@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "domains": {
+    "1": { "status": "not_started", "last_visited": null, "task_total": null, "task_statements": {}, "drills": [] },
+    "2": { "status": "not_started", "last_visited": null, "task_total": null, "task_statements": {}, "drills": [] },
+    "3": { "status": "not_started", "last_visited": null, "task_total": null, "task_statements": {}, "drills": [] },
+    "4": { "status": "not_started", "last_visited": null, "task_total": null, "task_statements": {}, "drills": [] },
+    "5": { "status": "not_started", "last_visited": null, "task_total": null, "task_statements": {}, "drills": [] }
+  },
+  "axis_mastery": {
+    "1": { "seen": 0, "correct": 0 },
+    "2": { "seen": 0, "correct": 0 },
+    "3": { "seen": 0, "correct": 0 },
+    "4": { "seen": 0, "correct": 0 },
+    "5": { "seen": 0, "correct": 0 }
+  }
+}
