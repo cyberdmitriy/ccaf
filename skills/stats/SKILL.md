@@ -15,7 +15,9 @@ Manual only; do NOT auto-invoke other skills.
 Follow the shared recipe **`${CLAUDE_PLUGIN_ROOT}/data/app-build.md`** exactly (same build as
 `/ccaf:exam` — it opens on the Dashboard). The dashboard shows overall accuracy, per-domain
 accuracy vs blueprint weight with focus markers, coverage (answered vs remaining), exam history
-(mock and external kept **separate**, never averaged), the 5-axis trap tally, and recurring misses.
+(mock and external kept **separate**, never averaged), a **Learning progress** card (tutor
+task-statement coverage + in-tutor drill scores + per-axis mastery, from `learning-progress.json`),
+the 5-axis trap tally, and recurring misses.
 
 ## If the store is empty
 If `stats.json` has no `exam_history` and an empty `answered`, say so plainly — the dashboard will
