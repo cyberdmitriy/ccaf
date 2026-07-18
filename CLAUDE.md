@@ -102,9 +102,12 @@ Reinstall after edits: `/plugin marketplace update ccaf-marketplace`.
 ## Staying current (content freshness)
 The exam and the docs it tests drift, so bundled content goes stale. Two layers, two update paths:
 - **Blueprint (format, domain weights, task statements)** — changes only when Anthropic publishes a new
-  **Exam Guide** version. That guide is **login-gated** (Partner Academy), so it's **checked by hand** —
-  it can't be fetched. Download the current guide, compare its version to the stamp in `data/sources.md`,
-  reconcile weights/task statements if it moved.
+  **Exam Guide** version. That guide is **publicly downloadable** (Skilljar landing page → S3 PDF; NOT
+  login-gated). Download the current guide, compare its title-page version to the stamp in
+  `data/sources.md`, reconcile the "Official exam facts" block if it moved. The current baseline is
+  **Exam Guide v1.0 (Effective July 2026)**; blueprint weights D1 27 / D2 18 / D3 20 / D4 20 / D5 15 and
+  the 30 task statements (D1:7 D2:5 D3:6 D4:6 D5:6) match the plugin. **Known gap:** the exam has
+  multiple-response items; the bank is single-answer only (tracked in `data/sources.md`).
 - **Technical behavior (CLI flags, hooks, MCP, `tool_choice`, Batch API, …)** — lives in **public docs**
   that `/ccaf:sync` can fetch (Claude Code changelog, Platform release notes, GitHub releases).
 `data/sources.md` is the single **source-of-truth list + "Last verified" stamp**. `/ccaf:sync` reads it,

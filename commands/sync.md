@@ -40,12 +40,17 @@ changes that touch concepts the bank tests (from `exam-traps.md` / `axes.md` the
 cosmetic/IDE fixes. Keep it short — a bulleted "since <date>" list, newest first, each line:
 `<date> · D<n> · <what changed> · <source>`. If nothing relevant changed, say "no exam-relevant changes since <date>".
 
-## Step 4 — Exam Guide reminder (Layer 1 — GATED, cannot fetch)
-The official **Exam Guide** (blueprint, domain weights, task statements) lives behind the **Anthropic
-Partner Academy** login and **cannot be fetched here**. Remind the user to:
-- download the current Exam Guide from Partner Academy and compare its **version** against the stamp in
-  `sources.md` (stamp is v0.2 / 2026-06-30 unless updated);
-- if the guide version is newer, the **domain weights or task statements may have shifted** — reconcile by hand.
+## Step 4 — Exam Guide check (Layer 1 — PUBLIC, semi-fetchable)
+The official **Exam Guide** (blueprint, domain weights, task statements) is **publicly downloadable** —
+it is NOT login-gated. Its landing page is fetchable; the version lives on the PDF's title page.
+- WebFetch the Layer-1 landing URL in `sources.md`
+  (`https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification`) and
+  extract the current **Exam Guide PDF** link.
+- The PDF title page states the version (stamp is **v1.0 · Effective July 2026** unless updated). WebFetch
+  may not reliably parse the PDF body — if you can't read the version cleanly, print the PDF link and ask
+  the user to open it and compare the title-page version against the stamp.
+- If the guide version is newer than the stamp, the **domain weights or task statements may have shifted** —
+  reconcile the "Official exam facts" block in `sources.md` by hand.
 
 ## Step 5 — Report & next steps (write nothing)
 Summarise: the baseline stamp, the "since <date>" change list (or "none"), and the Exam Guide reminder.
