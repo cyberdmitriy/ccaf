@@ -28,6 +28,7 @@ Then run **`/ccaf:init`** to set up and get routed.
 | `/ccaf:exam` | Build & open your offline study app. Pick a mode (`weak`/`unseen`/`random`/`review`), narrow to domains, choose a length **on the page**, sit it with a timer (pause/resume, resume-later, and an optional **2-min-per-question time limit**: at zero it tells you "time's up" and flags the attempt as *over time*, but never submits for you — you always finish every question). **Sit it from the keyboard:** `1`–`4`/`A`–`D` answer the current question, `J`/`K` (or `↑`/`↓`) move between questions, the nav highlights where you are, and **Jump to unanswered** skips to the first blank. `weak` mode now also resurfaces questions you haven't seen in a while (light spaced repetition). Copy the results JSON when done and record it with `/ccaf:result`. |
 | `/ccaf:result` | **The single recorder.** Records ANY result — the study app's results JSON (one sitting or a batch), or an external attempt (official/other practice) from a screenshot or pasted breakdown — and re-ranks your focus domains. |
 | `/ccaf:stats` | Opens the same offline app on its **Dashboard** — accuracy, per-domain accuracy vs blueprint weight, coverage, exam history (mock vs external kept separate) with a **score-trend sparkline**, 5-axis trap tally, recurring fails — plus a short text summary. |
+| `/ccaf:sync` | **Freshness check (read-only).** Fetches Anthropic's official Claude Code / API changelogs and reports what changed since the plugin's last-verified date, tagged by domain, and reminds you to download the current Exam Guide. Never edits the question bank — it tells you *what* drifted so you can decide what to refresh. |
 
 **Reviewing results:** the results page opens on your **misses only** (no more scrolling a whole 60-question exam); flip to **All** or filter by domain with one click, and each question shows the **axis** its trap trips on so you learn the pattern, not just the answer.
 
@@ -69,8 +70,8 @@ for changing the plugin. This README stays focused on *using* it.
 ```
 ccaf-plugin/
 ├─ .claude-plugin/{plugin.json, marketplace.json}
-├─ commands/{init.md, result.md}
+├─ commands/{init.md, result.md, sync.md}
 ├─ skills/{d1..d5-teacher, exam, stats}/SKILL.md
 └─ data/{questions.json, validate.py, tutor-prompts.md, exam-traps.md, axes.md, teaching-method.md,
-         app-template.html, app-build.md, progress-template/}
+         sources.md, app-template.html, app-build.md, progress-template/}
 ```

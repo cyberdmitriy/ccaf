@@ -16,11 +16,12 @@ progress is per-user and lives OUTSIDE the plugin.
 ## Layout
 ```
 .claude-plugin/{plugin.json, marketplace.json}   # manifest + single-plugin marketplace
-commands/{init.md, result.md}                     # /ccaf:init (hub), /ccaf:result (single result recorder)
+commands/{init.md, result.md, sync.md}            # /ccaf:init (hub), /ccaf:result (recorder), /ccaf:sync (freshness check)
 skills/{d1..d5-teacher, exam, stats}/SKILL.md     # tutors + study-app (exam) + dashboard (stats)
 data/
   questions.json        # CANONICAL question bank (the thing you'll extend most)
   validate.py           # read-only bank validator (run after every edit: python3 data/validate.py)
+  sources.md            # authoritative-source list + "Last verified" stamp; /ccaf:sync reads it (read-only)
   app-template.html     # the self-contained study app (dashboard+select+exam+results); 2 inject points
   app-build.md          # SHARED build recipe both /ccaf:exam and /ccaf:stats follow (injects bank+history)
   teaching-method.md    # HOW the d1..d5 tutors teach (shared Concept→Axis→Apply→Check pedagogy)
@@ -38,6 +39,7 @@ README.md               # end-user facing (install + usage)
 4. **Progress lives at `~/.claude/ccaf-progress/`**, never in the plugin dir (plugin dirs are wiped on update). Skills bootstrap it from `data/progress-template/` with `cp -rn` (never overwrite).
 5. **`/ccaf:result` is the single recorder** (mock JSON — one sitting or a batch array — or external screenshot). `/ccaf:exam` and `/ccaf:stats` both **build & open the same app** (`ccaf-exam.html`) via the shared `data/app-build.md` recipe and never write to the store; the app hands results back only via copy-JSON. The app itself does question selection + scoring client-side.
 6. **Path refs:** bundled files via `${CLAUDE_PLUGIN_ROOT}/data/...`; progress via `$HOME/.claude/ccaf-progress/...`.
+   **`/ccaf:sync` is report-only** — it fetches official docs (`allowed-tools: WebFetch, WebSearch, Read`) and reports drift; it NEVER edits `questions.json`, lessons, `sources.md`, or any progress file, and never invokes another command.
 7. **One app file, no archive:** `/ccaf:exam` & `/ccaf:stats` overwrite a single `$HOME/.claude/ccaf-progress/ccaf-exam.html`. No per-exam files. `stats.json` is the authoritative history; the app reconciles unrecorded local sittings against `recorded_exam_ids` so nothing is double-counted. To change the app UI/logic, edit `data/app-template.html` (keep the `/*__BANK__*/[]` and `/*__HISTORY__*/{}` placeholders valid as empty literals); to change what data it gets, edit `data/app-build.md`.
 
 ## App UI internals (v0.6.3 — all in `data/app-template.html`)
@@ -96,6 +98,20 @@ Recommended workflow — this is how the bank was built (multiple sources, dedup
 /ccaf:init            # then /ccaf:exam (pick mode/length on the page) → copy JSON → /ccaf:result → /ccaf:stats
 ```
 Reinstall after edits: `/plugin marketplace update ccaf-marketplace`.
+
+## Staying current (content freshness)
+The exam and the docs it tests drift, so bundled content goes stale. Two layers, two update paths:
+- **Blueprint (format, domain weights, task statements)** — changes only when Anthropic publishes a new
+  **Exam Guide** version. That guide is **login-gated** (Partner Academy), so it's **checked by hand** —
+  it can't be fetched. Download the current guide, compare its version to the stamp in `data/sources.md`,
+  reconcile weights/task statements if it moved.
+- **Technical behavior (CLI flags, hooks, MCP, `tool_choice`, Batch API, …)** — lives in **public docs**
+  that `/ccaf:sync` can fetch (Claude Code changelog, Platform release notes, GitHub releases).
+`data/sources.md` is the single **source-of-truth list + "Last verified" stamp**. `/ccaf:sync` reads it,
+fetches the public changelogs, and **reports** what changed since the stamp (report-only — it never edits
+the bank). When drift is real: run the bank-extension workflow above for behavior changes, reconcile the
+blueprint by hand for guide changes, then **bump the three "Last verified" lines in `sources.md` and the
+plugin version**. Keep `sources.md` and `commands/sync.md` in sync if you add/rename a source.
 
 ## Provenance
 Bank built from `../source/{exam-1.html, exam-2.html, test-exam.pdf}` (study workspace). Lesson/trap
