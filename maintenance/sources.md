@@ -1,10 +1,9 @@
 # CCAF — Sources of truth & freshness baseline
 
-This file is the **authoritative-source list** for the plugin's teaching content, plus a
-**last-verified stamp** and the official blueprint/task-statements copied from the Exam Guide.
-`/ccaf:sync` reads it to report what has changed upstream since the stamp; the maintainer updates it
-whenever the bundled content is refreshed. It ships with the plugin (read-only at runtime —
-`/ccaf:sync` never writes it).
+**Maintainer-only** reference (not shipped runtime data — no skill/command reads it). It holds the
+**authoritative-source list**, a **last-verified stamp**, and the official blueprint/task-statements
+copied from the Exam Guide. The periodic-review procedure in `maintenance/RUNBOOK.md` consults this
+file and updates the stamp when content is refreshed.
 
 Two layers: the **exam blueprint** (format, domains, weights, task statements) changes only when
 Anthropic publishes a new **Exam Guide** version — that guide is **publicly downloadable** (see Layer 1),
@@ -62,9 +61,9 @@ The single authoritative source for the blueprint, domain weights, and task stat
 - Public overview mirrors (unofficial, quick sanity-check only, NOT authoritative):
   https://claudecertifications.com/claude-certified-architect · .../domains
 
-## Layer 2 — Technical behavior (PUBLIC · fetchable by `/ccaf:sync`)
-Official product docs the exam is built on. `/ccaf:sync` fetches these and reports entries dated after
-the "Last verified" stamp above.
+## Layer 2 — Technical behavior (PUBLIC · fetchable during review)
+Official product docs the exam is built on. During a review (see `RUNBOOK.md`), fetch these and check
+for entries dated after the "Last verified" stamp above.
 - **Claude Code changelog** (D2/D3 — CLI flags, hooks, slash commands, plan mode, CI/CD):
   https://code.claude.com/docs/en/changelog
 - **Claude Code releases (GitHub)** (same, sometimes fresher):
@@ -82,9 +81,10 @@ the "Last verified" stamp above.
 - **D5 Context & Reliability** — Platform release notes + Claude Code changelog (context/session behavior).
 
 ## What to do when something changed
-`/ccaf:sync` is **report-only** — it never edits the bank. When it flags a drift:
+The review is a maintainer task (see `RUNBOOK.md`) — it may edit the bank, skills, or lessons. When a
+review finds drift:
 1. Re-download the latest **Exam Guide** from the Layer-1 landing page; if the version > the stamp above,
    reconcile blueprint weights / task statements by hand (and update the "Official exam facts" block here).
 2. For behavior changes, run the **bank-extension workflow** in `CLAUDE.md` (extract → classify →
    dedupe → assign ids/axis → `python3 data/validate.py` → version bump).
-3. Update the "Last verified" lines here and bump the plugin version.
+3. Update the "Last verified" lines here, add a CHANGELOG entry, and bump the plugin version.
