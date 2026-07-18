@@ -39,4 +39,5 @@ Append misses to `$HOME/.claude/ccaf-progress/fails-tracker.md` and a trap-type 
 - **Independent instance** review > self-review; large reviews = per-file passes + a separate cross-file integration pass.
 
 ## Hand-off
+First **record learning progress** — follow the "Recording learning progress" contract in `${CLAUDE_PLUGIN_ROOT}/data/teaching-method.md` (read-modify-write only D4's entry of `$HOME/.claude/ccaf-progress/learning-progress.json` + shared `axis_mastery`).
 When done, suggest the next step (e.g. `/ccaf:exam` or another `/ccaf:dN-teacher`). Never auto-invoke; instruct the user.
