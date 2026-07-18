@@ -132,6 +132,13 @@
   .dval{margin-left:auto;font-variant-numeric:tabular-nums;font-size:.9rem;font-weight:600;white-space:nowrap}
   .dval small{color:var(--muted);font-weight:500}
   .focus-flag{font-size:.66rem;background:var(--accent);color:#fff;border-radius:999px;padding:.05rem .45rem;letter-spacing:.04em;text-transform:uppercase}
+  /* ---------- learning-progress card ---------- */
+  .lp-status{font-size:.66rem;font-weight:700;border-radius:999px;padding:.05rem .5rem;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+  .lp-status.lp-not_started{background:var(--paper2);color:var(--muted)}
+  .lp-status.lp-in_progress{background:var(--accent-soft);color:var(--accent2)}
+  .lp-status.lp-complete{background:var(--ok-soft);color:var(--ok)}
+  .axis-mastery{font-size:.82rem;color:var(--ink2);margin:.1rem 0 .2rem 1.4rem}
+  .axis-mastery b{color:var(--ink);font-variant-numeric:tabular-nums}
 
   /* ---------- history timeline ---------- */
   .exlist{margin-top:1rem;display:flex;flex-direction:column;gap:.6rem}
@@ -494,6 +501,19 @@ $("#brandBtn").onclick=()=>{
   renderDashboard(); showView("dashboard");
 };
 
+/* ---- learning progress (tutor sessions, read-only from HISTORY.learning) ---- */
+const LEARNING = HISTORY.learning || null;
+const LP_STATUS_LABEL = {not_started:"not started", in_progress:"in progress", complete:"complete"};
+function learningDomain(d){ return (LEARNING && LEARNING.domains && LEARNING.domains[String(d)]) || null; }
+function lpCovered(ld){ if(!ld||!ld.task_statements) return 0;
+  return Object.values(ld.task_statements).filter(t=>t&&t.covered).length; }
+function lpLatestDrill(ld){ return (ld&&ld.drills&&ld.drills.length)? ld.drills[ld.drills.length-1] : null; }
+function lpAnyActivity(){ if(!LEARNING||!LEARNING.domains) return false;
+  return [1,2,3,4,5].some(d=>{ const ld=LEARNING.domains[String(d)];
+    return ld && ((ld.status && ld.status!=="not_started") || lpCovered(ld)>0 || (ld.drills&&ld.drills.length)); }); }
+function lpAxisAny(){ const m=LEARNING&&LEARNING.axis_mastery; if(!m) return false;
+  return [1,2,3,4,5].some(a=>Number((m[String(a)]||{}).seen||0)>0); }
+
 /* ================= DASHBOARD ================= */
 function renderDashboard(){
   const v=$("#view-dashboard");
@@ -601,6 +621,30 @@ function renderDashboard(){
   }
   html+=`</section>`;
 
+  /* learning progress — tutor task-statement coverage + in-tutor drills (read-only) */
+  if(lpAnyActivity()){
+    html+=`<section class="block"><h2>Learning progress <span class="count">tutor task-statement coverage · in-tutor drills</span></h2><div class="card pad">`;
+    for(let d=1;d<=5;d++){
+      const ld=learningDomain(d);
+      const status=(ld&&ld.status)||"not_started";
+      const total=(ld&&ld.task_total)||null;
+      const cov=lpCovered(ld);
+      const pct=total?Math.round(100*cov/total):0;
+      const drill=lpLatestDrill(ld);
+      const lv=(ld&&ld.last_visited)||null;
+      html+=`<div class="dbar-row">
+        <div class="dbar-top">
+          <span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>
+          <span class="dname"><b>D${d}</b> <span class="dn-full">${DOMAIN_SHORT[d]}</span></span>
+          <span class="lp-status lp-${status}">${LP_STATUS_LABEL[status]||esc(status)}</span>
+          <span class="dval">${total?cov+"/"+total+" <small>statements</small>":"<small>not started</small>"}${drill?` <small>· drill ${drill.score}/${drill.total}</small>`:""}${lv?` <small>· seen ${esc(lv)}</small>`:""}</span>
+        </div>
+        <div class="track"><div class="fill" style="width:${pct}%;background:var(${DOMAIN_VAR[d]})"></div></div>
+      </div>`;
+    }
+    html+=`</div></section>`;
+  }
+
   /* axis tally — computed client-side from per-question axis over the user's misses (always correct
      against the current bank); HISTORY.axis_tally is only a fallback when the bank carries no axis. */
   const computed=computeAxisTally(merged);
@@ -613,6 +657,9 @@ function renderDashboard(){
         <span class="axis-name"><b>${a}</b>${AXIS_NAMES[a]}</span>
         ${hasAxis?`<span class="axis-count">${val} miss${val===1?"":"es"}</span>`:""}</div>
       <div class="axis-desc">${AXIS_DESC[a]}</div>
+      ${(function(){ const m=LEARNING&&LEARNING.axis_mastery&&LEARNING.axis_mastery[String(a)];
+        if(!m||!Number(m.seen)) return ""; const s=Number(m.seen), c=Number(m.correct||0);
+        return `<div class="axis-mastery">Tutor recognition: <b>${c}/${s}</b> correct · ${Math.round(100*c/s)}%</div>`; })()}
       ${hasAxis?`<div class="track"><div class="fill" style="width:${Math.round(100*val/axisMax)}%;background:var(--accent)"></div></div>`:""}
     </div>`;}
   html+=`${hasAxis?"":'<p class="hint" style="margin-top:.5rem">The tally fills in as you record exams — each miss is tagged with the axis it tripped on.</p>'}</div></section>`;
