@@ -177,3 +177,36 @@ scratch per Rule 0, and lean harder on legends.
 Each tutor lists its domain's task statements. Tick every one before declaring the domain
 done — do not skip a sub-topic just because the learner scores well overall; the exam samples
 across all task statements.
+
+## Recording learning progress (at hand-off, before you suggest the next command)
+Teacher sessions are otherwise stateless — their progress dies on `/clear`. So at hand-off you
+persist what this session covered into the per-user file `learning-progress.json`. This is
+**separate** from `stats.json` (exam results, owned by `/ccaf:result`) — never touch that here.
+
+Perform this contract as a **read-modify-write**, touching ONLY the current domain's entry and the
+shared `axis_mastery` — never clobber the other four domains from a stale copy:
+
+1. The store + file already exist (Step-0 `cp -rn` bootstraps `learning-progress.json` from the
+   template on first run). If for any reason the file is missing, recreate it from the template
+   skeleton before writing.
+2. **Read** `$HOME/.claude/ccaf-progress/learning-progress.json` into memory.
+3. In `domains["<d>"]` for YOUR domain only:
+   - set `last_visited` = today (`YYYY-MM-DD`, from session context — best effort);
+   - set `task_total` = this domain's task-statement count (you know your own set, e.g. D4 = 6 →
+     4.1–4.6);
+   - for each task statement you **fully taught AND check-questioned** this session, set
+     `task_statements["<id>"] = {"covered": true, "ts": "<today>"}` (use the tutor's own ids, e.g.
+     `"4.3"`). Do NOT mark a statement you only mentioned.
+   - if the 8-question domain drill was taken, append `{"ts": "<today>", "score": <int>, "total": <int>}`
+     to `drills`.
+   - recompute `status`: `complete` when covered count == `task_total` **and** the latest drill
+     passed (`score/total >= 7/8`); else `in_progress` if any activity exists; else leave
+     `not_started`.
+4. In shared `axis_mastery`: for every check-question / drill question whose axis (1–5) is known,
+   increment `axis_mastery["<a>"].seen`, and `.correct` when the learner got it right. This is
+   cumulative across sessions and complements the misses-only `stats.json.axis_tally`.
+5. **Write** the whole object back as **valid JSON — no trailing commas**. Preserve every other
+   domain's data and any pre-existing counts exactly.
+
+Do this silently as part of hand-off; you may tell the user in one line that their progress was
+saved. It's a write to the learner's own store, not a skill call — you never invoke another skill.
