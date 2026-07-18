@@ -54,6 +54,23 @@ PROFILE_FOCUS = parse_profile_focus(f"{STORE}/profile.md")
 bank = json.load(open(f"{ROOT}/data/questions.json"))["questions"]
 stats = json.load(open(f"{STORE}/stats.json"))
 
+# ---- learning-progress (tutor task-statement coverage + drills); READ-ONLY here, never written ----
+def load_learning(path):
+    try:
+        obj = json.load(open(path))
+    except (FileNotFoundError, ValueError):
+        obj = None
+    skel = {"schema": 1,
+            "domains": {str(d): {"status": "not_started", "last_visited": None,
+                                 "task_total": None, "task_statements": {}, "drills": []} for d in range(1, 6)},
+            "axis_mastery": {str(a): {"seen": 0, "correct": 0} for a in range(1, 6)}}
+    if not isinstance(obj, dict):
+        return skel
+    obj.setdefault("domains", skel["domains"])
+    obj.setdefault("axis_mastery", skel["axis_mastery"])
+    return obj
+LEARNING = load_learning(f"{STORE}/learning-progress.json")
+
 # answered: transform the store's {attempts:[...], last_correct} -> {last_correct, attempts:<count>, last_ts}
 # last_ts (ISO ts of the MOST RECENT attempt) drives the app's spaced-repetition "due" term in weak mode.
 answered = {}
@@ -88,6 +105,8 @@ for q in bank: counts[str(q["domain"])] = counts.get(str(q["domain"]),0)+1
 # Note: blueprint weights and per-domain accuracy are NOT injected — the app owns the blueprint
 # (constant CCAF data) and recomputes per-domain accuracy client-side from `answered` (latest attempt
 # + any unrecorded local sittings), so injecting them would just be stale duplicate data.
+# `learning` IS injected (read-only) — the tutors' learning-progress.json, powering the dashboard's
+# "Learning progress" card; the app only reads it, never writes back.
 HISTORY = {
     "generated_at": "",  # optional label; leave "" (no clock available here)
     "bank_total": len(bank),
@@ -97,6 +116,7 @@ HISTORY = {
     "axis_tally": stats.get("axis_tally") or {"1":0,"2":0,"3":0,"4":0,"5":0},
     "exam_history": exam_history,
     "recorded_exam_ids": recorded,
+    "learning": LEARNING,
 }
 
 tpl = open(f"{ROOT}/data/app-template.html").read()
