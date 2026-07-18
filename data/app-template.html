@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCAF Study — Mock Exam &amp; Progress</title>
+<style>
+  :root{
+    /* warm "study-desk" light theme */
+    --paper:#FBF8F1; --paper2:#F4EFE4; --surface:#FFFFFF; --surface2:#FCFAF5;
+    --ink:#211D15; --ink2:#453F31; --muted:#5C5440; --faint:#8F836A;
+    --line:#E7DFCE; --line2:#EFE9DB;
+    --accent:#B5502F; --accent2:#9A3F22; --accent-soft:#F3E2D8;
+    --ok:#3F7A55; --ok-soft:#E3EEE3; --bad:#AE3B33; --bad-soft:#F5E1DD;
+    --warn:#9A6B18; --warn-soft:#F6ECD4;
+    /* domain hues (muted, print-like) */
+    --d1:#B5502F; --d2:#A9781F; --d3:#2E7D74; --d4:#4C5FA6; --d5:#8A4F79;
+    --shadow:0 1px 2px rgba(60,45,20,.06), 0 6px 20px rgba(60,45,20,.05);
+    --shadow-sm:0 1px 2px rgba(60,45,20,.07);
+    --radius:14px; --radius-sm:10px;
+    --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --font-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --font-mono:"SF Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    --maxw:940px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;overflow-x:hidden}
+  body{
+    background:
+      radial-gradient(1200px 600px at 100% -10%, #FFFDF8 0%, rgba(255,253,248,0) 55%),
+      linear-gradient(var(--paper),var(--paper));
+    color:var(--ink);
+    font:15.5px/1.6 var(--font-body);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    padding-bottom:4rem;
+  }
+  h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;letter-spacing:.005em;line-height:1.2;margin:0}
+  a{color:var(--accent)}
+  code,.mono{font-family:var(--font-mono);font-size:.9em}
+  .stem code, .opt code, .explain code{
+    background:var(--paper2);border:1px solid var(--line);border-radius:5px;padding:.04em .34em;font-size:.86em;color:var(--ink2)}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+    border-radius:var(--radius-sm);padding:.5rem 1rem;transition:.15s ease;box-shadow:var(--shadow-sm)}
+  button:hover{border-color:var(--faint);transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(181,80,47,.28)}
+  button.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  button.ghost{background:transparent;box-shadow:none;border-color:transparent}
+  button.ghost:hover{background:var(--paper2);border-color:var(--line)}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+  /* ---------- accessibility: visible focus, reduced motion, SR-only ---------- */
+  :focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+  button:focus-visible,.navchip:focus-visible,.chip:focus-visible,.mode:focus-visible,
+  .count-btn:focus-visible,.tab:focus-visible,.seg-btn:focus-visible,a:focus-visible,
+  textarea:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+  .opt:focus-within{outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent)}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    html{scroll-behavior:auto}
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(251,248,241,.86);backdrop-filter:saturate(1.4) blur(10px);
+    border-bottom:1px solid var(--line);}
+  .topbar-inner{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:1rem;padding:.7rem 1.1rem;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:.5rem;margin-right:.3rem;
+    border:none;background:transparent;box-shadow:none;padding:.15rem .2rem;cursor:pointer;border-radius:8px}
+  .brand:hover{transform:none;border-color:transparent}
+  .brand:hover .mark{color:var(--accent2)}
+  .brand .logo{display:inline-flex;align-items:center;color:var(--accent)}
+  .brand .logo svg{height:1.5rem;width:1.5rem;display:block}
+  .brand .mark{font-family:var(--font-display);font-weight:700;font-size:1.15rem;color:var(--accent);letter-spacing:.02em}
+  .brand .sub{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .tabs{display:flex;gap:.25rem;margin-left:auto}
+  .tab{border:none;background:transparent;box-shadow:none;color:var(--ink2);padding:.42rem .8rem;border-radius:999px;font-weight:600;font-size:.92rem}
+  .tab:hover{background:var(--paper2);transform:none}
+  .tab.active{background:var(--accent-soft);color:var(--accent2)}
+  .exam-controls{display:flex;align-items:center;gap:.6rem;margin-left:auto}
+  .clock{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:1.05rem;font-weight:600;
+    background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.3rem .7rem;min-width:6rem;text-align:center}
+  .clock.low{color:#fff;background:var(--bad);border-color:var(--bad);animation:pulseLow 1s ease-in-out infinite}
+  .clock.over{color:#fff;background:var(--bad);border-color:var(--bad)}
+  @keyframes pulseLow{0%,100%{opacity:1}50%{opacity:.72}}
+  .prog-mini{font-size:.86rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  main{max-width:var(--maxw);margin:0 auto;padding:1.9rem 1.1rem}
+  .view{display:none;animation:fade .35s ease both}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .lede{color:var(--ink2);margin:.5rem 0 0;font-size:1rem;line-height:1.5}
+  section.block{margin-top:2.6rem}
+  .block > h2{font-size:1.32rem;display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem}
+  .block > h2 .count{font-family:var(--font-body);font-size:.85rem;color:var(--ink2);font-weight:500;letter-spacing:0}
+  .eyebrow{font-size:.75rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .page-head{margin-bottom:1.9rem}
+  .page-head h1{font-size:2rem;margin:.4rem 0 0}
+
+  /* ---------- cards / tiles ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .pad{padding:1.1rem 1.2rem}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.9rem;margin-top:1rem}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem;box-shadow:var(--shadow)}
+  .tile .k{font-size:.76rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .tile .v{font-family:var(--font-display);font-size:2rem;line-height:1;margin-top:.4rem}
+  .tile .v small{font-size:.9rem;color:var(--muted);font-family:var(--font-body)}
+  .tile .foot{font-size:.8rem;color:var(--muted);margin-top:.35rem}
+
+  /* ---------- banners ---------- */
+  .banner{display:flex;gap:.8rem;align-items:flex-start;border-radius:var(--radius);padding:.85rem 1rem;margin-top:1rem;border:1px solid}
+  .banner .ic{font-size:1.1rem;line-height:1.3}
+  .banner.warn{background:var(--warn-soft);border-color:#E8D2A0;color:#6b4b12}
+  .banner.info{background:var(--accent-soft);border-color:#E7C9B9;color:var(--accent2)}
+  .banner .act{margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap}
+  .banner b{font-weight:700}
+
+  /* ---------- domain bars (stacked: header line + full-width track) ---------- */
+  .dbar-row{padding:.85rem 0;border-top:1px solid var(--line2)}
+  .dbar-row:first-child{border-top:none;padding-top:.4rem}
+  .dbar-top{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .dname{display:flex;align-items:baseline;gap:.4rem;font-size:1rem;min-width:0}
+  .dname b{font-family:var(--font-display);font-weight:600;color:var(--ink)}
+  .dn-full{font-weight:600;color:var(--ink)}
+  .dot{width:.72rem;height:.72rem;border-radius:50%;flex:none}
+  .dchip{font-size:.68rem;color:var(--muted);font-weight:500}
+  .ddesc{font-size:.88rem;color:var(--ink2);margin:.3rem 0 .6rem 1.22rem;line-height:1.5}
+  .track{height:.72rem;background:var(--paper2);border-radius:999px;overflow:hidden;position:relative}
+  .fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+  .blueprint-tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--faint);opacity:.7}
+  .dval{margin-left:auto;font-variant-numeric:tabular-nums;font-size:.9rem;font-weight:600;white-space:nowrap}
+  .dval small{color:var(--muted);font-weight:500}
+  .focus-flag{font-size:.66rem;background:var(--accent);color:#fff;border-radius:999px;padding:.05rem .45rem;letter-spacing:.04em;text-transform:uppercase}
+
+  /* ---------- history timeline ---------- */
+  .exlist{margin-top:1rem;display:flex;flex-direction:column;gap:.6rem}
+  .exrow{display:flex;align-items:center;gap:.9rem;padding:.7rem .95rem;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface2)}
+  .exrow .score{font-family:var(--font-display);font-size:1.35rem;min-width:3.4rem}
+  .exrow .mid{flex:1;min-width:0}
+  .exrow .mid .t{font-weight:600;font-size:.92rem}
+  .exrow .mid .s{font-size:.8rem;color:var(--muted)}
+  .badge{font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;font-weight:700;border-radius:999px;padding:.12rem .5rem}
+  .badge.mock{background:var(--accent-soft);color:var(--accent2)}
+  .badge.external{background:#E7E9F3;color:#3a4890}
+  .badge.pending{background:var(--warn-soft);color:#6b4b12;border:1px dashed #d8bd83}
+  .exrow .errs{font-size:.82rem;color:var(--bad);font-weight:600;white-space:nowrap}
+  .spark{display:flex;gap:2px;align-items:flex-end;height:26px}
+  .spark span{width:7px;border-radius:2px 2px 0 0;background:var(--accent);opacity:.85}
+
+  /* ---------- axis + fails ---------- */
+  .axis-row{padding:.6rem 0;border-top:1px solid var(--line2)}
+  .axis-row:first-child{border-top:none;padding-top:.3rem}
+  .axis-top{display:flex;align-items:center;gap:.6rem}
+  .axis-name{font-size:1rem}
+  .axis-name b{font-family:var(--font-display);color:var(--accent2);margin-right:.15rem}
+  .axis-count{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600;color:var(--muted);white-space:nowrap}
+  .axis-desc{font-size:.88rem;color:var(--ink2);margin:.28rem 0 .55rem 1.4rem;line-height:1.55}
+  .fails-table{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:.8rem}
+  .fails-table th,.fails-table td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line2);vertical-align:top}
+  .fails-table th{font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .dtag{font-family:var(--font-mono);font-size:.78rem;font-weight:600;padding:.05rem .35rem;border-radius:5px;color:#fff}
+
+  /* ---------- config / new exam ---------- */
+  .cfg-grid{display:grid;gap:1.1rem;margin-top:1.2rem}
+  .field .flabel{font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.5rem}
+  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.7rem}
+  .mode{display:block;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:.8rem .9rem;cursor:pointer;background:var(--surface);transition:.15s}
+  .mode:hover{border-color:var(--faint)}
+  .mode.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .mode .mt{font-weight:700;display:flex;align-items:center;justify-content:space-between}
+  .mode .mt .avail{font-size:.74rem;color:var(--muted);font-weight:600}
+  .mode.sel .mt .avail{color:var(--accent2)}
+  .mode .md{font-size:.86rem;color:var(--ink2);margin-top:.3rem;line-height:1.45}
+  .mode.disabled{opacity:.45;cursor:not-allowed}
+  .chips{display:flex;gap:.5rem;flex-wrap:wrap}
+  .chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:.4rem .85rem;cursor:pointer;font-size:.9rem;font-weight:600;display:flex;align-items:center;gap:.45rem;transition:.15s}
+  .chip:hover{border-color:var(--faint)}
+  .chip.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent2)}
+  .chip .dot{width:.6rem;height:.6rem}
+  .chip-count{color:var(--muted);font-weight:500;font-size:.82rem}
+  .chip.sel .chip-count{color:var(--accent2)}
+  .counts{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+  .count-btn{min-width:3.2rem;text-align:center}
+  .count-btn.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+  .cfg-summary{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--line)}
+  .cfg-summary .big{font-family:var(--font-display);font-size:1.15rem}
+  .cfg-note{font-size:.9rem;color:var(--ink2)}
+  .cfg-note.warn{color:var(--warn)}
+
+  /* ---------- exam ---------- */
+  .exam-head{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.4rem}
+  .navgrid{display:flex;flex-wrap:wrap;gap:.32rem;margin:.9rem 0 1.4rem}
+  .navchip{width:2rem;height:2rem;border-radius:7px;border:1px solid var(--line);background:var(--surface);font-size:.8rem;font-weight:600;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink2);transition:.12s;font-variant-numeric:tabular-nums;
+    padding:0;box-shadow:none;position:relative}
+  .navchip:hover{border-color:var(--faint);transform:none}
+  .navchip.answered{background:var(--ink2);border-color:var(--ink2);color:#fff}     /* answered = solid neutral (not accent) */
+  .navchip.flagged::after{content:"";position:absolute;top:-3px;right:-3px;width:.5rem;height:.5rem;border-radius:50%;
+    background:var(--warn);border:1.5px solid var(--surface)}                         /* flagged = warn dot */
+  .navchip.current{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent);color:var(--accent2);z-index:1}  /* current = accent ring */
+  .navchip.answered.current{box-shadow:0 0 0 2px var(--accent);color:#fff}
+  .q{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.15rem 1.25rem;margin:0 0 1rem;box-shadow:var(--shadow);scroll-margin-top:5.5rem}
+  .q .qhead{display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem}
+  .q .qno{font-family:var(--font-display);font-size:1.05rem;color:var(--muted)}
+  .q .stem{margin:.1rem 0 .95rem;white-space:pre-wrap;font-size:1.02rem;line-height:1.55}
+  .opt{display:flex;gap:.7rem;align-items:flex-start;padding:.62rem .75rem;border:1.5px solid var(--line);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:.5rem;transition:.12s;background:var(--surface2)}
+  .opt:last-child{margin-bottom:0}
+  .opt:hover{border-color:var(--faint);background:var(--paper2)}
+  .opt.picked{border-color:var(--accent);background:var(--accent-soft)}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt .lab{font-weight:700;font-family:var(--font-mono);color:var(--muted);flex:none;width:1.3rem}
+  .opt.picked .lab{color:var(--accent2)}
+  .opt .otext{flex:1}
+  .q.graded .opt{cursor:default}
+  .q.graded .opt:hover{background:var(--surface2);border-color:var(--line)}
+  .opt.is-correct{border-color:var(--ok);background:var(--ok-soft)}
+  .opt.is-correct .lab{color:var(--ok)}
+  .opt.is-wrong{border-color:var(--bad);background:var(--bad-soft)}
+  .opt.is-wrong .lab{color:var(--bad)}
+  .opt .verdict{margin-left:auto;font-size:.75rem;font-weight:700;letter-spacing:.04em;align-self:center}
+  .opt.is-correct .verdict{color:var(--ok)}
+  .opt.is-wrong .verdict{color:var(--bad)}
+  .explain{margin-top:.75rem;padding:.7rem .85rem;border-left:3px solid var(--accent);background:var(--surface2);border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:.93rem;color:var(--ink2)}
+  .explain b{color:var(--ink)}
+
+  /* ---------- paginated exam: flag button, prev/next bar, review gate ---------- */
+  .flagbtn{margin-left:auto;padding:.32rem .7rem;font-size:.82rem;color:var(--muted);box-shadow:none}
+  .flagbtn.on{background:var(--warn-soft);border-color:#d8bd83;color:#6b4b12}
+  .qnav{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
+    margin-top:1.15rem;padding-top:1rem;border-top:1px solid var(--line2)}
+  .qnav-mid{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+  .reviewgate .qno{color:var(--ink);font-size:1.25rem}
+  .rg-block{margin-top:1.1rem}
+  .rg-lbl{font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:.55rem}
+  .rg-ok{color:var(--ok);font-weight:600;margin-top:1rem}
+
+  /* ---------- overlay ---------- */
+  #overlay{position:fixed;inset:0;background:rgba(36,31,23,.55);backdrop-filter:blur(3px);display:none;
+    align-items:center;justify-content:center;flex-direction:column;gap:1.2rem;z-index:50;color:#fff;text-align:center}
+  #overlay.show{display:flex}
+  #overlay .big{font-family:var(--font-display);font-size:1.8rem}
+
+  /* ---------- results ---------- */
+  .result-hero{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+  .ring{--p:0;width:130px;height:130px;border-radius:50%;flex:none;
+    background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--paper2) 0);
+    display:grid;place-items:center;position:relative}
+  .ring::after{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--surface)}
+  .ring .rv{position:relative;text-align:center;font-family:var(--font-display)}
+  .ring .rv b{font-size:2rem;display:block;line-height:1}
+  .ring .rv span{font-size:.75rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+  .result-hero .verdict-msg{font-family:var(--font-display);font-size:1.5rem}
+  .result-hero .sub{color:var(--muted);margin-top:.3rem}
+  .export-box{margin-top:1rem}
+  textarea{width:100%;min-height:150px;font-family:var(--font-mono);font-size:.8rem;line-height:1.5;
+    background:var(--surface2);color:var(--ink2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:.8rem;resize:vertical}
+  .copyrow{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;margin-top:.8rem}
+  .copy-ok{color:var(--ok);font-weight:600;font-size:.88rem}
+
+  /* ---------- results review controls (segmented toggle + domain chips) ---------- */
+  .review-controls{display:flex;gap:.9rem 1.1rem;align-items:center;flex-wrap:wrap;margin:.2rem 0 1.1rem}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow-sm)}
+  .seg-btn{border:none;background:transparent;box-shadow:none;border-radius:0;padding:.4rem .95rem;font-weight:600;font-size:.88rem;color:var(--ink2);transform:none}
+  .seg-btn:hover{background:var(--paper2);transform:none;border-color:transparent}
+  .seg-btn.sel{background:var(--accent);color:#fff}
+  .seg-btn.sel:hover{background:var(--accent2)}
+  /* axis badge on a review card */
+  .axisbadge{font-size:.72rem;font-weight:600;letter-spacing:.02em;color:var(--muted);background:var(--paper2);
+    border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem;white-space:nowrap;margin-left:auto}
+  /* ---------- score-trend sparkline ---------- */
+  .trend-card{margin-top:1rem;padding:1.1rem 1.2rem}
+  .trend-svg{width:100%;height:auto;display:block;overflow:visible}
+  .trend-legend{display:flex;gap:1.1rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:.7rem;align-items:center}
+  .trend-legend .lg{display:inline-flex;align-items:center;gap:.4rem}
+  .trend-legend .sw{width:.85rem;height:.85rem;border-radius:3px;display:inline-block}
+  .trend-empty{color:var(--muted);font-size:.9rem;padding:.3rem 0}
+
+  /* ---------- empty state ---------- */
+  .empty{text-align:center;padding:2.5rem 1rem;color:var(--muted)}
+  .empty .em-ic{font-size:2.4rem}
+  .empty h3{color:var(--ink);margin:.6rem 0 .3rem;font-size:1.2rem}
+  .steps{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-top:1rem}
+  .hint{color:var(--ink2);font-size:.9rem;line-height:1.5}
+  .kbd{font-family:var(--font-mono);background:var(--paper2);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:.08rem .4rem;font-size:.82em}
+  hr.soft{border:none;border-top:1px solid var(--line);margin:1.6rem 0}
+  @media (max-width:640px){
+    .dname{white-space:normal}
+    .ddesc{margin-left:0}
+    .axis-desc{margin-left:0}
+    .result-hero{gap:1rem}
+  }
+</style>
+</head>
+<body>
+
+<div id="srStatus" aria-live="polite" role="status" class="sr-only"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <button class="brand" id="brandBtn" type="button" title="Go to the dashboard" aria-label="CCAF Study — go to dashboard">
+      <span class="logo"><!-- LOGO:START (Claude sunburst; inline & fill="currentColor" so the theme tints it) -->
+        <svg viewBox="0 0 500 500" fill="none" stroke="currentColor" stroke-linecap="round" role="img" aria-hidden="true"><path d="M249.7 242.0 L243.0 60.0" stroke-width="22"/><path d="M253.3 242.7 L316.0 104.0" stroke-width="20"/><path d="M256.2 244.9 L372.0 150.0" stroke-width="19"/><path d="M257.9 249.1 L418.0 230.0" stroke-width="22"/><path d="M257.6 252.5 L404.0 300.0" stroke-width="19"/><path d="M254.9 256.3 L350.0 380.0" stroke-width="20"/><path d="M252.2 257.7 L296.0 414.0" stroke-width="18"/><path d="M249.6 258.0 L240.0 438.0" stroke-width="23"/><path d="M245.7 256.7 L162.0 388.0" stroke-width="19"/><path d="M243.0 253.8 L120.0 320.0" stroke-width="19"/><path d="M242.0 250.0 L98.0 250.0" stroke-width="21"/><path d="M243.3 245.6 L110.0 158.0" stroke-width="19"/><path d="M246.6 242.7 L188.0 116.0" stroke-width="18"/></svg>
+      <!-- LOGO:END --></span>
+      <span class="mark">CCAF</span><span class="sub">Study</span>
+    </button>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-view="dashboard">Dashboard</button>
+      <button class="tab" data-view="config">New exam</button>
+    </nav>
+    <div class="exam-controls" id="examControls" style="display:none">
+      <span class="prog-mini" id="progMini">0/0</span>
+      <span class="clock" id="clock">00:00:00</span>
+      <button id="jumpBtn" class="ghost" title="Go to the first unanswered question">Jump to unanswered</button>
+      <button id="quitBtn" class="ghost" title="Leave without submitting (progress is saved)">Quit</button>
+      <button id="pauseBtn" class="ghost">Pause</button>
+      <button id="submitBtn" class="primary">Submit</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- ============ DASHBOARD ============ -->
+  <div class="view active" id="view-dashboard"></div>
+
+  <!-- ============ CONFIG / NEW EXAM ============ -->
+  <div class="view" id="view-config"></div>
+
+  <!-- ============ EXAM ============ -->
+  <div class="view" id="view-exam">
+    <div class="page-head"><span class="eyebrow" id="examEyebrow">Mock exam</span></div>
+    <div id="timeUpBanner" class="banner warn" style="display:none">
+      <span class="ic">⏳</span>
+      <div><b>Your time is up.</b> This is practice — keep going and answer every question at your own pace.
+        This attempt will be recorded, and flagged as <b>“over time”</b> in your stats.</div>
+      <div class="act"><button type="button" class="ghost" onclick="hideTimeUp()">Dismiss</button></div>
+    </div>
+    <div class="navgrid" id="navgrid"></div>
+    <div id="quiz"></div>
+  </div>
+
+  <!-- ============ RESULTS ============ -->
+  <div class="view" id="view-results"></div>
+</main>
+
+<div id="overlay">
+  <div class="big">Paused</div>
+  <div style="opacity:.85">The clock and the exam are frozen.</div>
+  <button id="resumeBtn" class="primary">Resume</button>
+</div>
+
+<script>
+"use strict";
+/* ==== Injected by /ccaf:exam. Empty literals keep the raw template valid. ==== */
+const BANK = /*__BANK__*/[];
+const HISTORY = /*__HISTORY__*/{};
+/* ============================================================================= */
+
+const DOMAIN_NAMES = {1:"Agentic Architecture & Orchestration",2:"Tool Design & MCP Integration",3:"Claude Code Config & Workflows",4:"Prompt Engineering & Structured Output",5:"Context Management & Reliability"};
+const DOMAIN_SHORT = {1:"Agentic Architecture",2:"Tool Design & MCP",3:"Config & Workflows",4:"Prompt Engineering",5:"Context & Reliability"};
+const DOMAIN_DESC = {1:"Agentic loops & stop_reason, coordinator/subagents, the Task tool, hooks, session state.",2:"Tool descriptions & selection, structured errors, tool_choice, MCP config & primitives, built-in tools.",3:"CLAUDE.md hierarchy, skills vs commands, .claude/rules, plan mode, CI/CD & CLI flags.",4:"Explicit criteria vs vague, few-shot, JSON-schema tool output, validation & retry, Batch API.",5:"Summarisation & case facts, escalation criteria, provenance, sampling & reliability."};
+const DOMAIN_VAR   = {1:"--d1",2:"--d2",3:"--d3",4:"--d4",5:"--d5"};
+const AXIS_NAMES = {1:"Determinism",2:"Exact hit",3:"Right diagnosis",4:"Proportionality",5:"Root-cause / antipattern"};
+const AXIS_DESC = {
+  1:"“Influences” vs “guarantees.” Anything the model reads (prompt, CLAUDE.md, rules, tool description) is probabilistic; only code outside it (a hook, schema-reject, forced specific tool) guarantees. High-stakes → deterministic.",
+  2:"“Similar” vs “exactly the thing.” The option acts in the right area but misses the precise target — tool_choice ‘any’ forces a tool, not the tool; Grep = contents, Glob = paths.",
+  3:"Solves the problem the stem actually states. A requirements gap ≠ a code gap (interview, not plan mode); synthesis needs the complete findings, not a lean summary.",
+  4:"Matched to the stakes — not over- or under-engineered. No subagent for a trivial one-file task; don't add agents to fix a decomposition bug; review by risk, not everything or nothing.",
+  5:"Fixes the cause, not the symptom, and dodges known antipatterns — a bigger model won't fix attention dilution; a louder prompt isn't enforcement; sentiment/self-confidence aren't valid signals."
+};
+const BLUEPRINT = (HISTORY.blueprint) || {1:27,2:18,3:20,4:20,5:15};
+const PASS_PCT = 72;
+
+const LS_INPROGRESS = "ccaf-app:inprogress";
+const LS_PENDING    = "ccaf-app:pending";     // array of finished-but-unrecorded result objects
+
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const el = (tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+/* escape, then render `code` spans and preserve newlines */
+function rich(s){return esc(s).replace(/`([^`]+)`/g,(_,m)=>"<code>"+m+"</code>");}
+function fmtTime(s){s=Math.max(0,Math.round(s||0));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;
+  const p=n=>String(n).padStart(2,"0");return (h?p(h)+":":"")+p(m)+":"+p(x);}
+function domVar(d){return getComputedStyle(document.documentElement).getPropertyValue(DOMAIN_VAR[d]).trim();}
+function uid(){try{return crypto.randomUUID();}catch(e){return "x"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}}
+function loadLS(k,f){try{const v=JSON.parse(localStorage.getItem(k)||"null");return v==null?f:v;}catch(e){return f;}}
+function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function prefersReducedMotion(){try{return window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;}catch(e){return false;}}
+function scrollTopSmooth(){window.scrollTo({top:0,behavior:prefersReducedMotion()?"auto":"smooth"});}
+
+/* ---- reconcile pending against authoritative recorded set ---- */
+const RECORDED = new Set((HISTORY.recorded_exam_ids)||[]);
+let pending = (loadLS(LS_PENDING,[])||[]).filter(p=>p && p.exam_id && !RECORDED.has(p.exam_id));
+saveLS(LS_PENDING, pending);
+let inProgress = loadLS(LS_INPROGRESS, null);
+if(inProgress && inProgress.submitted) inProgress = null;
+
+/* ==== merged answered view: authoritative (recorded) + pending sittings ==== */
+function mergedAnswered(){
+  const m = {}; // id -> {last_correct, seen, last_ts}
+  const auth = HISTORY.answered || {};
+  for(const id in auth){ m[id] = {last_correct:!!auth[id].last_correct, seen:(auth[id].attempts||1), last_ts:auth[id].last_ts||null}; }
+  // pending is newer -> overwrite last_correct + last_ts, add to seen
+  pending.forEach(p=>(p.answers||[]).forEach(a=>{
+    const id=String(a.id); const prev=m[id]||{last_correct:false,seen:0,last_ts:null};
+    m[id]={last_correct:!!a.is_correct, seen:prev.seen+1, last_ts:p.ts||prev.last_ts||null};
+  }));
+  return m;
+}
+/* client-side 5-axis tally: for each question whose latest attempt is wrong, tally BANK[id].axis.
+   Preferred over HISTORY.axis_tally (always correct against the current bank); falls back to it when
+   no per-question axis data is available. */
+function computeAxisTally(merged){
+  const t={1:0,2:0,3:0,4:0,5:0}; const byId={}; BANK.forEach(q=>byId[q.id]=q); let any=false;
+  for(const id in merged){ if(merged[id].last_correct) continue; const q=byId[id];
+    if(q && q.axis>=1 && q.axis<=5){ t[q.axis]++; any=true; } }
+  return {tally:t, any};
+}
+function domainAccuracy(merged){
+  const per={}; for(let d=1;d<=5;d++) per[d]={seen:0,correct:0};
+  const byId={}; BANK.forEach(q=>byId[q.id]=q);
+  for(const id in merged){ const q=byId[id]; if(!q)continue; per[q.domain].seen++; if(merged[id].last_correct) per[q.domain].correct++; }
+  return per;
+}
+function domainCounts(){ const c={1:0,2:0,3:0,4:0,5:0}; BANK.forEach(q=>c[q.domain]++); return c; }
+function examPct(e){
+  if(e.score&&e.score.total) return Math.round(100*e.score.correct/e.score.total);
+  if(e.per_domain_pct){
+    // blueprint-weighted mean of the per-domain %s (a plain average over-weights the small domains)
+    let num=0,den=0;
+    for(const d in e.per_domain_pct){ const p=Number(e.per_domain_pct[d]), w=Number(BLUEPRINT[d])||0;
+      if(!isNaN(p)&&w){ num+=p*w; den+=w; } }
+    if(den) return Math.round(num/den);
+    const vs=Object.values(e.per_domain_pct).map(Number).filter(x=>!isNaN(x));  // fallback: plain mean
+    return vs.length?Math.round(vs.reduce((s,x)=>s+x,0)/vs.length):null;
+  }
+  return null;
+}
+/* self-contained inline-SVG score-trend sparkline. Mock sittings = connected line + dots;
+   external results = separate diamond markers on the same timeline, NEVER averaged into the mock line. */
+function renderTrend(allExams){
+  const withTs=allExams.filter(e=>e.ts).slice().sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
+  const pts=withTs.map((e,i)=>({e,i,type:e.type,pct:examPct(e)})).filter(p=>p.pct!=null);
+  const mock=pts.filter(p=>p.type==="mock");
+  const ext=pts.filter(p=>p.type!=="mock");
+  if(mock.length<2){
+    return `<div class="card pad trend-card"><h3 style="font-size:1rem;margin-bottom:.5rem">Score trend</h3>
+      <div class="trend-empty">📈 Not enough data yet — record at least 2 mock sittings to see your trend${ext.length?" (external results are tracked separately below)":""}.</div></div>`;
+  }
+  const W=680,H=140,padL=10,padR=10,padT=16,padB=22, iw=W-padL-padR, ih=H-padT-padB, n=withTs.length;
+  const X=i=> padL + (n>1? i/(n-1):0.5)*iw;
+  const Y=p=> padT + (1-Math.max(0,Math.min(100,p))/100)*ih;
+  const passY=Y(PASS_PCT);
+  const mpath=mock.map(p=>X(p.i).toFixed(1)+","+Y(p.pct).toFixed(1)).join(" ");
+  let svg=`<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mock exam score trend over time">`;
+  svg+=`<line x1="${padL}" y1="${Y(0).toFixed(1)}" x2="${W-padR}" y2="${Y(0).toFixed(1)}" style="stroke:var(--line)" stroke-width="1"/>`;
+  svg+=`<line x1="${padL}" y1="${passY.toFixed(1)}" x2="${W-padR}" y2="${passY.toFixed(1)}" style="stroke:var(--faint)" stroke-width="1" stroke-dasharray="4 4"/>`;
+  svg+=`<text x="${W-padR}" y="${(passY-4).toFixed(1)}" text-anchor="end" style="fill:var(--muted)" font-size="10">${PASS_PCT}% pass</text>`;
+  svg+=`<polyline points="${mpath}" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  mock.forEach(p=>{ const x=X(p.i).toFixed(1),y=Y(p.pct).toFixed(1);
+    svg+=`<circle cx="${x}" cy="${y}" r="3.6" style="fill:var(--accent)"><title>mock · ${esc(String(p.e.ts).slice(0,10))} · ${p.pct}%</title></circle>`;
+    svg+=`<text x="${x}" y="${(Y(p.pct)-8).toFixed(1)}" text-anchor="middle" style="fill:var(--muted)" font-size="9">${p.pct}</text>`; });
+  ext.forEach(p=>{ const x=X(p.i),y=Y(p.pct),s=4.4;
+    svg+=`<path d="M ${x.toFixed(1)} ${(y-s).toFixed(1)} L ${(x+s).toFixed(1)} ${y.toFixed(1)} L ${x.toFixed(1)} ${(y+s).toFixed(1)} L ${(x-s).toFixed(1)} ${y.toFixed(1)} Z" style="fill:var(--d4)"><title>external · ${esc(String(p.e.ts).slice(0,10))} · ${p.pct}%</title></path>`; });
+  svg+=`</svg>`;
+  const legend=`<div class="trend-legend">
+    <span class="lg"><span class="sw" style="background:var(--accent)"></span>Mock (${mock.length})</span>
+    ${ext.length?`<span class="lg"><span class="sw" style="background:var(--d4);border-radius:2px;transform:rotate(45deg)"></span>External (${ext.length}) · separate, never averaged</span>`:""}
+    <span class="lg"><span class="sw" style="background:var(--faint)"></span>${PASS_PCT}% pass line</span></div>`;
+  return `<div class="card pad trend-card"><h3 style="font-size:1rem;margin-bottom:.6rem">Score trend</h3>${svg}${legend}</div>`;
+}
+
+/* ================= VIEW ROUTING ================= */
+let currentView="dashboard";
+function showView(name){
+  currentView=name;
+  $$(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+name));
+  $$("#tabs .tab").forEach(t=>t.classList.toggle("active", t.dataset.view===name));
+  $("#examControls").style.display = (name==="exam") ? "flex" : "none";
+  $("#tabs").style.display = (name==="exam") ? "none" : "flex";
+  window.scrollTo({top:0,behavior:"instant"in window?"instant":"auto"});
+  /* a11y: announce the route change and move focus to the view heading (the exam view
+     manages its own focus in renderCurrentQuestion, so skip it here). */
+  const st=$("#srStatus");
+  if(st){ const titles={dashboard:"Dashboard",config:"New exam",exam:"Exam",results:"Results"}; st.textContent=(titles[name]||name)+" loaded"; }
+  if(name!=="exam"){ const view=$("#view-"+name), h=view&&view.querySelector("h1,h2,.eyebrow");
+    if(h){ h.setAttribute("tabindex","-1"); try{h.focus({preventScroll:true});}catch(e){} } }
+}
+$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="config") renderConfig(); showView(t.dataset.view); });
+/* logo + wordmark → dashboard. During a live exam it behaves like Quit (confirm + save progress). */
+$("#brandBtn").onclick=()=>{
+  if(currentView==="exam" && exam && !exam.submitted){ quitExam(); return; }
+  renderDashboard(); showView("dashboard");
+};
+
+/* ================= DASHBOARD ================= */
+function renderDashboard(){
+  const v=$("#view-dashboard");
+  const merged=mergedAnswered();
+  const byId={}; BANK.forEach(q=>byId[q.id]=q);
+  const uniqByDom={1:0,2:0,3:0,4:0,5:0};
+  Object.keys(merged).forEach(id=>{ const q=byId[id]; if(q) uniqByDom[q.domain]++; });
+  const perDom=domainAccuracy(merged);
+  const counts=domainCounts();
+  const bankTotal=BANK.length;
+  const answeredUnique=Object.keys(merged).length;
+  let seen=0,correct=0; for(let d=1;d<=5;d++){seen+=perDom[d].seen;correct+=perDom[d].correct;}
+  const overallPct = seen?Math.round(100*correct/seen):null;
+  const history = ((HISTORY.exam_history)||[]).slice();
+  const pendRows = pending.map(p=>({exam_id:p.exam_id,ts:p.ts,type:"mock",mode:p.mode,count:p.count,score:p.score,per_domain:p.per_domain,time_spent_seconds:p.time_spent_seconds,over_time:p.over_time,_pending:true}));
+  const allExams=[...history,...pendRows];
+  const mockExams=allExams.filter(e=>e.type==="mock");
+  const examsTaken=allExams.length;
+  const avgTime = mockExams.length ? mockExams.reduce((s,e)=>s+(e.time_spent_seconds||0),0)/mockExams.length : null;
+  const focus=(HISTORY.focus_domains)||[];
+
+  /* empty state */
+  if(bankTotal===0){
+    v.innerHTML=`<div class="empty"><div class="em-ic">📭</div><h3>No question bank loaded</h3>
+      <p class="hint">This page was generated without questions. Regenerate it with <span class="kbd">/ccaf:exam</span>.</p></div>`;
+    return;
+  }
+  if(examsTaken===0 && answeredUnique===0){
+    v.innerHTML=`<div class="page-head"><span class="eyebrow">Welcome</span><h1>Your CCAF study desk</h1>
+      <p class="lede">${bankTotal} questions across 5 domains. No attempts recorded yet — take your first mock exam to start building your stats.</p></div>
+      <div class="empty card pad" style="margin-top:1.5rem"><div class="em-ic">🎯</div>
+        <h3>Start with a mock exam</h3>
+        <p class="hint">Pick a mode and length, sit the exam offline, then export the result to record your progress.</p>
+        <div class="steps"><button class="primary" onclick="renderConfig();showView('config')">Start a new exam →</button></div>
+      </div>`;
+    return;
+  }
+
+  const kpis=[
+    {k:"Overall accuracy", v: overallPct==null?"—":overallPct+"<small>%</small>", foot: seen?correct+" / "+seen+" answered":"no answers yet"},
+    {k:"Bank covered", v: answeredUnique+"<small>/"+bankTotal+"</small>", foot: Math.round(100*answeredUnique/bankTotal)+"% of questions seen"},
+    {k:"Exams taken", v: String(examsTaken), foot: mockExams.length+" mock · "+(allExams.length-mockExams.length)+" external"},
+    {k:"Avg mock time", v: avgTime==null?"—":fmtTime(avgTime), foot: avgTime==null?"—":"per sitting"},
+  ];
+
+  let html=`<div class="page-head"><span class="eyebrow">Dashboard</span><h1>Progress overview</h1></div>`;
+
+  /* resume-in-progress banner */
+  if(inProgress && inProgress.question_ids && inProgress.question_ids.length){
+    const ans=Object.keys(inProgress.answers||{}).length;
+    html+=`<div class="banner info"><span class="ic">⏱️</span>
+      <div><b>Exam in progress</b> — ${ans}/${inProgress.question_ids.length} answered, ${fmtTime(inProgress.elapsed)} elapsed.</div>
+      <div class="act"><button class="primary" onclick="resumeExam()">Resume exam</button>
+      <button class="ghost" onclick="discardInProgress()">Discard</button></div></div>`;
+  }
+  /* pending-export banner */
+  if(pending.length){
+    html+=`<div class="banner warn"><span class="ic">⚠️</span>
+      <div><b>${pending.length} sitting${pending.length>1?"s":""} not yet recorded.</b> Export ${pending.length>1?"them":"it"} and run <span class="kbd">/ccaf:result</span> so ${pending.length>1?"they count":"it counts"} in long-term progress.</div>
+      <div class="act"><button class="primary" onclick="showExport()">Export unrecorded →</button>
+      <button class="ghost" onclick="discardPending()">Discard</button></div></div>`;
+  }
+
+  html+=`<div class="tiles">`+kpis.map(t=>`<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="foot">${t.foot}</div></div>`).join("")+`</div>`;
+
+  /* per-domain */
+  html+=`<section class="block"><h2>By domain <span class="count">accuracy · coverage · blueprint weight</span></h2><div class="card pad">`;
+  for(let d=1;d<=5;d++){
+    const pd=perDom[d], acc=pd.seen?Math.round(100*pd.correct/pd.seen):null;
+    const uniq=uniqByDom[d];
+    const isFocus=focus.includes(d);
+    html+=`<div class="dbar-row">
+      <div class="dbar-top">
+        <span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>
+        <span class="dname"><b>D${d}</b> <span class="dn-full">${DOMAIN_NAMES[d]}</span></span>
+        ${isFocus?'<span class="focus-flag">focus</span>':""}
+        <span class="dval">${acc==null?'<small>not attempted</small>':acc+"%"} <small>· ${uniq}/${counts[d]} seen · ${BLUEPRINT[d]}% of exam</small></span>
+      </div>
+      <div class="ddesc">${DOMAIN_DESC[d]}</div>
+      <div class="track"><div class="fill" style="width:${acc==null?0:acc}%;background:var(${DOMAIN_VAR[d]})"></div>
+        <div class="blueprint-tick" style="left:${BLUEPRINT[d]}%" title="blueprint weight ${BLUEPRINT[d]}%"></div></div>
+    </div>`;
+  }
+  html+=`</div></section>`;
+
+  /* exam history */
+  html+=`<section class="block"><h2>Exam history <span class="count">${examsTaken} total · mock and external shown separately, never averaged</span></h2>`;
+  if(allExams.length) html+=renderTrend(allExams);
+  if(!allExams.length){ html+=`<p class="hint">No exams recorded yet.</p>`; }
+  else{
+    const sorted=allExams.slice().sort((a,b)=>String(b.ts||"").localeCompare(String(a.ts||"")));
+    html+=`<div class="exlist">`+sorted.map(e=>{
+      const pct = examPct(e);
+      const errs = e.score&&e.score.total!=null ? (e.score.total-e.score.correct) : null;
+      const badge = e._pending?`<span class="badge pending">unrecorded</span>`:`<span class="badge ${e.type}">${e.type}</span>`;
+      const when = e.ts? esc(String(e.ts).replace("T"," ").slice(0,16)) : "";
+      const label = e.label? esc(e.label) : (e.mode? esc(e.mode)+" mode":"");
+      return `<div class="exrow">
+        <div class="score" style="color:${pct!=null&&pct>=PASS_PCT?'var(--ok)':'var(--ink)'}">${pct==null?'—':pct+'%'}</div>
+        <div class="mid"><div class="t">${badge} ${label}</div>
+          <div class="s">${when}${e.score&&e.score.total!=null?" · "+e.score.correct+"/"+e.score.total:""}${e.time_spent_seconds?" · "+fmtTime(e.time_spent_seconds):""}${e.over_time?" · ⏳ over time":""}</div></div>
+        ${errs!=null?`<div class="errs">${errs} miss${errs===1?"":"es"}</div>`:""}
+      </div>`;
+    }).join("")+`</div>`;
+  }
+  html+=`</section>`;
+
+  /* axis tally — computed client-side from per-question axis over the user's misses (always correct
+     against the current bank); HISTORY.axis_tally is only a fallback when the bank carries no axis. */
+  const computed=computeAxisTally(merged);
+  const axis = computed.any ? computed.tally : ((HISTORY.axis_tally)||{});
+  const axisMax=Math.max(1,...Object.values(axis).map(Number));
+  const hasAxis=Object.values(axis).some(x=>Number(x)>0);
+  html+=`<section class="block"><h2>The 5 axes of failure <span class="count">what every wrong answer trips on${hasAxis?" · and where you get caught":""}</span></h2><div class="card pad">`;
+  for(let a=1;a<=5;a++){const val=Number(axis[a]||0);
+    html+=`<div class="axis-row"><div class="axis-top">
+        <span class="axis-name"><b>${a}</b>${AXIS_NAMES[a]}</span>
+        ${hasAxis?`<span class="axis-count">${val} miss${val===1?"":"es"}</span>`:""}</div>
+      <div class="axis-desc">${AXIS_DESC[a]}</div>
+      ${hasAxis?`<div class="track"><div class="fill" style="width:${Math.round(100*val/axisMax)}%;background:var(--accent)"></div></div>`:""}
+    </div>`;}
+  html+=`${hasAxis?"":'<p class="hint" style="margin-top:.5rem">The tally fills in as you record exams — each miss is tagged with the axis it tripped on.</p>'}</div></section>`;
+
+  /* recurring fails */
+  const fails=Object.keys(merged).filter(id=>!merged[id].last_correct).map(id=>byId[id]).filter(Boolean);
+  if(fails.length){
+    html+=`<section class="block"><h2>Recurring misses <span class="count">${fails.length} question${fails.length>1?"s":""} last answered wrong</span></h2>
+      <div class="card pad" style="overflow-x:auto"><table class="fails-table"><thead><tr><th>#</th><th>Domain</th><th>Question</th></tr></thead><tbody>`;
+    fails.slice(0,40).forEach(q=>{ html+=`<tr><td class="mono">${q.id}</td>
+      <td><span class="dtag" style="background:var(${DOMAIN_VAR[q.domain]})">D${q.domain}</span></td>
+      <td>${rich(q.stem.length>150?q.stem.slice(0,150)+"…":q.stem)}</td></tr>`; });
+    html+=`</tbody></table>${fails.length>40?`<p class="hint">Showing 40 of ${fails.length}.</p>`:""}</div></section>`;
+  }
+
+  html+=`<hr class="soft"><div style="text-align:center"><button class="primary" onclick="renderConfig();showView('config')">Start a new exam →</button></div>`;
+  v.innerHTML=html;
+}
+
+/* ================= CONFIG / NEW EXAM ================= */
+let cfg={mode:"weak",domains:new Set(),count:30,timed:false}; // timed = 2 min/question; else untimed
+function poolFor(mode,domains,merged){
+  let pool=BANK.slice();
+  if(domains.size) pool=pool.filter(q=>domains.has(q.domain));
+  if(mode==="review") pool=pool.filter(q=>merged[q.id]&&merged[q.id].last_correct===false);
+  // unseen keeps the FULL domain-filtered pool here on purpose: selectSet() orders unseen-first then
+  // least-seen, so a request larger than the true-unseen count tops up with least-seen instead of
+  // truncating the exam. (availByMode still shows the true-unseen count as "N new".)
+  return pool;
+}
+function availByMode(domains,merged){
+  const inDoms=q=>!domains.size||domains.has(q.domain);
+  return {
+    weak: poolFor("weak",domains,merged).length,
+    unseen: BANK.filter(q=>inDoms(q) && !merged[q.id]).length,   // TRUE unseen (no fallback inflation)
+    unseenPool: BANK.filter(inDoms).length,                       // fallback pool → keeps unseen usable
+    random: poolFor("random",domains,merged).length,
+    review: BANK.filter(q=>inDoms(q) && merged[q.id]&&merged[q.id].last_correct===false).length,
+  };
+}
+function renderConfig(){
+  const v=$("#view-config");
+  const merged=mergedAnswered();
+  const counts=domainCounts();
+  const focus=(HISTORY.focus_domains)||[];
+  const MODES=[
+    {id:"weak",t:"Weak areas",d:"Biases toward your focus/low-accuracy domains and questions you've missed."},
+    {id:"unseen",t:"Unseen",d:"Questions you haven't answered yet; falls back to least-seen."},
+    {id:"random",t:"Random",d:"A uniform random draw across the whole bank."},
+    {id:"review",t:"Review misses",d:"Only questions whose last attempt was wrong."},
+  ];
+  const av=availByMode(cfg.domains,merged);
+
+  let html=`<div class="page-head"><span class="eyebrow">New exam</span><h1>Build your exam</h1>
+    <p class="lede">Choose a mode, optionally narrow to domains, pick a length — the set is drawn from ${BANK.length} questions.</p></div>
+    <div class="cfg-grid">
+      <div class="field"><div class="flabel">Mode</div><div class="modes" id="modes">`;
+  MODES.forEach(m=>{
+    const n=av[m.id];
+    // unseen stays usable via least-seen fallback, so disable it only when its whole pool is empty
+    const dis = m.id==="unseen" ? av.unseenPool===0 : n===0;
+    const availLbl = m.id==="unseen" ? `${n} new` : `${n} available`;
+    html+=`<label class="mode ${cfg.mode===m.id?"sel":""} ${dis?"disabled":""}" data-mode="${m.id}">
+      <div class="mt">${m.t}<span class="avail">${availLbl}</span></div><div class="md">${m.d}</div></label>`;
+  });
+  html+=`</div></div>
+      <div class="field"><div class="flabel">Domains <span class="hint">(none selected = all)</span></div><div class="chips" id="chips">`;
+  for(let d=1;d<=5;d++){
+    html+=`<div class="chip ${cfg.domains.has(d)?"sel":""}" data-dom="${d}"><span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>D${d} ${DOMAIN_SHORT[d]} <span class="chip-count">${counts[d]}</span>${focus.includes(d)?'<span class="focus-flag">focus</span>':''}</div>`;
+  }
+  html+=`</div></div>
+      <div class="field"><div class="flabel">Length</div><div class="counts" id="counts">`;
+  [15,30,60].forEach(c=>html+=`<button class="count-btn ${cfg.count===c?"sel":""}" data-count="${c}">${c}</button>`);
+  html+=`<button class="count-btn ${cfg.count==="all"?"sel":""}" data-count="all">All</button></div></div>
+      <div class="field"><div class="flabel">Time limit <span class="hint">(2 min per question; at zero it says "time's up" but never submits for you)</span></div><div class="counts" id="limits">`;
+  html+=`<button class="count-btn ${!cfg.timed?"sel":""}" data-timed="0">No limit</button>`;
+  html+=`<button class="count-btn ${cfg.timed?"sel":""}" data-timed="1">Timed · 2 min/question</button>`;
+  html+=`</div></div>
+      <div class="cfg-summary" id="cfgSummary"></div>
+    </div>`;
+  v.innerHTML=html;
+
+  $$("#modes .mode").forEach(m=>m.onclick=()=>{ if(m.classList.contains("disabled"))return; cfg.mode=m.dataset.mode; renderConfig(); });
+  $$("#chips .chip").forEach(c=>c.onclick=()=>{ const d=+c.dataset.dom; cfg.domains.has(d)?cfg.domains.delete(d):cfg.domains.add(d); renderConfig(); });
+  $$("#counts .count-btn").forEach(b=>b.onclick=()=>{ cfg.count=b.dataset.count==="all"?"all":+b.dataset.count; renderConfig(); });
+  $$("#limits .count-btn").forEach(b=>b.onclick=()=>{ cfg.timed=b.dataset.timed==="1"; renderConfig(); });
+  updateCfgSummary(merged);
+}
+function updateCfgSummary(merged){
+  const pool=poolFor(cfg.mode,cfg.domains,merged);
+  const avail=pool.length;
+  const want = cfg.count==="all"?avail:cfg.count;
+  const actual=Math.min(want,avail);
+  const sum=$("#cfgSummary");
+  let note="", cls="cfg-note";
+  if(avail===0){ note=(cfg.mode==="review")?"No missed questions yet — try Weak or Random.":"No questions match this selection."; cls="cfg-note warn"; }
+  else if(actual<want){ note=`Only ${avail} available for this selection — the exam will have ${actual}.`; cls="cfg-note warn"; }
+  sum.innerHTML=`<div class="big">${actual} question${actual===1?"":"s"}${cfg.timed?` · ${actual*2} min`:""}</div>
+    <div class="${cls}">${note||(cfg.timed?`Timed at 2 min/question = ${actual*2} min. At zero you're told "time's up" and the attempt is flagged over-time — you still finish every question.`:"Ready when you are.")}</div>
+    <button class="primary" id="startBtn" style="margin-left:auto" ${avail===0?"disabled":""}>Start exam →</button>`;
+  const sb=$("#startBtn"); if(sb) sb.onclick=()=>startExam(pool,actual);
+}
+
+/* ================= EXAM ================= */
+let exam=null; // {question_ids, questions, exam_id, mode, answers, elapsed, paused, submitted, started_ts}
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+function selectSet(pool,n,mode,merged){
+  let chosen;
+  if(mode==="weak"){
+    const focus=new Set((HISTORY.focus_domains)||[]);
+    const perDom=domainAccuracy(merged);
+    const now=Date.now();
+    // due term (light spaced-repetition, no full SM-2): older last_ts => higher priority.
+    //   ageDays = days since last attempt; due = min(1.5, ageDays/14) so it saturates at ~2 weeks.
+    //   never-seen gets the full 1.5. Combined with the missed(+3)/unseen(+1) terms this keeps
+    //   previously-missed and long-unseen questions clearly ahead of freshly-correct ones.
+    const dueOf=q=>{ const m=merged[q.id];
+      if(!m||!m.last_ts) return 1.5;                      // never seen (or no recency signal) => most due
+      const t=Date.parse(m.last_ts); if(isNaN(t)) return 0.75;
+      return Math.max(0,Math.min(1.5,((now-t)/86400000)/14));
+    };
+    const score=q=>{
+      const m=merged[q.id];
+      let s=Math.random()*0.5;
+      if(m&&m.last_correct===false) s+=3;        // previously missed
+      if(!m) s+=1;                                 // unseen
+      const acc=perDom[q.domain].seen?perDom[q.domain].correct/perDom[q.domain].seen:0.5;
+      s+=(1-acc)*2;                                // weak domain
+      if(focus.has(q.domain)) s+=1.2;              // declared focus
+      s+=(BLUEPRINT[q.domain]/27)*0.6;             // blueprint weight
+      s+=dueOf(q);                                 // spaced-repetition recency (due)
+      return s;
+    };
+    chosen=pool.slice().sort((a,b)=>score(b)-score(a)).slice(0,n);
+  } else if(mode==="unseen"){
+    const un=shuffle(pool.filter(q=>!merged[q.id]));
+    const seenSorted=pool.filter(q=>merged[q.id]).sort((a,b)=>(merged[a.id].seen)-(merged[b.id].seen));
+    chosen=[...un,...seenSorted].slice(0,n);
+  } else { // random, review
+    chosen=shuffle(pool.slice()).slice(0,n);
+  }
+  return shuffle(chosen); // present in random order
+}
+
+function startExam(pool,n){
+  const merged=mergedAnswered();
+  const set=selectSet(pool,n,cfg.mode,merged);
+  if(!set.length) return;
+  exam={ exam_id:"exam-"+uid(), mode:cfg.mode, domains:[...cfg.domains],
+    question_ids:set.map(q=>q.id), answers:{}, flagged:{}, elapsed:0, paused:false, submitted:false,
+    limit_seconds: cfg.timed ? set.length*120 : 0, over_time:false,   // 2 min per question
+    started_ts:new Date().toISOString() };
+  currentQId=null;
+  inProgress=null;
+  persistExam();
+  renderExam();
+  showView("exam");
+}
+function questionsOf(ids){ const byId={}; BANK.forEach(q=>byId[q.id]=q); return ids.map(id=>byId[id]).filter(Boolean); }
+function persistExam(){ if(!exam||exam.submitted)return;
+  saveLS(LS_INPROGRESS,{exam_id:exam.exam_id,mode:exam.mode,domains:exam.domains,question_ids:exam.question_ids,
+    answers:exam.answers,flagged:exam.flagged||{},current:currentQId,elapsed:exam.elapsed,paused:exam.paused,submitted:false,
+    limit_seconds:exam.limit_seconds||0,over_time:!!exam.over_time,started_ts:exam.started_ts}); }
+
+function renderExam(){
+  const qs=questionsOf(exam.question_ids);
+  $("#examEyebrow").textContent = (exam.mode?exam.mode[0].toUpperCase()+exam.mode.slice(1):"Mock")+" exam · "+qs.length+" questions";
+  buildNav(qs);
+  const ids=exam.question_ids.map(String);
+  if(currentQId==null || ids.indexOf(String(currentQId))<0) currentQId = ids.length?ids[0]:null;
+  examStage="question";
+  renderCurrentQuestion();
+  updateProgress();
+  updateClock();
+  if(exam.over_time) showTimeUp(); else hideTimeUp();
+  if(exam.paused) setPaused(true);
+}
+/* render ONLY the current question — one question per screen (mirrors the real proctored exam). */
+function renderCurrentQuestion(){
+  const quiz=$("#quiz"); if(!quiz)return;
+  const ids=exam.question_ids.map(String);
+  const idx=Math.max(0,ids.indexOf(String(currentQId)));
+  const q=questionsOf([exam.question_ids[idx]])[0];
+  if(!q){ quiz.innerHTML=""; return; }
+  const flagged=!!(exam.flagged&&exam.flagged[q.id]);
+  const opts=["A","B","C","D"].map(L=>{
+    const picked=exam.answers[q.id]===L;
+    return `<label class="opt ${picked?"picked":""}" data-letter="${L}">
+      <input type="radio" name="q${q.id}" value="${L}" ${picked?"checked":""}>
+      <span class="lab">${L}</span><span class="otext">${rich(q.options[L])}</span></label>`;
+  }).join("");
+  const last=idx===ids.length-1;
+  const card=el("div","q"); card.id="q-"+q.id; card.dataset.idx=idx;
+  card.innerHTML=`<div class="qhead">
+      <span class="qno" tabindex="-1">Q${idx+1} <small style="color:var(--faint);font-weight:400">/ ${ids.length}</small></span>
+      <span class="dtag" style="background:var(${DOMAIN_VAR[q.domain]})">D${q.domain}</span>
+      <span class="dchip">${DOMAIN_SHORT[q.domain]}</span>
+      <button type="button" class="flagbtn ${flagged?'on':''}" id="flagBtn" aria-pressed="${flagged?'true':'false'}"
+        title="Mark this question to revisit before submitting (press F)">${flagged?'★ Marked':'☆ Mark for review'}</button>
+    </div>
+    <div class="stem">${rich(q.stem)}</div>${opts}
+    <div class="qnav">
+      <button type="button" id="prevBtn" ${idx===0?'disabled':''}>← Previous</button>
+      <span class="qnav-mid">Question ${idx+1} of ${ids.length}</span>
+      <button type="button" id="nextBtn" class="primary">${last?'Review &amp; submit →':'Next →'}</button>
+    </div>`;
+  quiz.innerHTML=""; quiz.appendChild(card);
+  quiz.onchange=e=>{ if(e.target.name&&e.target.name.startsWith("q")) pickAnswer(e.target.name.slice(1),e.target.value); };
+  $("#prevBtn").onclick=()=>gotoQ(idx-1);
+  $("#nextBtn").onclick=()=> last?showReviewScreen():gotoQ(idx+1);
+  $("#flagBtn").onclick=()=>toggleFlag(q.id);
+  setCurrent(String(q.id));
+  if(exam.paused) $$("#quiz input").forEach(i=>i.disabled=true);
+  const h=quiz.querySelector(".qno"); if(h){ try{h.focus({preventScroll:true});}catch(e){} }
+}
+/* set an answer (used by both click/change and keyboard) */
+function pickAnswer(id,L){
+  if(!exam||exam.paused||exam.submitted)return;
+  id=String(id);
+  if(!exam.question_ids.some(x=>String(x)===id))return;
+  exam.answers[id]=L;
+  const card=$("#q-"+id);
+  if(card){ const inp=card.querySelector('input[value="'+L+'"]'); if(inp) inp.checked=true;
+    card.querySelectorAll(".opt").forEach(o=>o.classList.toggle("picked",o.dataset.letter===L)); }
+  persistExam(); updateProgress();
+}
+function buildNav(qs){
+  const nav=$("#navgrid"); if(!nav)return; nav.innerHTML="";
+  qs.forEach((q,i)=>{ const c=el("button","navchip",String(i+1));
+    c.type="button"; c.id="nav-"+q.id; c.dataset.qid=String(q.id);
+    c.setAttribute("aria-label","Question "+(i+1));
+    c.onclick=()=>gotoQ(i); nav.appendChild(c); });
+}
+/* current-question tracking (keyboard + navigator target). One question renders at a time. */
+let currentQId=null, examStage="question"; // examStage: "question" | "review"
+function setCurrent(id){ if(id==null)return; currentQId=String(id);
+  $$("#navgrid .navchip").forEach(c=>c.classList.toggle("current", c.dataset.qid===currentQId)); }
+function gotoQ(i){ if(!exam||exam.submitted)return; const ids=exam.question_ids.map(String); if(!ids.length)return;
+  i=Math.max(0,Math.min(ids.length-1,i)); currentQId=ids[i]; examStage="question";
+  renderCurrentQuestion(); updateProgress(); persistExam(); scrollTopSmooth(); }
+function updateProgress(){
+  const qs=exam.question_ids; const ans=qs.filter(id=>exam.answers[id]).length;
+  const pm=$("#progMini"); if(pm) pm.textContent=ans+"/"+qs.length;
+  const chips=$$("#navgrid .navchip");
+  qs.forEach((id,i)=>{ const c=chips[i]; if(!c)return;
+    const answered=!!exam.answers[id], flagged=!!(exam.flagged&&exam.flagged[id]);
+    if(!exam.submitted) c.classList.toggle("answered",answered);
+    c.classList.toggle("flagged",flagged);
+    c.setAttribute("aria-label","Question "+(i+1)+(answered?", answered":", not answered")+(flagged?", marked for review":""));
+  });
+  const jb=$("#jumpBtn"); if(jb) jb.disabled = exam.submitted || ans===qs.length;
+}
+/* toggle "mark for review" on a question */
+function toggleFlag(id){ if(!exam||exam.submitted)return; id=String(id);
+  exam.flagged=exam.flagged||{};
+  if(exam.flagged[id]) delete exam.flagged[id]; else exam.flagged[id]=true;
+  const on=!!exam.flagged[id], b=$("#flagBtn");
+  if(b && String(currentQId)===id){ b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false");
+    b.textContent=on?'★ Marked':'☆ Mark for review'; }
+  persistExam(); updateProgress();
+}
+/* timer — counts up; a timed exam counts DOWN, and at zero it flags "over time" (it NEVER auto-submits:
+   this is practice, so the learner always finishes every question). */
+setInterval(()=>{ if(exam&&exam.answers&&!exam.paused&&!exam.submitted){  // only ticks for a live, unsubmitted exam
+  exam.elapsed++;
+  if(exam.limit_seconds && !exam.over_time && exam.elapsed>=exam.limit_seconds){ exam.over_time=true; showTimeUp(); persistExam(); }
+  updateClock();
+  if(exam.elapsed%5===0)persistExam();
+} },1000);
+function updateClock(){ const c=$("#clock"); if(!c)return;
+  if(exam&&exam.limit_seconds){ const rem=exam.limit_seconds-exam.elapsed;
+    if(rem>0){ c.textContent=fmtTime(rem); c.classList.toggle("low",rem<=60); c.classList.remove("over"); c.title="Time remaining"; }
+    else { c.textContent="+"+fmtTime(-rem); c.classList.remove("low"); c.classList.add("over"); c.title="Over the time limit — finish at your own pace"; } }
+  else { c.textContent=fmtTime(exam?exam.elapsed:0); c.classList.remove("low","over"); c.title="Elapsed"; } }
+function showTimeUp(){ const b=$("#timeUpBanner"); if(b) b.style.display="flex"; }
+function hideTimeUp(){ const b=$("#timeUpBanner"); if(b) b.style.display="none"; }
+function setPaused(p){ if(!exam)return; exam.paused=p; $("#overlay").classList.toggle("show",p);
+  $$("#quiz input").forEach(i=>i.disabled=p); $("#submitBtn").disabled=p||exam.submitted; persistExam(); }
+$("#pauseBtn").onclick=()=>setPaused(true);
+$("#resumeBtn").onclick=()=>setPaused(false);
+$("#jumpBtn").onclick=()=>{ if(!exam||exam.submitted)return;
+  const ids=exam.question_ids.map(String);
+  const idx=ids.findIndex(id=>!exam.answers[id]);
+  if(idx>=0) gotoQ(idx); };
+$("#quitBtn").onclick=()=>quitExam();
+$("#clock").textContent="00:00:00";
+
+/* keyboard: 1-4 / A-D pick the current option; J/K or ←/→/↑/↓ move between questions; F flags */
+document.addEventListener("keydown",e=>{
+  if(currentView!=="exam"||!exam||exam.paused||exam.submitted)return;
+  if(examStage!=="question")return;
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const tag=(e.target&&e.target.tagName)||""; if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT")return;
+  const ids=exam.question_ids.map(String); if(!ids.length)return;
+  let idx=ids.indexOf(String(currentQId)); if(idx<0)idx=0;
+  const k=e.key.toLowerCase();
+  if("1234".indexOf(k)>=0){ pickAnswer(ids[idx],["A","B","C","D"][k-1]); e.preventDefault(); }
+  else if("abcd".indexOf(k)>=0){ pickAnswer(ids[idx],k.toUpperCase()); e.preventDefault(); }
+  else if(k==="j"||e.key==="ArrowRight"||e.key==="ArrowDown"){ gotoQ(idx+1); e.preventDefault(); }
+  else if(k==="k"||e.key==="ArrowLeft"||e.key==="ArrowUp"){ gotoQ(idx-1); e.preventDefault(); }
+  else if(k==="f"){ toggleFlag(ids[idx]); e.preventDefault(); }
+});
+/* review-before-submit gate: lists unanswered + flagged questions, each a jump target */
+function showReviewScreen(){
+  if(!exam||exam.submitted)return;
+  examStage="review";
+  const ids=exam.question_ids.map(String);
+  const unanswered=ids.filter(id=>!exam.answers[id]);
+  const flagged=ids.filter(id=>exam.flagged&&exam.flagged[id]);
+  const chips=arr=>`<div class="navgrid">`+arr.map(id=>{ const i=ids.indexOf(id);
+      const an=!!exam.answers[id], fl=exam.flagged&&exam.flagged[id];
+      return `<button type="button" class="navchip${an?' answered':''}${fl?' flagged':''}" data-jump="${id}" aria-label="Go to question ${i+1}">${i+1}</button>`;
+    }).join("")+`</div>`;
+  const quiz=$("#quiz");
+  quiz.innerHTML=`<div class="q reviewgate">
+      <div class="qhead"><span class="qno" tabindex="-1">Review before submit</span></div>
+      <p class="hint">You've answered <b>${ids.length-unanswered.length}</b> of <b>${ids.length}</b> question${ids.length===1?"":"s"}.${flagged.length?` <b>${flagged.length}</b> marked for review.`:""}</p>
+      ${unanswered.length?`<div class="rg-block"><div class="rg-lbl">Unanswered · ${unanswered.length}</div>${chips(unanswered)}</div>`:`<div class="rg-ok">✅ All questions answered.</div>`}
+      ${flagged.length?`<div class="rg-block"><div class="rg-lbl">Marked for review · ${flagged.length}</div>${chips(flagged)}</div>`:""}
+      <div class="qnav">
+        <button type="button" id="rgBack">← Return to exam</button>
+        <button type="button" id="rgSubmit" class="primary">Submit exam${unanswered.length?` · ${unanswered.length} blank`:""}</button>
+      </div>
+    </div>`;
+  $("#rgBack").onclick=()=>{ examStage="question"; renderCurrentQuestion(); scrollTopSmooth(); };
+  $("#rgSubmit").onclick=()=>submitExam();
+  $$("#quiz .navchip[data-jump]").forEach(c=>c.onclick=()=>gotoQ(ids.indexOf(String(c.dataset.jump))));
+  scrollTopSmooth();
+  const h=quiz.querySelector(".qno"); if(h){ try{h.focus({preventScroll:true});}catch(e){} }
+}
+/* quit without submitting — progress is saved so it can be resumed from the dashboard */
+function quitExam(){
+  if(!exam||exam.submitted)return;
+  if(!confirm("Quit this exam without submitting? Your progress is saved — you can resume it from the dashboard."))return;
+  persistExam();
+  inProgress=loadLS(LS_INPROGRESS,null);
+  exam=null; examStage="question";
+  $("#examControls").style.display="none";
+  renderDashboard(); showView("dashboard");
+}
+
+function resumeExam(){ if(!inProgress)return;
+  exam={exam_id:inProgress.exam_id,mode:inProgress.mode,domains:inProgress.domains||[],
+    question_ids:inProgress.question_ids,answers:inProgress.answers||{},flagged:inProgress.flagged||{},elapsed:inProgress.elapsed||0,
+    paused:false,submitted:false,limit_seconds:inProgress.limit_seconds||0,over_time:!!inProgress.over_time,started_ts:inProgress.started_ts};
+  currentQId = inProgress.current!=null?String(inProgress.current):(exam.question_ids.length?String(exam.question_ids[0]):null);
+  renderExam(); updateClock(); showView("exam");
+}
+function discardInProgress(){ if(!confirm("Discard the exam in progress? This can't be undone."))return;
+  inProgress=null; try{localStorage.removeItem(LS_INPROGRESS);}catch(e){} renderDashboard(); }
+/* discard finished-but-unrecorded sittings from local storage (recorded progress in the store is untouched) */
+function discardPending(){ if(!pending.length)return;
+  const n=pending.length;
+  if(!confirm(`Discard ${n} unrecorded sitting${n>1?"s":""}? This can't be undone. Your recorded progress (stats.json) is not affected.`))return;
+  pending=[]; saveLS(LS_PENDING,pending); renderDashboard(); }
+
+/* submit + grade */
+function submitExam(){
+  if(!exam||exam.submitted)return;
+  exam.submitted=true; exam.paused=false; $("#overlay").classList.remove("show");
+  $("#submitBtn").disabled=true; $("#pauseBtn").disabled=true;
+  const jb=$("#jumpBtn"); if(jb) jb.disabled=true;
+  try{localStorage.removeItem(LS_INPROGRESS);}catch(e){} inProgress=null;
+  const result=grade();
+  pending.push(result); saveLS(LS_PENDING,pending);
+  renderResults(result);
+  showView("results");
+}
+$("#submitBtn").onclick=()=>{
+  if(!exam||exam.submitted)return;
+  if(examStage==="review"){ submitExam(); return; }   // already on the review gate → finalize
+  showReviewScreen();                                  // otherwise open the review-before-submit gate
+};
+function grade(){
+  const qs=questionsOf(exam.question_ids);
+  const answers=[]; const perDom={}; let correct=0;
+  qs.forEach(q=>{ const chosen=exam.answers[q.id]||null; const isc=chosen===q.correct; if(isc)correct++;
+    answers.push({id:q.id,domain:q.domain,chosen,correct:q.correct,is_correct:isc});
+    (perDom[q.domain]||(perDom[q.domain]={correct:0,total:0})); perDom[q.domain].total++; if(isc)perDom[q.domain].correct++;
+  });
+  return { exam_id:exam.exam_id, type:"mock", mode:exam.mode, count:qs.length, ts:exam.started_ts,
+    time_spent_seconds:exam.elapsed, limit_seconds:exam.limit_seconds||0, over_time:!!exam.over_time,
+    score:{correct,total:qs.length}, per_domain:perDom, answers };
+}
+
+/* ================= RESULTS ================= */
+let lastResult=null;
+function renderResults(r){
+  lastResult=r;
+  const v=$("#view-results");
+  const qs=questionsOf((r.answers||[]).map(a=>a.id));  // drive off the result, not the live exam global
+  const pct=r.score.total?Math.round(100*r.score.correct/r.score.total):0;
+  const passed=pct>=PASS_PCT;
+  const msg = passed? "Above the 72% line 🎉" : "Below the 72% pass line";
+  let html=`<div class="page-head"><span class="eyebrow">Results</span></div>
+    <div class="card pad result-hero">
+      <div class="ring" style="--p:${pct}"><div class="rv"><b style="color:${passed?'var(--ok)':'var(--accent2)'}">${pct}%</b><span>score</span></div></div>
+      <div><div class="verdict-msg">${r.score.correct} / ${r.score.total} correct</div>
+        <div class="sub">${msg} · ${fmtTime(r.time_spent_seconds)}${r.over_time?' · ⏳ over time':(r.limit_seconds?' · within time':'')} · ${esc(r.mode)} mode</div></div>
+    </div>`;
+
+  /* per-domain */
+  html+=`<section class="block"><h2>By domain</h2><div class="card pad">`;
+  Object.keys(r.per_domain).map(Number).sort((a,b)=>a-b).forEach(d=>{
+    const p=r.per_domain[d]; const dp=p.total?Math.round(100*p.correct/p.total):0;
+    html+=`<div class="dbar-row"><div class="dbar-top">
+        <span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>
+        <span class="dname"><b>D${d}</b> <span class="dn-full">${DOMAIN_NAMES[d]}</span></span>
+        <span class="dval">${dp}% <small>· ${p.correct}/${p.total}</small></span></div>
+      <div class="track"><div class="fill" style="width:${dp}%;background:var(${DOMAIN_VAR[d]})"></div></div></div>`;
+  });
+  html+=`</div></section>`;
+
+  /* export */
+  html+=`<section class="block"><h2>Record this result</h2>
+    <div class="banner info"><span class="ic">💾</span><div>Your progress lives in long-term memory only after you record it.
+      Copy the JSON, run <span class="kbd">/ccaf:result</span> in Claude Code, and paste it.
+      ${pending.length>1?`<br><b>Tip:</b> you have ${pending.length} unrecorded sittings — the box below includes all of them so one paste records everything.`:""}</div></div>
+    <div class="export-box">
+      <label for="jsonOut" class="sr-only">Exam results as JSON — select all and copy</label>
+      <textarea id="jsonOut" readonly aria-label="Exam results as JSON — select all and copy"></textarea>
+      <div class="copyrow"><button class="primary" id="copyBtn">Copy ${pending.length>1?"all unrecorded":"results"} as JSON</button>
+        <span id="copyMsg" class="copy-ok" style="display:none">Copied ✓</span>
+        <span class="hint">Textarea is the reliable path; the button may be blocked on a <code>file://</code> page.</span></div>
+    </div></section>`;
+
+  /* review — misses-only by default, with an All toggle and a domain filter */
+  const missed=r.answers.filter(a=>!a.is_correct);
+  const examDomains=[...new Set(qs.map(q=>q.domain))].sort((a,b)=>a-b);
+  reviewState={showAll:false, domains:new Set(examDomains)};
+  const domChips=examDomains.map(d=>`<div class="chip sel" data-rdom="${d}"><span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>D${d} ${DOMAIN_SHORT[d]}</div>`).join("");
+  html+=`<section class="block"><h2>Review <span class="count" id="revCount"></span></h2>
+    <div class="review-controls">
+      <div class="seg" id="revToggle">
+        <button class="seg-btn sel" data-all="0">Misses only</button>
+        <button class="seg-btn" data-all="1">All</button></div>
+      ${examDomains.length>1?`<div class="chips" id="revDomains">${domChips}</div>`:""}
+    </div>
+    <div id="review"></div></section>`;
+  html+=`<hr class="soft"><div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap">
+    <button onclick="renderDashboard();showView('dashboard')">← Dashboard</button>
+    <button class="primary" onclick="renderConfig();showView('config')">Another exam →</button></div>`;
+  v.innerHTML=html;
+
+  $$("#revToggle .seg-btn").forEach(b=>b.onclick=()=>{ reviewState.showAll=b.dataset.all==="1";
+    $$("#revToggle .seg-btn").forEach(x=>x.classList.toggle("sel",x===b)); renderReviewList(); });
+  $$("#revDomains .chip").forEach(c=>c.onclick=()=>{ const d=+c.dataset.rdom;
+    reviewState.domains.has(d)?reviewState.domains.delete(d):reviewState.domains.add(d);
+    c.classList.toggle("sel", reviewState.domains.has(d)); renderReviewList(); });
+  renderReviewList();
+  wireExport();
+}
+/* (re)populate #review from lastResult + reviewState, without leaving the results view */
+let reviewState={showAll:false, domains:new Set()};
+function renderReviewList(){
+  const rev=$("#review"); if(!rev)return;
+  const r=lastResult; if(!r)return;
+  const qs=questionsOf((r.answers||[]).map(a=>a.id));
+  const showAll=reviewState.showAll, dom=reviewState.domains;
+  const missedTotal=r.answers.filter(a=>!a.is_correct).length;
+  const cnt=$("#revCount");
+  if(cnt) cnt.textContent = showAll ? `${r.answers.length} question${r.answers.length===1?"":"s"}`
+                                    : `${missedTotal} miss${missedTotal===1?"":"es"} of ${r.answers.length}`;
+  const list=qs.filter(q=>{ const a=r.answers.find(x=>x.id===q.id);
+    return a && dom.has(q.domain) && (showAll || !a.is_correct); });
+  rev.innerHTML="";
+  if(!list.length){
+    const clean=(!showAll && missedTotal===0);
+    rev.innerHTML=`<div class="empty"><div class="em-ic">${clean?"✅":"🔍"}</div>
+      <h3>${clean?"No misses — nice.":"No questions match this filter."}</h3></div>`;
+    return;
+  }
+  list.forEach(q=>{
+    const a=r.answers.find(x=>x.id===q.id); const isc=a.is_correct;
+    const qnum=r.answers.map(a=>String(a.id)).indexOf(String(q.id))+1;
+    const card=el("div","q graded");
+    const opts=["A","B","C","D"].map(L=>{
+      let cls="opt", verdict="";
+      if(L===q.correct){cls+=" is-correct"; verdict='<span class="verdict">Correct</span>';}
+      if(L===a.chosen && !isc){cls+=" is-wrong"; verdict='<span class="verdict">Your pick</span>';}
+      return `<div class="${cls}"><span class="lab">${L}</span><span class="otext">${rich(q.options[L])}</span>${verdict}</div>`;
+    }).join("");
+    const axisB=(q.axis>=1&&q.axis<=5)?`<span class="axisbadge" title="${esc(AXIS_DESC[q.axis])}">Axis ${q.axis} · ${esc(AXIS_NAMES[q.axis])}</span>`:"";
+    card.innerHTML=`<div class="qhead"><span class="qno">Q${qnum}</span>
+        <span class="dtag" style="background:var(${DOMAIN_VAR[q.domain]})">D${q.domain}</span>
+        <span class="badge ${isc?'':'external'}" style="${isc?'background:var(--ok-soft);color:var(--ok)':'background:var(--bad-soft);color:var(--bad)'}">${isc?'✓ correct':'✗ '+(a.chosen?'wrong':'blank')}</span>
+        ${axisB}</div>
+      <div class="stem">${rich(q.stem)}</div>${opts}
+      ${q.explanation?`<div class="explain">${rich(q.explanation)}</div>`:""}`;
+    rev.appendChild(card);
+  });
+}
+function exportPayload(){
+  // one object if a single pending sitting, else an array (batch) — /ccaf:result accepts either
+  return pending.length===1 ? pending[0] : pending.slice();
+}
+function wireExport(){
+  const ta=$("#jsonOut"); if(!ta)return;
+  ta.value=JSON.stringify(exportPayload(),null,2);
+  ta.addEventListener("focus",e=>e.target.select());
+  const btn=$("#copyBtn"), msg=$("#copyMsg");
+  btn.onclick=async()=>{ ta.focus(); ta.select();
+    try{ await navigator.clipboard.writeText(ta.value); msg.style.display="inline"; msg.textContent="Copied ✓"; }
+    catch(e){ const ok=document.execCommand&&document.execCommand("copy");
+      msg.style.display="inline"; msg.style.color=ok?"var(--ok)":"var(--bad)";
+      msg.textContent=ok?"Copied ✓":"Copy blocked — select the text and copy manually."; } };
+}
+/* jump straight to export from a dashboard banner */
+function showExport(){
+  if(!pending.length){ renderDashboard(); return; }
+  lastResult=pending[pending.length-1];  // newest unrecorded sitting drives the review view
+  renderResults(lastResult); showView("results");
+  const box=$("#view-results .export-box"); if(box) box.scrollIntoView({behavior:"smooth"});
+}
+
+/* ================= BOOT ================= */
+renderDashboard();
+showView("dashboard");
+</script>
+</body>
+</html>

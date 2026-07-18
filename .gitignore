@@ -1,0 +1,14 @@
+# Per-user study data must never ship with the plugin.
+# (It lives in ~/.claude/ccaf-progress/, but guard against any local copy.)
+ccaf-progress/
+**/ccaf-progress/
+*-result.json
+exams/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/

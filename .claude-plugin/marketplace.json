@@ -1,0 +1,15 @@
+{
+  "name": "ccaf-marketplace",
+  "owner": { "name": "Dmitry Antonenko", "email": "dmitry@buzzwoo.de" },
+  "metadata": {
+    "description": "Study tooling for the Claude Certified Architect (Foundations) exam."
+  },
+  "plugins": [
+    {
+      "name": "ccaf",
+      "source": "./",
+      "description": "Interactive CCAF tutor + configurable mock-exam generator with per-user progress tracking.",
+      "version": "0.6.6"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "ccaf",
+  "displayName": "CCAF Architect Exam Tutor",
+  "version": "0.6.6",
+  "description": "Interactive tutor and mock-exam generator for the Claude Certified Architect (Foundations) exam. Five domain teachers, trap drills built on a 5-axis distractor framework, and a configurable HTML mock exam. Per-user progress is tracked in ~/.claude/ccaf-progress/. Start with /ccaf:init.",
+  "author": { "name": "Dmitry Antonenko", "email": "dmitry@buzzwoo.de" },
+  "license": "MIT",
+  "keywords": ["claude", "certification", "ccaf", "exam", "tutor", "study"],
+  "commands": ["./commands/"],
+  "skills": ["./skills/"]
+}
