@@ -8,6 +8,15 @@ skills/commands/hooks, not this CLAUDE.md).
 only how to *change* it — architecture, invariants, schema, and the extend/test workflow. Keep it that way:
 don't add usage/marketing here, don't add schema/invariants to the README.
 
+## Maintaining this file
+Keep CLAUDE.md **thin** — it loads every session, so it is standing context cost. Keep only facts needed on
+(nearly) every change that **can't be discovered from the repo**: invariants, the schema essentials, God
+Rules, and pointers. Everything on-demand — app feature detail, long workflows, reference material — lives
+in a sibling file (`maintenance/*.md`, `data/*.md`) reached by a **plain path pointer, NOT `@import`**
+(`@import` inlines the file and saves no context). Never duplicate what another file already documents —
+reference it. When adding, add only the specific missing fact. **Propose changes to this file and wait for
+confirmation before editing** (see God Rule #8).
+
 ## God Rules (never skip, no exceptions)
 
 1. **Think deeply before proposing.** Before suggesting any change, analyze the affected skill/command/bank/app/progress-store for gaps, trade-offs, learner-facing impact, and regressions — e.g. does a bank edit break `stats.json` id references? does an app change break the two `/*__BANK__*/`/`/*__HISTORY__*/` placeholders or the graceful-degrade paths? does a lesson edit still match the Exam Guide? Surface anything non-obvious.
