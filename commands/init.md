@@ -25,7 +25,10 @@ Read `${CLAUDE_PLUGIN_ROOT}/data/questions.json` `meta`. Tell the user: total qu
 ## Step 3.5 — Show learning progress (from tutor sessions)
 Read `$HOME/.claude/ccaf-progress/learning-progress.json` (read-only; never write it here). If it
 is missing, or every domain is `not_started` with no drills, say plainly that no tutor sessions are
-recorded yet and point them at `/ccaf:d1-teacher`…`/ccaf:d5-teacher` — do NOT invent progress.
+recorded yet and point them at `/ccaf:d1-teacher`…`/ccaf:d5-teacher` — do NOT invent progress. If the
+file **exists but won't parse** (malformed), say so plainly (do NOT report zero progress and do NOT
+overwrite it) — suggest `python3 ${CLAUDE_PLUGIN_ROOT}/data/validate.py --learning $HOME/.claude/ccaf-progress/learning-progress.json`
+to see what's wrong.
 
 Otherwise print one line per domain that has any activity, e.g.:
 `D4: task statements 2/6 · last drill 6/8 · last visited 2026-07-18 · in progress`

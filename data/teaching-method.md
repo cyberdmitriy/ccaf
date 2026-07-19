@@ -187,9 +187,14 @@ Perform this contract as a **read-modify-write**, touching ONLY the current doma
 shared `axis_mastery` — never clobber the other four domains from a stale copy:
 
 1. The store + file already exist (Step-0 `cp -rn` bootstraps `learning-progress.json` from the
-   template on first run). If for any reason the file is missing, recreate it from the template
+   template on first run). If the file is genuinely **missing**, recreate it from the template
    skeleton before writing.
-2. **Read** `$HOME/.claude/ccaf-progress/learning-progress.json` into memory.
+2. **Read** `$HOME/.claude/ccaf-progress/learning-progress.json` into memory. **If it exists but is
+   malformed / won't parse, do NOT recreate it from the skeleton** — that would wipe the other four
+   domains' real progress. Instead: copy it aside to `learning-progress.json.bak`, tell the user the
+   file was corrupt and preserved as `.bak`, then start a fresh skeleton for this write. (Only a
+   genuinely absent file is safe to skeleton-recreate — a present-but-unparseable one is data to
+   salvage, not to overwrite.)
 3. In `domains["<d>"]` for YOUR domain only:
    - set `last_visited` = today (`YYYY-MM-DD`, from session context — best effort);
    - set `task_total` = this domain's task-statement count (you know your own set, e.g. D4 = 6 →

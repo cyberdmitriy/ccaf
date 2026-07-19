@@ -503,6 +503,7 @@ $("#brandBtn").onclick=()=>{
 
 /* ---- learning progress (tutor sessions, read-only from HISTORY.learning) ---- */
 const LEARNING = HISTORY.learning || null;
+const LEARNING_UNREADABLE = !!HISTORY.learning_unreadable;   // file present but malformed → surface, don't silently show zero
 const LP_STATUS_LABEL = {not_started:"not started", in_progress:"in progress", complete:"complete"};
 function learningDomain(d){ return (LEARNING && LEARNING.domains && LEARNING.domains[String(d)]) || null; }
 function lpCovered(ld){ if(!ld||!ld.task_statements) return 0;
@@ -619,6 +620,12 @@ function renderDashboard(){
   }
   html+=`</section>`;
 
+  /* learning progress — surface a malformed progress file instead of silently rendering zero */
+  if(LEARNING_UNREADABLE){
+    html+=`<section class="block"><h2>Learning progress</h2>
+      <div class="banner warn"><span class="ic">⚠️</span>
+      <div><b>Your <span class="kbd">learning-progress.json</span> couldn't be read (malformed JSON).</b> Progress isn't shown below — the file on disk is intact but unreadable; fix or restore it (a tutor may have written invalid JSON). Run <span class="kbd">python3 data/validate.py --learning ~/.claude/ccaf-progress/learning-progress.json</span> to see what's wrong.</div></div></section>`;
+  }
   /* learning progress — tutor task-statement coverage + in-tutor drills (read-only) */
   if(lpAnyActivity()){
     html+=`<section class="block"><h2>Learning progress <span class="count">tutor task-statement coverage · in-tutor drills</span></h2><div class="card pad">`;

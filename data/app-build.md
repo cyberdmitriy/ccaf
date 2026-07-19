@@ -55,21 +55,25 @@ bank = json.load(open(f"{ROOT}/data/questions.json"))["questions"]
 stats = json.load(open(f"{STORE}/stats.json"))
 
 # ---- learning-progress (tutor task-statement coverage + drills); READ-ONLY here, never written ----
+# Distinguish ABSENT (expected first run -> skeleton, no warning) from PRESENT-BUT-CORRUPT
+# (surface it -> the app shows a warning instead of silently rendering zero progress).
 def load_learning(path):
-    try:
-        obj = json.load(open(path))
-    except (FileNotFoundError, ValueError):
-        obj = None
     skel = {"schema": 1,
             "domains": {str(d): {"status": "not_started", "last_visited": None,
                                  "task_total": None, "task_statements": {}, "drills": []} for d in range(1, 6)},
             "axis_mastery": {str(a): {"seen": 0, "correct": 0} for a in range(1, 6)}}
+    if not os.path.exists(path):
+        return skel, False                 # absent -> expected first run
+    try:
+        obj = json.load(open(path))
+    except ValueError:
+        return skel, True                  # present but unparseable -> surface, don't pretend it's empty
     if not isinstance(obj, dict):
-        return skel
+        return skel, True
     obj.setdefault("domains", skel["domains"])
     obj.setdefault("axis_mastery", skel["axis_mastery"])
-    return obj
-LEARNING = load_learning(f"{STORE}/learning-progress.json")
+    return obj, False
+LEARNING, LEARNING_UNREADABLE = load_learning(f"{STORE}/learning-progress.json")
 
 # answered: transform the store's {attempts:[...], last_correct} -> {last_correct, attempts:<count>, last_ts}
 # last_ts (ISO ts of the MOST RECENT attempt) drives the app's spaced-repetition "due" term in weak mode.
@@ -117,6 +121,7 @@ HISTORY = {
     "exam_history": exam_history,
     "recorded_exam_ids": recorded,
     "learning": LEARNING,
+    "learning_unreadable": LEARNING_UNREADABLE,
 }
 
 tpl = open(f"{ROOT}/data/app-template.html").read()

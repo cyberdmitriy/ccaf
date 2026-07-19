@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Validate data/questions.json against the schema + authoring invariants in CLAUDE.md.
 
-Usage:  python3 data/validate.py           (run from the plugin root)
-        python3 validate.py                (run from data/)
+Usage:  python3 data/validate.py                     (validate the question bank)
+        python3 validate.py                          (same, run from data/)
+        python3 data/validate.py --learning <path>   (validate a learning-progress.json shape)
 
-Exits 0 if the bank is valid, 1 otherwise. Read-only — never mutates the file.
-Checks: unique sequential ids · A–D options · valid `correct` · `axis` 1–5 on every entry ·
+Exits 0 if valid, 1 otherwise. Read-only — never mutates the file.
+Bank checks: unique sequential ids · A–D options · valid `correct` · `axis` 1–5 on every entry ·
 meta.total and meta.per_domain match reality · reports the correct-answer-letter distribution
 (overall + per domain) and warns on a heavy skew · flags any `</script>`/`<!--` that would break
 the injected HTML app · flags empty explanations.
+`--learning`: shape-checks a per-user learning-progress.json (schema · domains 1–5 with the right
+keys and a valid status · axis_mastery 1–5 with int seen/correct · drills/task_statements shape).
+Useful in the maintenance runbook and after hand-off writes.
 """
 import json, os, sys, collections
 
@@ -78,5 +82,69 @@ def main():
     print("\nok — bank is valid.")
     return 0
 
+def validate_learning(path):
+    """Shape-check a learning-progress.json. Read-only. Returns 0 if valid, 1 otherwise."""
+    try:
+        d = json.load(open(path))
+    except FileNotFoundError:
+        print(f"FAIL: no such file: {path}")
+        return 1
+    except ValueError as e:
+        print(f"FAIL: {path} is not valid JSON: {e}")
+        return 1
+    errors = []
+    if not isinstance(d, dict):
+        print("FAIL: top level is not an object")
+        return 1
+    if d.get("schema") != 1:
+        errors.append(f"schema {d.get('schema')!r} != 1")
+    domains = d.get("domains")
+    if not isinstance(domains, dict) or set(domains) != {"1", "2", "3", "4", "5"}:
+        errors.append(f"domains keys must be exactly 1–5, got {sorted(domains) if isinstance(domains, dict) else type(domains).__name__}")
+        domains = {}
+    for k, v in (domains or {}).items():
+        if not isinstance(v, dict):
+            errors.append(f"domains[{k}] is not an object"); continue
+        if set(v) != {"status", "last_visited", "task_total", "task_statements", "drills"}:
+            errors.append(f"domains[{k}] keys {sorted(v)} != status/last_visited/task_total/task_statements/drills")
+        if v.get("status") not in ("not_started", "in_progress", "complete"):
+            errors.append(f"domains[{k}].status {v.get('status')!r} invalid")
+        tt = v.get("task_total")
+        if tt is not None and not isinstance(tt, int):
+            errors.append(f"domains[{k}].task_total must be int or null")
+        ts = v.get("task_statements")
+        if not isinstance(ts, dict):
+            errors.append(f"domains[{k}].task_statements must be an object")
+        else:
+            for sid, sv in ts.items():
+                if not isinstance(sv, dict) or "covered" not in sv:
+                    errors.append(f"domains[{k}].task_statements[{sid}] must be {{covered, ts}}")
+        drills = v.get("drills")
+        if not isinstance(drills, list):
+            errors.append(f"domains[{k}].drills must be a list")
+        else:
+            for i, dr in enumerate(drills):
+                if not (isinstance(dr, dict) and isinstance(dr.get("score"), int) and isinstance(dr.get("total"), int)):
+                    errors.append(f"domains[{k}].drills[{i}] must be {{ts, score:int, total:int}}")
+    am = d.get("axis_mastery")
+    if not isinstance(am, dict) or set(am) != {"1", "2", "3", "4", "5"}:
+        errors.append("axis_mastery keys must be exactly 1–5")
+    else:
+        for k, v in am.items():
+            if not (isinstance(v, dict) and isinstance(v.get("seen"), int) and isinstance(v.get("correct"), int)):
+                errors.append(f"axis_mastery[{k}] must be {{seen:int, correct:int}}")
+    if errors:
+        for e in errors:
+            print(f"FAIL: {e}")
+        print(f"\n{len(errors)} error(s).")
+        return 1
+    print(f"ok — learning-progress at {path} is valid.")
+    return 0
+
 if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] == "--learning":
+        if len(sys.argv) < 3:
+            print("usage: python3 validate.py --learning <path-to-learning-progress.json>")
+            sys.exit(2)
+        sys.exit(validate_learning(sys.argv[2]))
     sys.exit(main())

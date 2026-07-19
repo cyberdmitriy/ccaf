@@ -6,6 +6,22 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.9.1] — 2026-07-19
+### Fixed
+- **Learning-progress reads no longer fail silently.** `app-build.md`'s `load_learning()` now
+  distinguishes an **absent** file (expected first run → skeleton, no warning) from a **present-but-
+  malformed** one (→ skeleton for rendering **plus** a `learning_unreadable` flag). The dashboard shows
+  a warning banner instead of silently rendering zero progress, and `/ccaf:init` reports the corruption
+  plainly rather than "no progress yet."
+- **Tutor write-contract no longer risks silent data loss.** `teaching-method.md` now says: a
+  present-but-unparseable `learning-progress.json` must be backed up to `.bak` and surfaced — **never**
+  skeleton-recreated (which would wipe the other domains' progress). Only a genuinely missing file is
+  safe to recreate.
+### Added
+- `data/validate.py --learning <path>` — shape-checks a `learning-progress.json` (schema, domains 1–5
+  keys + valid status, `axis_mastery`, drills/task_statements shape). Referenced by the warning banner,
+  `/ccaf:init`, and the maintenance runbook.
+
 ## [0.9.0] — 2026-07-18
 ### Changed
 - **Sync is now a maintainer procedure, not a shipped command.** Removed the `/ccaf:sync` slash command
