@@ -63,9 +63,17 @@ transfers across every practice exam. See `data/axes.md`.
 
 Adding questions, lessons, or traps — or changing how it works? The schema, invariants, and full
 workflow live in **`CLAUDE.md`** (auto-loaded when you work in this repo) — the single source of truth
-for changing the plugin. Keeping content current with the official exam is a periodic maintainer task —
-see **`maintenance/RUNBOOK.md`** — and every release/review is logged in **`CHANGELOG.md`**. This README
+for changing the plugin. Every release and content review is logged in **`CHANGELOG.md`**. This README
 stays focused on *using* it.
+
+**Keeping content current (periodic, every 6–12 months).** The exam and docs drift, so the bundled
+content is re-verified against the official sources on a schedule. Full procedure: **`maintenance/RUNBOOK.md`**.
+To run it: open this repo in Claude Code, download the current Exam Guide PDF (link in
+`maintenance/sources.md`), then prompt *"run the CCAF maintenance review per `maintenance/RUNBOOK.md`"*.
+It fetches the latest Exam Guide + Claude Code / API docs and runs two stored, **report-only** audits —
+`bank-coverage-audit` (bank ↔ official task statements) and `fact-currency-audit` (flags/paths/numbers
+vs current docs) — then proposes any edits for your approval. This is a **maintainer** task, not
+something plugin users run.
 
 ## Layout
 ```
