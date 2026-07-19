@@ -13,7 +13,7 @@ so it can be checked directly. The **technical behavior** the exam tests (CLI fl
 ## Last verified (against the official Exam Guide, primary source)
 - **Exam Guide:** **v1.0 · Effective July 2026 · exam code CCAR-F** (title page). "Subject to change
   without notice." Verified against the PDF on 2026-07-18.
-- **Product docs / changelogs checked:** 2026-07-18.
+- **Product docs / changelogs checked:** 2026-07-19 (Layer-2 fact-currency audit — 0 stale facts across all 5 domains).
 - **Bundled content built/last-synced:** 2026-07-18 (bank = 240 questions).
 
 > When you refresh content against the sources below, bump these lines and the plugin version.
@@ -47,6 +47,19 @@ so it can be checked directly. The **technical behavior** the exam tests (CLI fl
 > (`questions.json`) is **single-answer only** (`correct` = one letter A–D) and the mock app grades
 > single-select. Multi-select is currently untrained. Tracked as a follow-up (would touch the schema,
 > the app grader, and `validate.py`).
+
+### Known exam-vs-product divergences — DO NOT "fix" these
+The exam is closed-book against **Exam Guide v1.0 (July 2026)**, a point-in-time snapshot. In a few
+spots the live product has since moved past the Guide. The bundled content deliberately follows the
+**Guide** (that is what the exam tests), so these look "wrong" against today's docs but are **correct
+for the exam** — do not edit them to match current docs:
+- **`allowed-tools` skill frontmatter** — the Guide (task 3.2) frames it as **restricting** tool access
+  during skill execution; current Claude Code docs say `allowed-tools` *grants* pre-approval and does
+  **not** restrict (use `disallowed-tools` to restrict). Content follows the Guide. (bank q94; tutor 3.2)
+- **`/memory` command** — the Guide (task 3.1) says `/memory` shows **which memory files are loaded**;
+  current docs route "which actually loaded" to `/context` and describe `/memory` as listing file
+  locations + toggling auto-memory. Content follows the Guide. (bank q201; tutor 3.1)
+Re-evaluate each only when a **new Exam Guide version** changes the framing (Layer-1 review).
 
 ## Layer 1 — Exam blueprint (PUBLIC · downloadable, checkable directly)
 The single authoritative source for the blueprint, domain weights, and task statements. Always

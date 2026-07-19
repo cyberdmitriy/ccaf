@@ -9,8 +9,10 @@ lessons, and the question bank, which is maintainer work, not something an insta
 
 Everything this runbook consults lives in `maintenance/`:
 - `sources.md` — authoritative-source list + **"Last verified"** stamp + the official blueprint/task
-  statements copied from the Exam Guide.
-- `bank-coverage-audit.workflow.js` — the stored multi-agent audit (below).
+  statements copied from the Exam Guide + known exam-vs-product divergences.
+- `bank-coverage-audit.workflow.js` — stored audit: bank ↔ task-statement coverage + sample questions.
+- `fact-currency-audit.workflow.js` — stored audit: cross-checks the bank/lessons' falsifiable
+  technical facts (flags, paths, numbers, API params) against current official docs + the Guide.
 
 Record every review in the root `CHANGELOG.md`.
 
@@ -30,10 +32,22 @@ The guide is **publicly downloadable** (not login-gated):
    `skills/dN-teacher/SKILL.md` (task-statement counts feed `learning-progress.json` `task_total`).
 
 ## Step 2 — Layer 2: product docs (behavior — flags, hooks, MCP, tool_choice, Batch API)
-Fetch each **Layer 2** source in `sources.md` (Claude Code changelog, Platform release notes, GitHub
-releases, Help Center) and scan for entries **dated after** the stamp. Tag each relevant change with the
-domain it touches using the **domain → source map** in `sources.md`. Ignore cosmetic/IDE fixes; keep
-changes that touch tested concepts (flags, hooks, MCP config, `tool_choice`, Batch API, session state).
+Two parts:
+- **Changelog scan** — fetch each **Layer 2** source in `sources.md` (Claude Code changelog, Platform
+  release notes, GitHub releases, Help Center) and scan for entries **dated after** the stamp. Tag each
+  relevant change with the domain it touches (**domain → source map** in `sources.md`). Ignore
+  cosmetic/IDE fixes; keep changes touching tested concepts (flags, hooks, MCP config, `tool_choice`,
+  Batch API, session state).
+- **Fact-currency audit** — run the stored workflow (same opt-in as Step 3):
+  ```
+  Workflow({ scriptPath: "maintenance/fact-currency-audit.workflow.js",
+             args: { root: "<absolute repo path>", guide: "<absolute exam_guide.pdf path>" } })
+  ```
+  Per domain it extracts the falsifiable technical facts from the bank + lessons and verifies each
+  against current official docs, returning `current` / `stale` / `unverifiable` with evidence. A `stale`
+  finding means the content contradicts **both** current docs **and** the Guide — a genuine error to
+  fix. A fact that matches the Guide but the product changed later is `current` for the exam — record it
+  under "Known exam-vs-product divergences" in `sources.md`, **do not edit the content**.
 
 ## Step 3 — Audit bank coverage (stored workflow)
 Run the stored coverage audit — it maps every bank question to the official task statements and checks the
@@ -67,7 +81,9 @@ re-domain them without judgment. See `data/axes.md`.
    date, content-built date).
 2. Add a dated entry to the root **`CHANGELOG.md`** — what you checked, what changed, what you edited (or
    "no changes; verified current").
-3. Bump the plugin **version** in `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json`.
+3. Bump the plugin **version** (`.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json`)
+   **only if shipped content changed** (bank / skills / lessons / app). A "verified current, no change"
+   review updates the stamp + CHANGELOG but does **not** bump the version (nothing shipped changed).
 4. If the bank changed, run `python3 data/validate.py` and confirm it passes.
 
 ## Known follow-ups (open)
