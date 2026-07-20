@@ -6,6 +6,16 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.11.0] — 2026-07-20
+### Changed
+- **Cheatsheet cards rebuilt to teach the transferable principle, not "pick X here".** Each card now reads as one line of reasoning: a plain-language **decision** headline (the question behind the question), a scenario-independent **rule**, **What gave it away** (verbatim signal words from the stem), **So the answer is** (the correct mechanism + why), and **Your instinct — and when it's right** (why the tempting option fails *here* **and the exact condition under which it would be correct**) — so the learner can answer similar-but-different questions instead of memorising an answer. The learner's pick is shown once, inside a **Show the full question** accordion (stem + all four options, correct in green, pick tagged), not a duplicate block. Card text renders **bold**, *italic*, and `code`.
+- **Dashboard: three blocks reworked.**
+  - *The 5 axes of failure* — cleaner heading (a numbered pill + name, replacing "1 Determinism"), a one-line "where you get caught" summary, a shared-baseline bar per axis for at-a-glance comparison, 2-line clamped descriptions, and dimmed "✓ clear" rows for axes with no misses (canonical 1→5 order kept).
+  - *Recurring misses* table (a truncated-stem list that duplicated the Cheatsheet) → a slim **review launcher**: backlog count + per-domain chips that deep-link into a pre-filtered Cheatsheet.
+  - *Avg mock time* tile → **Projected score** — the mean of the last up-to-3 recorded exams, colour-referenced to the 72% pass line.
+### Fixed
+- `/ccaf:result` cheatsheet authoring rewritten to enforce the discriminating-principle format (`decision`/`rule`/`signal`/`answer`/`flip`, anchored to each question's axis) instead of a generic "trigger → rule → why".
+
 ## [0.10.0] — 2026-07-20
 ### Added
 - **Cheatsheet — a per-user, miss-driven study aid.** A new **Cheatsheet** view in the offline app, built from the questions you get wrong. Each miss is a card: the scenario **trigger**, **Pick this** (rule + correct option), **Why it fits**, **The trap** (why the tempting distractor is wrong *here* and when it would be right), **You picked** (your wrong option), an axis badge + a per-domain-coloured tag, and a collapsible **Show the scenario** accordion with the full question stem + all four options (correct green, your pick red). Active misses on top; a later correct answer moves the card to a **Mastered** section. Filter by domain/axis/search. Content lives in a new per-user store file `cheatsheet.json` (survives plugin updates); `/ccaf:result` writes it and **backfills** entries for misses recorded before the feature existed. The question bank is untouched.
