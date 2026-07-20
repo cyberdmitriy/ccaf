@@ -13,7 +13,9 @@ Manual only; do NOT auto-invoke other skills.
 
 ## Build & open
 Follow the shared recipe **`${CLAUDE_PLUGIN_ROOT}/data/app-build.md`** exactly (same build as
-`/ccaf:exam` — it opens on the Dashboard). The dashboard shows overall accuracy, per-domain
+`/ccaf:exam` — it opens on the Dashboard). **Rebuild every run:** run the recipe's build step (Steps
+1–4) even if `ccaf-exam.html` already exists — never just `open` a stale file, or new questions,
+freshly-recorded history, and new views (e.g. the Cheatsheet tab) won't appear. The dashboard shows overall accuracy, per-domain
 accuracy vs blueprint weight with focus markers, coverage (answered vs remaining), exam history
 (mock and external kept **separate**, never averaged), a **Learning progress** card (tutor
 task-statement coverage + in-tutor drill scores + per-axis mastery, from `learning-progress.json`),

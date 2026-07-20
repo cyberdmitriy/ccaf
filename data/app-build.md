@@ -4,6 +4,14 @@ Both `/ccaf:exam` and `/ccaf:stats` build the **same** self-contained offline ap
 `app-template.html` + the user's progress store, then open it. This file is the single source of
 truth for that build so the two skills stay in sync. Follow it verbatim.
 
+> **ALWAYS REBUILD — never open a stale file.** `ccaf-exam.html` is a disposable build artifact.
+> On **every** `/ccaf:exam` and `/ccaf:stats`, run Steps 1–4 in full and **overwrite** any existing
+> `ccaf-exam.html`. **Do NOT** shortcut to `open`-ing a pre-existing `ccaf-exam.html` because "the
+> file already exists" — a stale file silently hides newly-recorded history and new app features
+> (this is exactly how a new tab/view appears "missing" after a plugin update). Running the build is
+> read-only w.r.t. the store, so there is never a reason to skip it. If the build errors, surface the
+> error — do not fall back to opening the old file.
+
 The app is one page with four client-side views: **Dashboard** (progress + history), **New exam**
 (mode/domain/length selection), **Exam** (timer, pause/resume, resume-later), **Results** (score +
 annotated review + copy-JSON export). All logic is client-side JS. The whole question bank
@@ -75,6 +83,27 @@ def load_learning(path):
     return obj, False
 LEARNING, LEARNING_UNREADABLE = load_learning(f"{STORE}/learning-progress.json")
 
+# ---- cheatsheet (miss-driven "trigger -> rule" table); READ-ONLY here, never written ----
+# Same ABSENT vs PRESENT-BUT-CORRUPT discipline as load_learning: absent -> empty skeleton, no
+# warning (expected first run); present but unparseable -> surface it so the app shows a banner
+# instead of silently rendering an empty cheatsheet.
+def load_cheatsheet(path):
+    skel = {"schema": 1, "entries": {}}
+    if not os.path.exists(path):
+        return skel, False
+    try:
+        obj = json.load(open(path))
+    except ValueError:
+        return skel, True
+    if not isinstance(obj, dict):
+        return skel, True
+    if "entries" in obj and not isinstance(obj["entries"], dict):
+        return skel, True                  # present but wrong type -> surface
+    obj.setdefault("schema", 1)
+    obj.setdefault("entries", {})          # missing key tolerated, mirrors load_learning
+    return obj, False
+CHEATSHEET, CHEATSHEET_UNREADABLE = load_cheatsheet(f"{STORE}/cheatsheet.json")
+
 # answered: transform the store's {attempts:[...], last_correct} -> {last_correct, attempts:<count>, last_ts}
 # last_ts (ISO ts of the MOST RECENT attempt) drives the app's spaced-repetition "due" term in weak mode.
 answered = {}
@@ -122,6 +151,8 @@ HISTORY = {
     "recorded_exam_ids": recorded,
     "learning": LEARNING,
     "learning_unreadable": LEARNING_UNREADABLE,
+    "cheatsheet": CHEATSHEET,
+    "cheatsheet_unreadable": CHEATSHEET_UNREADABLE,
 }
 
 tpl = open(f"{ROOT}/data/app-template.html").read()

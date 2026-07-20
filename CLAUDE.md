@@ -30,6 +30,7 @@ confirmation before editing** (see God Rule #8).
 9. **Design for extension, not just the current case.** When behavior branches on a finite set (domain 1–5, axis 1–5, exam mode weak/unseen/random/review, mock vs external, status not_started/in_progress/complete), keep the branch in ONE place — a constants map, an enum-like table, the domain→source map — so new cases opt in without hunting call sites. Heavier abstraction (new file, new mechanism) needs an explicit trade-off discussion first.
 10. **Evidence before hypothesis.** When debugging the bank/app/build/validator, gather the actual measurement first — run `python3 data/validate.py`, the build harness, `node --check` on the extracted app script, or read a workflow's `journal.jsonl` — before diagnosing. If a fix doesn't produce the expected output, **revert it** before the next hypothesis; never stack guesses.
 11. **NEVER destroy user state or bank integrity without explicit approval.** The per-user store `~/.claude/ccaf-progress/` holds real learner state (stats, fails, learning-progress) — never wipe or overwrite it; bootstrap only via `cp -rn` (never overwrite), and a malformed progress file is backed up to `.bak` and surfaced, never skeleton-recreated. **Never renumber or reorder existing `questions.json` ids** — `stats.json` references them; changing ids corrupts every user's history (append-only, always). "Verifying it works" is not a reason to touch real state — use a throwaway `HOME`/store (as the build/coverage harnesses do).
+12. **Never commit or bump the version on your own.** Do NOT `git commit` and do NOT change the plugin version (`plugin.json`/`marketplace.json`/`CHANGELOG.md` release headers) as a side effect of making changes. Edit → verify → **stop and report what changed**. Commit/bump only (a) when the user explicitly asks, or (b) after you propose it and they approve. The version is a release decision the user makes — **one** coherent bump per release the user names, never one per small change. (Rebuilding the user's `ccaf-exam.html` preview is fine — it's a regenerable artifact, not a commit.)
 
 ## What this is
 A self-contained plugin teammates install and drive with slash commands. It teaches the 5 CCAF domains,
@@ -62,19 +63,22 @@ README.md               # end-user facing (install + usage)
 CHANGELOG.md            # version history + content-review log
 ```
 
+**Planning artifacts:** superpowers specs/plans go under `.superpowers/` (git-ignored scratch) —
+never create a `docs/` tree. If a skill defaults to `docs/superpowers/…`, redirect it to `.superpowers/`.
+
 ## Invariants — do not break these
 1. **Manual-only:** every skill/command sets `disable-model-invocation: true` (blocks auto-invocation AND removes it from ambient context). Never remove this; never set `user-invocable: false`.
 2. **No skill→skill calls:** Claude Code can't invoke one skill from another. `/ccaf:init` routes by *instructing* the user which command to type. Keep hand-offs as instructions.
 3. **Focus is data-driven, never hardcoded:** teachers/exam read the user's `~/.claude/ccaf-progress/{profile.md,stats.json}` and bias toward THEIR weak domains. Do not bake any person's results (percentages, "focus domain") into skills.
 4. **Progress lives at `~/.claude/ccaf-progress/`**, never in the plugin dir (plugin dirs are wiped on update). Skills bootstrap it from `data/progress-template/` with `cp -rn` (never overwrite).
-5. **`/ccaf:result` is the single recorder** (mock JSON — one sitting or a batch array — or external screenshot). `/ccaf:exam` and `/ccaf:stats` both **build & open the same app** (`ccaf-exam.html`) via the shared `data/app-build.md` recipe and never write to the store; the app hands results back only via copy-JSON. The app itself does question selection + scoring client-side.
+5. **`/ccaf:result` is the single recorder** (mock JSON — one sitting or a batch array — or external screenshot). `/ccaf:exam` and `/ccaf:stats` both **build & open the same app** (`ccaf-exam.html`) via the shared `data/app-build.md` recipe and never write to the store; the app hands results back only via copy-JSON. The app itself does question selection + scoring client-side. `/ccaf:result` also upserts a per-user `cheatsheet.json` — the app's miss-driven *trigger→rule* table — on each mock miss (additive, never in the bank; the app reads it read-only).
 6. **Path refs:** bundled files via `${CLAUDE_PLUGIN_ROOT}/data/...`; progress via `$HOME/.claude/ccaf-progress/...`.
 7. **One app file, no archive:** `/ccaf:exam` & `/ccaf:stats` overwrite a single `$HOME/.claude/ccaf-progress/ccaf-exam.html`. No per-exam files. `stats.json` is the authoritative history; the app reconciles unrecorded local sittings against `recorded_exam_ids` so nothing is double-counted. To change the app UI/logic, edit `data/app-template.html` (keep the `/*__BANK__*/[]` and `/*__HISTORY__*/{}` placeholders valid as empty literals); to change what data it gets, edit `data/app-build.md`.
 
 ## App UI internals
 The offline study app (`data/app-template.html`) has many client-side features (results review, 5-axis
 tally, score-trend sparkline, weak-mode spaced repetition, one-question-per-screen exam, mark-for-review
-gate, timed mode, learning-progress card + malformed handling, …). The feature-by-feature reference lives
+gate, timed mode, learning-progress card + malformed handling, cheatsheet view, …). The feature-by-feature reference lives
 in **`maintenance/app-internals.md`** — read it before editing the app. Hard constraint: keep the
 `/*__BANK__*/[]` and `/*__HISTORY__*/{}` placeholders valid as empty literals; change the injected data via
 `data/app-build.md`.

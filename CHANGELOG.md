@@ -6,6 +6,15 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.10.0] — 2026-07-20
+### Added
+- **Cheatsheet — a per-user, miss-driven study aid.** A new **Cheatsheet** view in the offline app, built from the questions you get wrong. Each miss is a card: the scenario **trigger**, **Pick this** (rule + correct option), **Why it fits**, **The trap** (why the tempting distractor is wrong *here* and when it would be right), **You picked** (your wrong option), an axis badge + a per-domain-coloured tag, and a collapsible **Show the scenario** accordion with the full question stem + all four options (correct green, your pick red). Active misses on top; a later correct answer moves the card to a **Mastered** section. Filter by domain/axis/search. Content lives in a new per-user store file `cheatsheet.json` (survives plugin updates); `/ccaf:result` writes it and **backfills** entries for misses recorded before the feature existed. The question bank is untouched.
+### Changed
+- **Blueprint-weight tick is bright red** on the dashboard "By domain" bars, so the target marker stands out against the coverage fill.
+### Fixed
+- **`/ccaf:exam` & `/ccaf:stats` always rebuild the app.** `app-build.md` + both skills now state that `ccaf-exam.html` is a disposable artifact regenerated every run, never opened stale — so a new view no longer appears "missing" after an update. (Instruction hardening; a hard guarantee would need a hook — logged in `maintenance/BACKLOG.md`.)
+- **Tutor progress checkpoints incrementally.** `teaching-method.md`'s recording contract now persists `learning-progress.json` after each task statement is taught + check-questioned (plus a hand-off flush), so a session interrupted before hand-off keeps what it covered.
+
 ## [0.9.1] — 2026-07-19
 ### Fixed
 - **Learning-progress reads no longer fail silently.** `app-build.md`'s `load_learning()` now

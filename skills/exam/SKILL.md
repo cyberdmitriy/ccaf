@@ -16,7 +16,8 @@ There are **no arguments** — mode, domains and length are chosen on the page i
 ## Build & open
 Follow the shared recipe **`${CLAUDE_PLUGIN_ROOT}/data/app-build.md`** exactly (bootstrap the store →
 read `profile.md` → run the Python builder that injects the full bank + authoritative history into
-`app-template.html` → write `$HOME/.claude/ccaf-progress/ccaf-exam.html` → open it).
+`app-template.html` → write `$HOME/.claude/ccaf-progress/ccaf-exam.html` → open it). **Rebuild every
+run** — always run the builder even if `ccaf-exam.html` already exists; never just `open` a stale file.
 
 ## Then tell the user (briefly)
 - The app opened on the **Dashboard** (their progress, per-domain accuracy, exam history, weak areas).

@@ -89,6 +89,10 @@ statement:
    legend section). The learner states the **winning condition** in the stem and **the axis each
    distractor fails on** BEFORE the reveal; then confirm against the question's `correct` +
    `explanation`.
+6. **Checkpoint** — once this task statement is fully taught + check-questioned, immediately persist
+   it via the read-modify-write in **Recording learning progress** below (mark the statement covered,
+   fold in the check answers' axis mastery). Don't batch it to hand-off — save now, so an interrupted
+   session keeps what you covered.
 
 Then connect to the next task statement.
 
@@ -178,10 +182,15 @@ Each tutor lists its domain's task statements. Tick every one before declaring t
 done — do not skip a sub-topic just because the learner scores well overall; the exam samples
 across all task statements.
 
-## Recording learning progress (at hand-off, before you suggest the next command)
-Teacher sessions are otherwise stateless — their progress dies on `/clear`. So at hand-off you
-persist what this session covered into the per-user file `learning-progress.json`. This is
-**separate** from `stats.json` (exam results, owned by `/ccaf:result`) — never touch that here.
+## Recording learning progress (checkpoint AS YOU GO — not only at hand-off)
+Teacher sessions are otherwise stateless — their progress dies on `/clear`, and a session
+interrupted before hand-off would lose everything taught. So do **not** wait for hand-off to save:
+**checkpoint incrementally**. Perform the read-modify-write below **right after you fully teach +
+check-question each task statement** (and right after each drill) — then a final flush at hand-off.
+Each checkpoint is the same cheap, safe read-modify-write touching only your domain's entry (+ shared
+`axis_mastery`); repeating it every lesson is idempotent, so partial progress survives an early exit.
+This persists into the per-user file `learning-progress.json`, **separate** from `stats.json` (exam
+results, owned by `/ccaf:result`) — never touch that here.
 
 Perform this contract as a **read-modify-write**, touching ONLY the current domain's entry and the
 shared `axis_mastery` — never clobber the other four domains from a stale copy:
@@ -199,7 +208,8 @@ shared `axis_mastery` — never clobber the other four domains from a stale copy
    - set `last_visited` = today (`YYYY-MM-DD`, from session context — best effort);
    - set `task_total` = this domain's task-statement count (you know your own set, e.g. D4 = 6 →
      4.1–4.6);
-   - for each task statement you **fully taught AND check-questioned** this session, set
+   - for each task statement you have **fully taught AND check-questioned** so far this session
+     (cumulative — include ones checkpointed earlier this session), set
      `task_statements["<id>"] = {"covered": true, "ts": "<today>"}` (use the tutor's own ids, e.g.
      `"4.3"`). Do NOT mark a statement you only mentioned.
    - if the 8-question domain drill was taken, append `{"ts": "<today>", "score": <int>, "total": <int>}`

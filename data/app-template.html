@@ -128,7 +128,7 @@
   .ddesc{font-size:.88rem;color:var(--ink2);margin:.3rem 0 .6rem 1.22rem;line-height:1.5}
   .track{height:.72rem;background:var(--paper2);border-radius:999px;overflow:hidden;position:relative}
   .fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
-  .blueprint-tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--faint);opacity:.7}
+  .blueprint-tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:#ff2200;opacity:1}
   .dval{margin-left:auto;font-variant-numeric:tabular-nums;font-size:.9rem;font-weight:600;white-space:nowrap}
   .dval small{color:var(--muted);font-weight:500}
   .focus-flag{font-size:.66rem;background:var(--accent);color:#fff;border-radius:999px;padding:.05rem .45rem;letter-spacing:.04em;text-transform:uppercase}
@@ -154,6 +154,56 @@
   .exrow .errs{font-size:.82rem;color:var(--bad);font-weight:600;white-space:nowrap}
   .spark{display:flex;gap:2px;align-items:flex-end;height:26px}
   .spark span{width:7px;border-radius:2px 2px 0 0;background:var(--accent);opacity:.85}
+
+  /* ---------- cheatsheet ---------- */
+  .cs-sub{color:var(--ink2);margin:.5rem 0 0;font-size:.95rem}
+  .cs-filters{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:1.2rem 0}
+  .cs-chips{display:flex;flex-wrap:wrap;gap:.35rem}
+  .cs-chip{font-size:.8rem;padding:.3rem .7rem;border:1px solid var(--line2);border-radius:999px;
+    background:var(--surface);color:var(--ink2);cursor:pointer}
+  .cs-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .cs-search{flex:1;min-width:12rem;padding:.4rem .7rem;border:1px solid var(--line2);border-radius:8px;
+    background:var(--surface);color:var(--ink);font:inherit}
+  .cs-dim{color:var(--muted)}
+  .cs-cards{display:flex;flex-direction:column;gap:1rem;margin-top:.4rem}
+  .cs-card{border:1px solid var(--line2);border-left:3px solid var(--accent2);border-radius:12px;
+    background:var(--surface);padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:.8rem}
+  .cs-card.mastered{border-left-color:var(--ok)}
+  .cs-card-head{display:flex;flex-direction:column;align-items:stretch;gap:.55rem;
+    padding-bottom:.85rem;border-bottom:1px solid var(--line2)}
+  .cs-trigger{font-weight:700;color:var(--accent2);font-size:1.12rem;line-height:1.35;width:100%}
+  .cs-tags{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:.45rem;justify-content:flex-start}
+  .cs-domtag{display:inline-flex;align-items:center;gap:.34rem;font-size:.72rem;font-weight:700;
+    letter-spacing:.02em;padding:.14rem .55rem;border-radius:999px;border:1px solid currentColor;background:var(--surface)}
+  .cs-domtag .dot{width:.5rem;height:.5rem;background:currentColor}
+  .cs-body{display:flex;flex-direction:column;gap:.7rem}
+  .cs-field{display:flex;flex-direction:column;gap:.28rem}
+  .cs-lbl{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .cs-rule{font-weight:700;color:var(--ink);line-height:1.45}
+  .cs-text{line-height:1.55;color:var(--ink2);font-size:.9rem}
+  .cs-opt{font-size:.86rem;line-height:1.4;border-radius:7px;padding:.35rem .55rem;align-self:flex-start}
+  .cs-correct{background:var(--ok-soft);color:var(--ok);font-weight:600}
+  .cs-wrong{background:var(--bad-soft);color:var(--bad)}
+  .cs-trap .cs-lbl{color:var(--warn)}
+  .cs-scenario{margin-top:.15rem;border-top:1px dashed var(--line2);padding-top:.7rem}
+  .cs-scenario summary{cursor:pointer;font-size:.76rem;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--accent);list-style:none;user-select:none}
+  .cs-scenario summary::-webkit-details-marker{display:none}
+  .cs-scenario summary::before{content:"▸ "}
+  .cs-scenario[open] summary::before{content:"▾ "}
+  .cs-stem{margin:.7rem 0;line-height:1.6;color:var(--ink);font-size:.92rem}
+  .cs-opts{list-style:none;display:flex;flex-direction:column;gap:.4rem;margin:0;padding:0}
+  .cs-o{display:flex;gap:.55rem;padding:.45rem .6rem;border-radius:8px;border:1px solid var(--line2);
+    font-size:.88rem;line-height:1.45;align-items:flex-start;background:var(--surface2)}
+  .cs-o-l{font-family:var(--font-mono);font-weight:700;color:var(--muted);flex:none}
+  .cs-o-t{flex:1;min-width:0}
+  .cs-o-mk{margin-left:auto;font-weight:700;flex:none}
+  .cs-o.cs-o-correct{border-color:var(--ok);background:var(--ok-soft)}
+  .cs-o.cs-o-correct .cs-o-mk,.cs-o.cs-o-correct .cs-o-l{color:var(--ok)}
+  .cs-o.cs-o-wrong{border-color:var(--bad);background:var(--bad-soft)}
+  .cs-o.cs-o-wrong .cs-o-mk,.cs-o.cs-o-wrong .cs-o-l{color:var(--bad)}
+  .cs-mastered{margin-top:1.4rem}
+  .cs-mastered summary{cursor:pointer;font-weight:600;color:var(--ink2);padding:.4rem 0}
 
   /* ---------- axis + fails ---------- */
   .axis-row{padding:.6rem 0;border-top:1px solid var(--line2)}
@@ -314,6 +364,7 @@
     <nav class="tabs" id="tabs">
       <button class="tab active" data-view="dashboard">Dashboard</button>
       <button class="tab" data-view="config">New exam</button>
+      <button class="tab" data-view="cheatsheet">Cheatsheet</button>
     </nav>
     <div class="exam-controls" id="examControls" style="display:none">
       <span class="prog-mini" id="progMini">0/0</span>
@@ -348,6 +399,9 @@
 
   <!-- ============ RESULTS ============ -->
   <div class="view" id="view-results"></div>
+
+  <!-- ============ CHEATSHEET ============ -->
+  <div class="view" id="view-cheatsheet"></div>
 </main>
 
 <div id="overlay">
@@ -490,11 +544,11 @@ function showView(name){
   /* a11y: announce the route change and move focus to the view heading (the exam view
      manages its own focus in renderCurrentQuestion, so skip it here). */
   const st=$("#srStatus");
-  if(st){ const titles={dashboard:"Dashboard",config:"New exam",exam:"Exam",results:"Results"}; st.textContent=(titles[name]||name)+" loaded"; }
+  if(st){ const titles={dashboard:"Dashboard",config:"New exam",exam:"Exam",results:"Results",cheatsheet:"Cheatsheet"}; st.textContent=(titles[name]||name)+" loaded"; }
   if(name!=="exam"){ const view=$("#view-"+name), h=view&&view.querySelector("h1,h2,.eyebrow");
     if(h){ h.setAttribute("tabindex","-1"); try{h.focus({preventScroll:true});}catch(e){} } }
 }
-$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="config") renderConfig(); showView(t.dataset.view); });
+$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="config") renderConfig(); if(t.dataset.view==="cheatsheet") renderCheatsheet(); showView(t.dataset.view); });
 /* logo + wordmark → dashboard. During a live exam it behaves like Quit (confirm + save progress). */
 $("#brandBtn").onclick=()=>{
   if(currentView==="exam" && exam && !exam.submitted){ quitExam(); return; }
@@ -705,6 +759,101 @@ function availByMode(domains,merged){
     review: BANK.filter(q=>inDoms(q) && merged[q.id]&&merged[q.id].last_correct===false).length,
   };
 }
+/* ---------- Cheatsheet view (miss-driven trigger→rule table) ---------- */
+let cheatState = { domain:"all", axis:"all", q:"" };
+
+function cheatList(){
+  const cs=(HISTORY.cheatsheet&&HISTORY.cheatsheet.entries)||{};
+  return Object.keys(cs).map(k=>cs[k]).filter(e=>e&&typeof e==="object");
+}
+function cheatOptText(qid,letter){
+  const q=BANK.find(x=>String(x.id)===String(qid));
+  if(!q||!q.options||!letter) return letter||"";
+  const t=q.options[letter];
+  return t?(letter+" · "+t):(letter||"");
+}
+function cheatMatches(e){
+  if(cheatState.domain!=="all"&&String(e.domain)!==cheatState.domain) return false;
+  if(cheatState.axis!=="all"&&String(e.axis)!==cheatState.axis) return false;
+  if(cheatState.q){ const s=(String(e.trigger||"")+" "+String(e.rule||"")+" "+String(e.why||"")).toLowerCase();
+    if(!s.includes(cheatState.q.toLowerCase())) return false; }
+  return true;
+}
+function cheatCard(e){
+  const axisB=(e.axis>=1&&e.axis<=5)?`<span class="axisbadge" title="${esc(AXIS_DESC[e.axis]||"")}">Axis ${e.axis} · ${esc(AXIS_NAMES[e.axis]||"")}</span>`:"";
+  const dvar=DOMAIN_VAR[e.domain];
+  const domTag=dvar?`<span class="cs-domtag" style="color:var(${dvar})"><span class="dot"></span>Domain ${esc(e.domain)}</span>`
+                   :`<span class="cs-domtag">Domain ${esc(e.domain)}</span>`;
+  const pick=e.correct?esc(cheatOptText(e.qid,e.correct)):"";
+  const you=e.your_pick?esc(cheatOptText(e.qid,e.your_pick)):"";
+  return `<article class="cs-card${e.status==="mastered"?" mastered":""}">
+    <header class="cs-card-head">
+      <div class="cs-trigger">${e.trigger?rich(e.trigger):'<span class="cs-dim">—</span>'}</div>
+      <div class="cs-tags">${axisB}${domTag}</div>
+    </header>
+    <div class="cs-body">
+      <div class="cs-field"><span class="cs-lbl">Pick this</span>
+        ${e.rule?`<div class="cs-rule">${rich(e.rule)}</div>`:""}
+        ${pick?`<div class="cs-opt cs-correct">✓ ${pick}</div>`:""}</div>
+      ${e.why?`<div class="cs-field"><span class="cs-lbl">Why it fits</span><div class="cs-text">${rich(e.why)}</div></div>`:""}
+      ${e.pitfall?`<div class="cs-field cs-trap"><span class="cs-lbl">The trap</span><div class="cs-text">${rich(e.pitfall)}</div></div>`:""}
+      ${you?`<div class="cs-field"><span class="cs-lbl">You picked</span><div class="cs-opt cs-wrong">✗ ${you}</div></div>`:""}
+      ${cheatScenario(e)}
+    </div>
+  </article>`;
+}
+function cheatScenario(e){
+  const q=BANK.find(x=>String(x.id)===String(e.qid));
+  if(!q||!q.stem) return "";
+  let opts="";
+  if(q.options){ opts=Object.keys(q.options).map(L=>{
+    const cls=L===e.correct?" cs-o-correct":(L===e.your_pick?" cs-o-wrong":"");
+    const mk=L===e.correct?"✓":(L===e.your_pick?"✗":"");
+    return `<li class="cs-o${cls}"><span class="cs-o-l">${esc(L)}</span><span class="cs-o-t">${esc(q.options[L])}</span>${mk?`<span class="cs-o-mk">${mk}</span>`:""}</li>`;
+  }).join(""); }
+  return `<details class="cs-scenario"><summary>Show the scenario</summary>
+    <div class="cs-stem">${rich(q.stem)}</div>
+    ${opts?`<ul class="cs-opts">${opts}</ul>`:""}</details>`;
+}
+function cheatCards(rows){ return `<div class="cs-cards">${rows.map(cheatCard).join("")}</div>`; }
+function renderCheatsheet(){
+  const v=$("#view-cheatsheet");
+  const head=`<div class="page-head"><span class="eyebrow">Cheatsheet</span><h1>Your miss-driven cheatsheet</h1>`;
+  if(HISTORY.cheatsheet_unreadable){
+    v.innerHTML=head+`</div><div class="banner warn"><span class="ic">⚠️</span>
+      <div><b>Your <span class="kbd">cheatsheet.json</span> couldn't be read (malformed or invalid JSON).</b> The table isn't shown — the file on disk is intact but unreadable; fix or restore it, then record an exam to rebuild.</div></div>`;
+    return;
+  }
+  const all=cheatList();
+  if(!all.length){
+    v.innerHTML=head+`</div><div class="empty"><div class="em-ic">🗒️</div><h3>No cheatsheet yet</h3>
+      <p class="hint">It fills in from the questions you miss when you record exams with <span class="kbd">/ccaf:result</span>.</p></div>`;
+    return;
+  }
+  const domains=[...new Set(all.map(e=>String(e.domain)))].sort();
+  const axes=[...new Set(all.map(e=>String(e.axis)))].sort();
+  const chip=(active,attr,val,label)=>`<button class="cs-chip${active?" on":""}" data-cs-${attr}="${esc(val)}">${esc(label)}</button>`;
+  const domChips=chip(cheatState.domain==="all","dom","all","All domains")+domains.map(d=>chip(cheatState.domain===d,"dom",d,"Domain "+d)).join("");
+  const axChips=chip(cheatState.axis==="all","axis","all","All axes")+axes.map(a=>chip(cheatState.axis===a,"axis",a,"Axis "+a)).join("");
+  const shown=all.filter(cheatMatches);
+  const active=shown.filter(e=>e.status!=="mastered");
+  const mastered=shown.filter(e=>e.status==="mastered");
+  v.innerHTML=head+`<p class="cs-sub">When to pick which — built from what you got wrong. ${active.length} active · ${mastered.length} mastered.</p></div>
+    <div class="cs-filters">
+      <div class="cs-chips">${domChips}</div>
+      <div class="cs-chips">${axChips}</div>
+      <input id="csSearch" class="cs-search" type="search" placeholder="Search trigger / rule…" value="${esc(cheatState.q)}" aria-label="Search cheatsheet">
+    </div>
+    <section class="block"><h2>Active <span class="count">${active.length} to refresh</span></h2>
+      ${active.length?cheatCards(active):'<p class="hint">Nothing active for this filter.</p>'}</section>
+    ${mastered.length?`<details class="cs-mastered"><summary>Mastered · ${mastered.length} ✓</summary>${cheatCards(mastered)}</details>`:""}`;
+  $$("#view-cheatsheet [data-cs-dom]").forEach(b=>b.onclick=()=>{cheatState.domain=b.dataset.csDom;renderCheatsheet();});
+  $$("#view-cheatsheet [data-cs-axis]").forEach(b=>b.onclick=()=>{cheatState.axis=b.dataset.csAxis;renderCheatsheet();});
+  const srch=$("#csSearch");
+  if(srch){ srch.oninput=()=>{ const val=srch.value; cheatState.q=val; renderCheatsheet();
+    const s2=$("#csSearch"); if(s2){ s2.focus(); try{s2.setSelectionRange(val.length,val.length);}catch(e){} } }; }
+}
+
 function renderConfig(){
   const v=$("#view-config");
   const merged=mergedAnswered();
