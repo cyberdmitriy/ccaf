@@ -6,7 +6,7 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
-## [Unreleased]
+## [0.14.0] — 2026-07-21
 ### Changed
 - **Merged `/ccaf:exam` + `/ccaf:stats` into a single `/ccaf:dashboard`.** Both opened the same app on the Dashboard; the merged skill opens it (Dashboard · Weak spots · Cheatsheet) and prints the text recap, and an exam is started from the in-app **Mock Exam** button. The old skills are deleted; all forward-facing refs repointed.
 - **App/dashboard UI cleanup.** Tabs renamed — personal miss-driven tab → **Weak spots**, the see→answer reference → **Cheatsheet**; **New exam** tab → a standalone **Mock Exam** accent button; dashboard review-launcher + "Start a new exam" footer removed; `page-head` (eyebrow + h1) dropped on every view; app content width is now fluid (`--maxw min(94vw, 1240px)`).
