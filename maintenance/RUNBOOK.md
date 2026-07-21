@@ -13,6 +13,8 @@ Everything this runbook consults lives in `maintenance/`:
 - `bank-coverage-audit.workflow.js` — stored audit: bank ↔ task-statement coverage + sample questions.
 - `fact-currency-audit.workflow.js` — stored audit: cross-checks the bank/lessons' falsifiable
   technical facts (flags, paths, numbers, API params) against current official docs + the Guide.
+- `reference-coverage.py` — deterministic report (no agents): `quick-reference.json` coverage vs the
+  bank — stale `q_ids` + per-domain unreferenced questions. Run with `python3 maintenance/reference-coverage.py`.
 
 Record every review in the root `CHANGELOG.md`.
 
@@ -73,8 +75,12 @@ re-domain them without judgment. See `data/axes.md`.
   `tutor-prompts.md` / tutor SKILLs by hand.
 - **Behavior drift, or thin coverage** → run the **bank-extension workflow** documented in the root
   `CLAUDE.md` (extract → classify domain → dedupe → assign ids + `axis` → `python3 data/validate.py`
-  → bump `meta`). New questions append at the end; never renumber.
+  → bump `meta`). New questions append at the end; never renumber. **Then** run
+  `python3 maintenance/reference-coverage.py` and add `quick-reference.json` rows for any flagged
+  unreferenced criteria (curated `see`/`answer`; hand-pick `q_ids`).
 - **Lesson/trap drift** → edit `data/tutor-prompts.md` / `data/exam-traps.md` / `data/axes.md`.
+  `exam-traps.md` is the **source** for `quick-reference.json` — when a core rule there changes, update
+  the matching Reference row so the see→answer projection doesn't drift.
 
 ## Step 5 — Close out (always)
 1. Update the three **"Last verified"** lines in `maintenance/sources.md` (Exam Guide version, docs-checked
@@ -84,7 +90,8 @@ re-domain them without judgment. See `data/axes.md`.
 3. Bump the plugin **version** (`.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json`)
    **only if shipped content changed** (bank / skills / lessons / app). A "verified current, no change"
    review updates the stamp + CHANGELOG but does **not** bump the version (nothing shipped changed).
-4. If the bank changed, run `python3 data/validate.py` and confirm it passes.
+4. If the bank changed, run `python3 data/validate.py` and confirm it passes, then
+   `python3 maintenance/reference-coverage.py` to confirm no new criteria are left unreferenced.
 
 ## Known follow-ups (open)
 - **Multiple-response items:** the exam has multi-select questions; the bank + app are single-answer only.

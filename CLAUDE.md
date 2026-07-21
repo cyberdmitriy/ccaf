@@ -19,7 +19,7 @@ confirmation before editing** (see God Rule #8).
 
 ## God Rules (never skip, no exceptions)
 
-1. **Think deeply before proposing.** Before suggesting any change, analyze the affected skill/command/bank/app/progress-store for gaps, trade-offs, learner-facing impact, and regressions — e.g. does a bank edit break `stats.json` id references? does an app change break the two `/*__BANK__*/`/`/*__HISTORY__*/` placeholders or the graceful-degrade paths? does a lesson edit still match the Exam Guide? Surface anything non-obvious.
+1. **Think deeply before proposing.** Before suggesting any change, analyze the affected skill/command/bank/app/progress-store for gaps, trade-offs, learner-facing impact, and regressions — e.g. does a bank edit break `stats.json` id references? does an app change break the three `/*__BANK__*/`/`/*__HISTORY__*/`/`/*__REFERENCE__*/` placeholders or the graceful-degrade paths? does a lesson edit still match the Exam Guide? Surface anything non-obvious.
 2. **Fix the cause, not the symptom.** (This is literally axis 5 — the plugin teaches it; hold yourself to it.) If only a workaround is available, say so explicitly, name the root cause it leaves unresolved, propose the proper fix, and ask which to do — never silently ship a workaround or a symptom patch (e.g. a silent fallback that hides bad data).
 3. **Follow existing patterns, never invent.** Before adding anything, read a sibling first and match it exactly: a command → `commands/{init,result}.md`; a skill → an existing `SKILL.md` frontmatter (`disable-model-invocation: true`, `allowed-tools`, `argument-hint`); a question → a `questions.json` entry (schema below); a stored audit → `maintenance/*.workflow.js`. Place logic where the **architecture** dictates, not where convenient: runtime data → `data/`; maintainer-only → `maintenance/`; per-user state → `~/.claude/ccaf-progress/`. If no precedent exists, ask.
 4. **Ask, don't guess.** If a requirement is ambiguous, ask a clarifying question before implementing. Never assume intent.
@@ -31,6 +31,7 @@ confirmation before editing** (see God Rule #8).
 10. **Evidence before hypothesis.** When debugging the bank/app/build/validator, gather the actual measurement first — run `python3 data/validate.py`, the build harness, `node --check` on the extracted app script, or read a workflow's `journal.jsonl` — before diagnosing. If a fix doesn't produce the expected output, **revert it** before the next hypothesis; never stack guesses.
 11. **NEVER destroy user state or bank integrity without explicit approval.** The per-user store `~/.claude/ccaf-progress/` holds real learner state (stats, fails, learning-progress) — never wipe or overwrite it; bootstrap only via `cp -rn` (never overwrite), and a malformed progress file is backed up to `.bak` and surfaced, never skeleton-recreated. **Never renumber or reorder existing `questions.json` ids** — `stats.json` references them; changing ids corrupts every user's history (append-only, always). "Verifying it works" is not a reason to touch real state — use a throwaway `HOME`/store (as the build/coverage harnesses do).
 12. **Never commit or bump the version on your own.** Do NOT `git commit` and do NOT change the plugin version (`plugin.json`/`marketplace.json`/`CHANGELOG.md` release headers) as a side effect of making changes. Edit → verify → **stop and report what changed**. Commit/bump only (a) when the user explicitly asks, or (b) after you propose it and they approve. The version is a release decision the user makes — **one** coherent bump per release the user names, never one per small change. (Rebuilding the user's `ccaf-exam.html` preview is fine — it's a regenerable artifact, not a commit.)
+13. **UI/UX: propose options BEFORE you build.** For ANY user-facing UI/UX change (a new view/screen, a layout, a component, restyling, or reworking how something reads), do NOT jump straight to code. First sketch **2–3 concrete approaches** — ASCII mockups or short descriptions, each with its trade-offs — recommend one, and get the user's pick. Only then implement. Optimise for **readability and clarity first**, then a distinctive, considered look: never bland/generic "just a table", never over-engineered either — **usability wins**. Before offering any option, ask yourself the gate question: *would this actually be readable and understandable to the user?* If not, it is not a candidate. (This rule exists because building UI first and iterating on taste later wastes rounds.)
 
 ## What this is
 A self-contained plugin teammates install and drive with slash commands. It teaches the 5 CCAF domains,
@@ -44,9 +45,10 @@ commands/{init.md, result.md}                     # /ccaf:init (hub), /ccaf:resu
 skills/{d1..d5-teacher, exam, stats}/SKILL.md     # tutors + study-app (exam) + dashboard (stats)
 data/
   questions.json        # CANONICAL question bank (the thing you'll extend most)
-  validate.py           # read-only bank validator (run after every edit: python3 data/validate.py)
-  app-template.html     # the self-contained study app (dashboard+select+exam+results); 2 inject points
-  app-build.md          # SHARED build recipe both /ccaf:exam and /ccaf:stats follow (injects bank+history)
+  quick-reference.json  # curated see→answer map (domain→section→row); projection of exam-traps.md; injected via /*__REFERENCE__*/
+  validate.py           # read-only validator: bank + quick-reference.json (run after every edit: python3 data/validate.py)
+  app-template.html     # the self-contained study app (dashboard+select+exam+cheatsheet+reference); 3 inject points
+  app-build.md          # SHARED build recipe both /ccaf:exam and /ccaf:stats follow (injects bank+history+reference)
   teaching-method.md    # HOW the d1..d5 tutors teach (shared Concept→Axis→Apply→Check pedagogy)
   tutor-prompts.md      # per-domain lesson script (task statements) — the WHAT the tutors teach
   exam-traps.md         # verbatim "Exam Trap" + core rule per lesson, 5 domains
@@ -57,6 +59,7 @@ maintenance/            # MAINTAINER-ONLY reference (not shipped runtime; no ski
   sources.md            # authoritative-source list + "Last verified" stamp + official blueprint/task statements + exam-vs-product divergences
   bank-coverage-audit.workflow.js  # stored audit: bank ↔ task-statement coverage + sample questions
   fact-currency-audit.workflow.js  # stored audit: bank/lesson facts (flags/paths/numbers) vs current docs
+  reference-coverage.py  # deterministic report: quick-reference.json coverage vs the bank (set arithmetic, no agents)
   app-internals.md      # feature-by-feature reference for data/app-template.html (read before editing the app)
   authoring-questions.md # detailed bank-authoring rules + the full extend-the-bank workflow
 README.md               # end-user facing (install + usage)
@@ -73,14 +76,14 @@ never create a `docs/` tree. If a skill defaults to `docs/superpowers/…`, redi
 4. **Progress lives at `~/.claude/ccaf-progress/`**, never in the plugin dir (plugin dirs are wiped on update). Skills bootstrap it from `data/progress-template/` with `cp -rn` (never overwrite).
 5. **`/ccaf:result` is the single recorder** (mock JSON — one sitting or a batch array — or external screenshot). `/ccaf:exam` and `/ccaf:stats` both **build & open the same app** (`ccaf-exam.html`) via the shared `data/app-build.md` recipe and never write to the store; the app hands results back only via copy-JSON. The app itself does question selection + scoring client-side. `/ccaf:result` also upserts a per-user `cheatsheet.json` — the app's miss-driven *trigger→rule* table — on each mock miss (additive, never in the bank; the app reads it read-only).
 6. **Path refs:** bundled files via `${CLAUDE_PLUGIN_ROOT}/data/...`; progress via `$HOME/.claude/ccaf-progress/...`.
-7. **One app file, no archive:** `/ccaf:exam` & `/ccaf:stats` overwrite a single `$HOME/.claude/ccaf-progress/ccaf-exam.html`. No per-exam files. `stats.json` is the authoritative history; the app reconciles unrecorded local sittings against `recorded_exam_ids` so nothing is double-counted. To change the app UI/logic, edit `data/app-template.html` (keep the `/*__BANK__*/[]` and `/*__HISTORY__*/{}` placeholders valid as empty literals); to change what data it gets, edit `data/app-build.md`.
+7. **One app file, no archive:** `/ccaf:exam` & `/ccaf:stats` overwrite a single `$HOME/.claude/ccaf-progress/ccaf-exam.html`. No per-exam files. `stats.json` is the authoritative history; the app reconciles unrecorded local sittings against `recorded_exam_ids` so nothing is double-counted. To change the app UI/logic, edit `data/app-template.html` (keep the `/*__BANK__*/[]`, `/*__HISTORY__*/{}` and `/*__REFERENCE__*/{}` placeholders valid as empty literals); to change what data it gets, edit `data/app-build.md`. The **Reference** tab renders `/*__REFERENCE__*/` (bundled `quick-reference.json`, a see→answer map) — bundled content, a sibling of `BANK`, not per-user `HISTORY`.
 
 ## App UI internals
 The offline study app (`data/app-template.html`) has many client-side features (results review, 5-axis
 tally, score-trend sparkline, weak-mode spaced repetition, one-question-per-screen exam, mark-for-review
-gate, timed mode, learning-progress card + malformed handling, cheatsheet view, …). The feature-by-feature reference lives
+gate, timed mode, learning-progress card + malformed handling, cheatsheet view, reference view, …). The feature-by-feature reference lives
 in **`maintenance/app-internals.md`** — read it before editing the app. Hard constraint: keep the
-`/*__BANK__*/[]` and `/*__HISTORY__*/{}` placeholders valid as empty literals; change the injected data via
+`/*__BANK__*/[]`, `/*__HISTORY__*/{}` and `/*__REFERENCE__*/{}` placeholders valid as empty literals; change the injected data via
 `data/app-build.md`.
 
 ## questions.json — schema & rules
@@ -96,6 +99,13 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 - **`axis`** = integer **1–5** — the ONE axis (`data/axes.md`) the strongest near-miss distractor trips on: **1** Determinism · **2** Exact-hit · **3** Right-diagnosis · **4** Proportionality · **5** Root-cause. Every question carries exactly one; it powers the dashboard 5-axis tally + the results-review badge and is read directly by `/ccaf:result`.
 - Current count: **240** (D1:64 D2:47 D3:42 D4:41 D5:46).
 - **Detailed authoring rules** (answer-letter balance · real near-miss / length-tell · imported-vs-authored scope · axis detail · batch provenance) **and the full "extend the bank" workflow** (extract → classify → dedupe → assign ids+axis → `validate.py` → version bump) live in **`maintenance/authoring-questions.md`** — read it before adding/editing questions.
+
+## quick-reference.json — the Reference tab's see→answer map
+`{ "meta": {"version":1}, "domains": { "1".."5": { "title": "…", "sections": [ { "title": "…", "rows": [ { "see": "…", "answer": "…", "q_ids": [12,45] } ] } ] } } }`
+- A **curated projection of `data/exam-traps.md`** (the source): each `section` mirrors an exam-traps sub-topic; each `row` is a signal phrase (`see`) → short mechanism (`answer`), both rendering `code`/`**bold**` via the app's `rich()`.
+- **`q_ids`** = bank question ids the criterion reflects — **hand-picked or `[]`, NEVER keyword-grepped** (a substring match makes the coverage report lie). Audit-only; not shown in the UI.
+- **No `axis` field** (axis lives in `questions.json` — a copy here would be a second source of truth). **No `meta.last_verified`** (that stamp lives once, in `maintenance/sources.md`).
+- Validated by `data/validate.py`; coverage vs the bank reported by `python3 maintenance/reference-coverage.py`. When you change a core rule in `exam-traps.md`, update the matching reference row so the projection doesn't drift.
 
 ## Extending lessons / traps
 `data/tutor-prompts.md` (lesson scripts) and `data/exam-traps.md` (verbatim traps + core rules) are organised by `## Domain N`. Add/refine within the right domain section; the skills read their domain's section by `${CLAUDE_PLUGIN_ROOT}/data/...`. The 5 axes live in `data/axes.md`. **`data/teaching-method.md` is the shared *pedagogy* (HOW every `/ccaf:dN-teacher` teaches — the Concept→Axis→Apply→Check loop); edit it to change teaching style for all domains at once, not per-domain content.**
@@ -115,6 +125,10 @@ verified" stamp + official blueprint/task statements + exam-vs-product divergenc
 stored audits → `maintenance/{bank-coverage,fact-currency}-audit.workflow.js`; each review logged in
 **`CHANGELOG.md`**. Current baseline: **Exam Guide v1.0 (July 2026)**; weights 27/18/20/20/15 and the 30
 task statements (D1:7 D2:5 D3:6 D4:6 D5:6) **match**. Known gap: multiple-response items untrained.
+When you **add bank questions**, run `python3 maintenance/reference-coverage.py` and add `quick-reference.json`
+rows for any flagged unreferenced criteria (curated — the script finds gaps, a human writes the answer +
+hand-picks `q_ids`). `exam-traps.md` is the **source** for `quick-reference.json`: change a core rule there
+→ update the matching reference row so the see→answer projection doesn't drift.
 
 ## Provenance
 Bank built from `../source/{exam-1.html, exam-2.html, test-exam.pdf}` (study workspace). Lesson/trap
