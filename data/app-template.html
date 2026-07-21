@@ -695,11 +695,11 @@ function showView(name){
   /* a11y: announce the route change and move focus to the view heading (the exam view
      manages its own focus in renderCurrentQuestion, so skip it here). */
   const st=$("#srStatus");
-  if(st){ const titles={dashboard:"Dashboard",config:"New exam",exam:"Exam",results:"Results",cheatsheet:"Weak spots",reference:"Cheatsheet"}; st.textContent=(titles[name]||name)+" loaded"; }
+  if(st){ const titles={dashboard:"Dashboard",config:"Mock Exam",exam:"Exam",results:"Results",cheatsheet:"Weak spots",reference:"Cheatsheet"}; st.textContent=(titles[name]||name)+" loaded"; }
   if(name!=="exam"){ const view=$("#view-"+name), h=view&&view.querySelector("h1,h2,.eyebrow");
     if(h){ h.setAttribute("tabindex","-1"); try{h.focus({preventScroll:true});}catch(e){} } }
 }
-$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="config") renderConfig(); if(t.dataset.view==="cheatsheet") renderCheatsheet(); if(t.dataset.view==="reference") renderReference(); showView(t.dataset.view); });
+$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="cheatsheet") renderCheatsheet(); if(t.dataset.view==="reference") renderReference(); showView(t.dataset.view); });
 /* logo + wordmark → dashboard. During a live exam it behaves like Quit (confirm + save progress). */
 $("#brandBtn").onclick=()=>{
   if(currentView==="exam" && exam && !exam.submitted){ quitExam(); return; }
@@ -769,6 +769,12 @@ function renderDashboard(){
 
   let html="";
 
+  /* malformed stats.json banner — the build backed it up to .bak and surfaced it here (God Rule #11):
+     the numbers below are from an empty skeleton, not your real history, until you fix/restore it. */
+  if(HISTORY.stats_unreadable){
+    html+=`<div class="banner warn"><span class="ic">⚠️</span>
+      <div><b>Your <span class="kbd">stats.json</span> couldn't be read (malformed JSON).</b> It was backed up to <span class="kbd">stats.json.bak</span> and this dashboard is showing <b>empty</b> stats — fix or restore the file, then rebuild. Nothing was overwritten.</div></div>`;
+  }
   /* resume-in-progress banner */
   if(inProgress && inProgress.question_ids && inProgress.question_ids.length){
     const ans=Object.keys(inProgress.answers||{}).length;

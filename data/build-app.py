@@ -12,7 +12,7 @@ skills call it as a belt-and-braces fallback.
 import json, os, re, sys, shutil, subprocess
 
 ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HOME = os.environ["HOME"]
+HOME = os.environ.get("HOME") or os.path.expanduser("~")
 STORE = f"{HOME}/.claude/ccaf-progress"
 
 # ---- bootstrap the per-user store from the template, never overwriting (mirrors `cp -rn`) ----
@@ -52,7 +52,29 @@ try:
     REFERENCE = json.load(open(f"{ROOT}/data/quick-reference.json"))  # bundled see→answer map
 except Exception:
     REFERENCE = {}   # graceful: the Reference tab shows a hint if the file is missing/unreadable
-stats = json.load(open(f"{STORE}/stats.json"))
+
+# ---- stats.json (authoritative history); READ-ONLY here. Same ABSENT vs PRESENT-BUT-CORRUPT
+# discipline as load_learning/load_cheatsheet + God Rule #11: a malformed real file is backed up to
+# .bak and SURFACED (never silently skeleton-recreated / never crashing the whole build). ----
+def load_stats(path):
+    skel = {"answered": {}, "per_domain": {}, "exam_history": [],
+            "axis_tally": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
+    if not os.path.exists(path):
+        return skel, False                 # absent -> expected first run (bootstrap normally copies it)
+    try:
+        with open(path) as f:
+            obj = json.load(f)
+    except ValueError:
+        try:
+            shutil.copy2(path, path + ".bak")   # preserve the corrupt file, don't overwrite it
+        except Exception:
+            pass
+        print(f"WARNING: {path} is malformed — backed up to {path}.bak; building with empty stats.")
+        return skel, True
+    if not isinstance(obj, dict):
+        return skel, True
+    return obj, False
+stats, STATS_UNREADABLE = load_stats(f"{STORE}/stats.json")
 
 # ---- learning-progress (tutor task-statement coverage + drills); READ-ONLY here, never written ----
 # Distinguish ABSENT (expected first run -> skeleton, no warning) from PRESENT-BUT-CORRUPT
@@ -145,6 +167,7 @@ HISTORY = {
     "learning_unreadable": LEARNING_UNREADABLE,
     "cheatsheet": CHEATSHEET,
     "cheatsheet_unreadable": CHEATSHEET_UNREADABLE,
+    "stats_unreadable": STATS_UNREADABLE,
 }
 
 tpl = open(f"{ROOT}/data/app-template.html").read()
@@ -163,8 +186,12 @@ open(dest, "w").write(out)
 print("wrote", dest, "| questions:", len(bank), "| answered:", len(answered),
       "| exams:", len(exam_history), "| focus:", focus)
 
-# open ONLY when asked AND interactive (never block a headless/-p/cron run on a GUI)
-if "--open" in sys.argv and sys.stdout.isatty():
+# open when asked, unless an explicit headless opt-out is set.
+# NOTE: do NOT gate on sys.stdout.isatty() — inside Claude Code stdout is ALWAYS a pipe (a hook, or
+# the Bash tool), so isatty() is False even in a normal interactive session and would wrongly suppress
+# the GUI. `open`/`xdg-open` return immediately and no-op harmlessly when there's no display (true
+# headless), so an explicit env opt-out (CCAF_NO_OPEN) is the only guard we need.
+if "--open" in sys.argv and not os.environ.get("CCAF_NO_OPEN"):
     try:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         subprocess.run([opener, dest], check=False)

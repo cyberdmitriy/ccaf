@@ -12,5 +12,12 @@ case "$PROMPT" in
   /ccaf:init*|/ccaf:dashboard*) ;;   # ours — rebuild below
   *) exit 0 ;;                        # anything else — pass through, negligible overhead
 esac
-python3 "${CLAUDE_PLUGIN_ROOT}/data/build-app.py" --open >/dev/null 2>&1 || exit 0
+# CLAUDE_PLUGIN_ROOT should always be set for a plugin hook; if not, no-op quietly (never block).
+[ -n "${CLAUDE_PLUGIN_ROOT:-}" ] || exit 0
+# Rebuild + open (build-app.py opens unless CCAF_NO_OPEN is set). On success, print a marker to
+# stdout — UserPromptSubmit stdout is injected into the model's context, so the skill/command can
+# SEE the hook already rebuilt & opened the app and skip its own build (avoids a double build).
+if python3 "${CLAUDE_PLUGIN_ROOT}/data/build-app.py" --open >/dev/null 2>&1; then
+  echo "[ccaf-hook] Rebuilt & opened ~/.claude/ccaf-progress/ccaf-exam.html — the app is already fresh and open. Do NOT run the build again; just report/route."
+fi
 exit 0

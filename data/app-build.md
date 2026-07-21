@@ -12,10 +12,11 @@ truth for that build so the two skills stay in sync. Follow it verbatim.
 > read-only w.r.t. the store, so there is never a reason to skip it. If the build errors, surface the
 > error — do not fall back to opening the old file.
 
-The app is one page with four client-side views: **Dashboard** (progress + history), **New exam**
-(mode/domain/length selection), **Exam** (timer, pause/resume, resume-later), **Results** (score +
-annotated review + copy-JSON export). All logic is client-side JS. The whole question bank
-(including answer keys) is injected; scoring and selection happen in the browser.
+The app is one page with client-side views: **Dashboard** (progress + history), **Weak spots**
+(miss-driven cheatsheet), **Cheatsheet** (curated see→answer reference), and — reached via the
+**Mock Exam** button — mode/domain/length selection, the **Exam** (timer, pause/resume, resume-later),
+and **Results** (score + annotated review + copy-JSON export). All logic is client-side JS. The whole
+question bank (including answer keys) is injected; scoring and selection happen in the browser.
 
 ## Step 1 — Bootstrap the per-user store (never overwrite)
 ```

@@ -17,10 +17,12 @@ This creates `~/.claude/ccaf-progress/` from the template on first run and never
 ## Step 1.5 — The dashboard is rebuilt for you (deterministically)
 A plugin **hook** (`hooks/ccaf-build.sh` → `data/build-app.py`) rebuilds **and** opens
 `~/.claude/ccaf-progress/ccaf-exam.html` the moment `/ccaf:init` is typed — outside the model, so it
-*always* reflects the latest plugin version (e.g. right after a `/plugin marketplace update`) and the
-user's latest stats. You don't run the build here. **Fallback only:** if the app didn't open (hooks
-disabled, or first install before a reinstall), run
-`python3 "${CLAUDE_PLUGIN_ROOT}/data/build-app.py" --open`. Never open a pre-existing file without rebuilding.
+*always* reflects the latest plugin version and the user's latest stats.
+- **If you see a `[ccaf-hook] Rebuilt & opened …` marker in context**, the hook already did it — do
+  **NOT** build again; just continue onboarding.
+- **If there is no such marker** (hooks disabled, or the first run right after a `/plugin marketplace
+  update` before a reinstall), run the fallback build yourself once:
+  `python3 "${CLAUDE_PLUGIN_ROOT}/data/build-app.py" --open`. Never open a pre-existing file without rebuilding.
 
 ## Step 2 — Detect returning vs new user
 Read `$HOME/.claude/ccaf-progress/{profile.md, stats.json}`.

@@ -6,6 +6,16 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [Unreleased]
+### Changed
+- **Merged `/ccaf:exam` + `/ccaf:stats` into a single `/ccaf:dashboard`.** Both opened the same app on the Dashboard; the merged skill opens it (Dashboard · Weak spots · Cheatsheet) and prints the text recap, and an exam is started from the in-app **Mock Exam** button. The old skills are deleted; all forward-facing refs repointed.
+- **App/dashboard UI cleanup.** Tabs renamed — personal miss-driven tab → **Weak spots**, the see→answer reference → **Cheatsheet**; **New exam** tab → a standalone **Mock Exam** accent button; dashboard review-launcher + "Start a new exam" footer removed; `page-head` (eyebrow + h1) dropped on every view; app content width is now fluid (`--maxw min(94vw, 1240px)`).
+### Added
+- **Deterministic app rebuild.** `data/build-app.py` (bootstrap → build → open, single source of truth) + a `UserPromptSubmit` hook (`hooks/ccaf-build.sh`) that runs it on `/ccaf:init` and `/ccaf:dashboard` — a runtime-enforced rebuild outside the model, so a stale `ccaf-exam.html` no longer hides new views/stats after a plugin update. The hook prints a marker so the skill skips a redundant second build; activates after a `/plugin marketplace update` reinstall.
+### Fixed
+- **Auto-open actually works.** `build-app.py --open` no longer gates on `sys.stdout.isatty()` (always false under a hook / the Bash tool, which wrongly suppressed the GUI); it opens unless `CCAF_NO_OPEN` is set.
+- **Malformed `stats.json` no longer crashes the build or fails silently.** It's backed up to `.bak` and surfaced via a dashboard banner (God Rule #11), building with empty stats instead of aborting. `HOME` unset falls back to `~` instead of a raw `KeyError`.
+
 ## [0.13.0] — 2026-07-21
 ### Added
 - **Reference tab — a curated "signal phrase → answer" cheat sheet across all five domains.** A new **Reference** view in the offline app (distinct from the personal, miss-driven **Cheatsheet**): per-domain, per-subtopic tables of *See in the question → Answer*, with a domain filter and search. Rendered as an aligned **zebra dictionary** (`table-layout:fixed` so long `code` tokens wrap instead of overflowing), accent arrow on each answer, coloured domain badges. Content lives in a new bundled **`data/quick-reference.json`** (83 rows, a curated projection of `exam-traps.md`; rows carry `see`/`answer`/`q_ids` — `q_ids` hand-picked or empty, never keyword-grepped; no `axis` field). Injected via a third build placeholder `/*__REFERENCE__*/{}` (a sibling of the bank, not per-user state; graceful `{}` when absent). The bank is untouched.
