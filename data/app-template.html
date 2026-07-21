@@ -78,6 +78,12 @@
   .tab{border:none;background:transparent;box-shadow:none;color:var(--ink2);padding:.42rem .8rem;border-radius:999px;font-weight:600;font-size:.92rem}
   .tab:hover{background:var(--paper2);transform:none}
   .tab.active{background:var(--accent-soft);color:var(--accent2)}
+  .exam-cta{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:.46rem 1.05rem;
+    font-family:var(--font-display);font-weight:600;font-size:.92rem;cursor:pointer;display:inline-flex;
+    align-items:center;gap:.4rem;box-shadow:var(--shadow-sm);transition:background .15s,transform .15s,box-shadow .15s}
+  .exam-cta:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:var(--shadow)}
+  .exam-cta .cta-arw{transition:transform .15s}
+  .exam-cta:hover .cta-arw{transform:translateX(3px)}
   .exam-controls{display:flex;align-items:center;gap:.6rem;margin-left:auto}
   .clock{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:1.05rem;font-weight:600;
     background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.3rem .7rem;min-width:6rem;text-align:center}
@@ -95,8 +101,6 @@
   .block > h2{font-size:1.32rem;display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem}
   .block > h2 .count{font-family:var(--font-body);font-size:.85rem;color:var(--ink2);font-weight:500;letter-spacing:0}
   .eyebrow{font-size:.75rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
-  .page-head{margin-bottom:1.9rem}
-  .page-head h1{font-size:2rem;margin:.4rem 0 0}
 
   /* ---------- cards / tiles ---------- */
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -457,10 +461,10 @@
     </button>
     <nav class="tabs" id="tabs">
       <button class="tab active" data-view="dashboard">Dashboard</button>
-      <button class="tab" data-view="config">New exam</button>
-      <button class="tab" data-view="cheatsheet">Cheatsheet</button>
-      <button class="tab" data-view="reference">Reference</button>
+      <button class="tab" data-view="cheatsheet">Weak spots</button>
+      <button class="tab" data-view="reference">Cheatsheet</button>
     </nav>
+    <button class="exam-cta" id="examCta" onclick="renderConfig();showView('config')">Mock Exam <span class="cta-arw">→</span></button>
     <div class="exam-controls" id="examControls" style="display:none">
       <span class="prog-mini" id="progMini">0/0</span>
       <span class="clock" id="clock">00:00:00</span>
@@ -481,7 +485,6 @@
 
   <!-- ============ EXAM ============ -->
   <div class="view" id="view-exam">
-    <div class="page-head"><span class="eyebrow" id="examEyebrow">Mock exam</span></div>
     <div id="timeUpBanner" class="banner warn" style="display:none">
       <span class="ic">⏳</span>
       <div><b>Your time is up.</b> This is practice — keep going and answer every question at your own pace.
@@ -687,11 +690,12 @@ function showView(name){
   $$("#tabs .tab").forEach(t=>t.classList.toggle("active", t.dataset.view===name));
   $("#examControls").style.display = (name==="exam") ? "flex" : "none";
   $("#tabs").style.display = (name==="exam") ? "none" : "flex";
+  { const ec=$("#examCta"); if(ec) ec.style.display = (name==="exam") ? "none" : "inline-flex"; }
   window.scrollTo({top:0,behavior:"instant"in window?"instant":"auto"});
   /* a11y: announce the route change and move focus to the view heading (the exam view
      manages its own focus in renderCurrentQuestion, so skip it here). */
   const st=$("#srStatus");
-  if(st){ const titles={dashboard:"Dashboard",config:"New exam",exam:"Exam",results:"Results",cheatsheet:"Cheatsheet"}; st.textContent=(titles[name]||name)+" loaded"; }
+  if(st){ const titles={dashboard:"Dashboard",config:"New exam",exam:"Exam",results:"Results",cheatsheet:"Weak spots",reference:"Cheatsheet"}; st.textContent=(titles[name]||name)+" loaded"; }
   if(name!=="exam"){ const view=$("#view-"+name), h=view&&view.querySelector("h1,h2,.eyebrow");
     if(h){ h.setAttribute("tabindex","-1"); try{h.focus({preventScroll:true});}catch(e){} } }
 }
@@ -742,9 +746,7 @@ function renderDashboard(){
     return;
   }
   if(examsTaken===0 && answeredUnique===0){
-    v.innerHTML=`<div class="page-head"><span class="eyebrow">Welcome</span><h1>Your CCAF study desk</h1>
-      <p class="lede">${bankTotal} questions across 5 domains. No attempts recorded yet — take your first mock exam to start building your stats.</p></div>
-      <div class="empty card pad" style="margin-top:1.5rem"><div class="em-ic">🎯</div>
+    v.innerHTML=`<div class="empty card pad"><div class="em-ic">🎯</div>
         <h3>Start with a mock exam</h3>
         <p class="hint">Pick a mode and length, sit the exam offline, then export the result to record your progress.</p>
         <div class="steps"><button class="primary" onclick="renderConfig();showView('config')">Start a new exam →</button></div>
@@ -765,7 +767,7 @@ function renderDashboard(){
       foot: proj==null?"no exams yet":(proj>=PASS_PCT?`recent form · clears ${PASS_PCT}% pass`:`recent form · ${PASS_PCT-proj} pts under pass`)},
   ];
 
-  let html=`<div class="page-head"><span class="eyebrow">Dashboard</span><h1>Progress overview</h1></div>`;
+  let html="";
 
   /* resume-in-progress banner */
   if(inProgress && inProgress.question_ids && inProgress.question_ids.length){
@@ -907,23 +909,6 @@ function renderDashboard(){
       </div>
     </details>`; }
   html+=`${hasAxis?"":'<p class="hint" style="margin-top:.5rem">The tally fills in as you record exams — each miss is tagged with the axis it tripped on.</p>'}</div></section>`;
-
-  /* review launcher — the misses themselves live in the Cheatsheet tab; here we only show the
-     backlog size + a per-domain jump-off (chips deep-link into a pre-filtered Cheatsheet). */
-  const fails=Object.keys(merged).filter(id=>!merged[id].last_correct).map(id=>byId[id]).filter(Boolean);
-  if(fails.length){
-    const byDom={}; fails.forEach(q=>{ byDom[q.domain]=(byDom[q.domain]||0)+1; });
-    const chips=Object.keys(byDom).sort().map(d=>`<button class="miss-chip" onclick="cheatState.domain='${d}';cheatState.axis='all';cheatState.q='';renderCheatsheet();showView('cheatsheet')"><span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>D${d} ${byDom[d]}</button>`).join("");
-    html+=`<section class="block"><div class="card pad miss-launcher">
-      <div class="miss-lead"><span class="miss-num">${fails.length}</span><span class="miss-lbl">miss${fails.length>1?"es":""} to review</span></div>
-      <div class="miss-chips">${chips}</div>
-      <button class="primary miss-open" onclick="cheatState.domain='all';cheatState.axis='all';cheatState.q='';renderCheatsheet();showView('cheatsheet')">Open Cheatsheet →</button>
-    </div></section>`;
-  } else if(answeredUnique>0){
-    html+=`<section class="block"><div class="card pad miss-clean"><b>✓ Clean sheet</b> — every question you've answered is currently correct.</div></section>`;
-  }
-
-  html+=`<hr class="soft"><div style="text-align:center"><button class="primary" onclick="renderConfig();showView('config')">Start a new exam →</button></div>`;
   v.innerHTML=html;
 }
 
@@ -1045,15 +1030,15 @@ function cheatScenario(e){
 function cheatCards(rows){ return `<div class="cs-cards">${rows.map(cheatCard).join("")}</div>`; }
 function renderCheatsheet(){
   const v=$("#view-cheatsheet");
-  const head=`<div class="page-head"><span class="eyebrow">Cheatsheet</span><h1>Your miss-driven cheatsheet</h1>`;
+  const head="";
   if(HISTORY.cheatsheet_unreadable){
-    v.innerHTML=head+`</div><div class="banner warn"><span class="ic">⚠️</span>
+    v.innerHTML=head+`<div class="banner warn"><span class="ic">⚠️</span>
       <div><b>Your <span class="kbd">cheatsheet.json</span> couldn't be read (malformed or invalid JSON).</b> The table isn't shown — the file on disk is intact but unreadable; fix or restore it, then record an exam to rebuild.</div></div>`;
     return;
   }
   const all=cheatList();
   if(!all.length){
-    v.innerHTML=head+`</div><div class="empty"><div class="em-ic">🗒️</div><h3>No cheatsheet yet</h3>
+    v.innerHTML=head+`<div class="empty"><div class="em-ic">🗒️</div><h3>No weak spots yet</h3>
       <p class="hint">It fills in from the questions you miss when you record exams with <span class="kbd">/ccaf:result</span>.</p></div>`;
     return;
   }
@@ -1065,7 +1050,7 @@ function renderCheatsheet(){
   const shown=all.filter(cheatMatches);
   const active=shown.filter(e=>e.status!=="mastered");
   const mastered=shown.filter(e=>e.status==="mastered");
-  v.innerHTML=head+`<p class="cs-sub">When to pick which — built from what you got wrong. ${active.length} active · ${mastered.length} mastered.</p></div>
+  v.innerHTML=head+`<p class="cs-sub">When to pick which — built from what you got wrong. ${active.length} active · ${mastered.length} mastered.</p>
     <div class="cs-filters">
       <div class="cs-chips">${domChips}</div>
       <div class="cs-chips">${axChips}</div>
@@ -1094,9 +1079,7 @@ function renderConfig(){
   ];
   const av=availByMode(cfg.domains,merged);
 
-  let html=`<div class="page-head"><span class="eyebrow">New exam</span><h1>Build your exam</h1>
-    <p class="lede">Choose a mode, optionally narrow to domains, pick a length — the set is drawn from ${BANK.length} questions.</p></div>
-    <div class="cfg-grid">
+  let html=`<div class="cfg-grid">
       <div class="field"><div class="flabel">Mode</div><div class="modes" id="modes">`;
   MODES.forEach(m=>{
     const n=av[m.id];
@@ -1208,7 +1191,6 @@ function persistExam(){ if(!exam||exam.submitted)return;
 
 function renderExam(){
   const qs=questionsOf(exam.question_ids);
-  $("#examEyebrow").textContent = (exam.mode?exam.mode[0].toUpperCase()+exam.mode.slice(1):"Mock")+" exam · "+qs.length+" questions";
   buildNav(qs);
   const ids=exam.question_ids.map(String);
   if(currentQId==null || ids.indexOf(String(currentQId))<0) currentQId = ids.length?ids[0]:null;
@@ -1436,8 +1418,7 @@ function renderResults(r){
   const pct=r.score.total?Math.round(100*r.score.correct/r.score.total):0;
   const passed=pct>=PASS_PCT;
   const msg = passed? "Above the 72% line 🎉" : "Below the 72% pass line";
-  let html=`<div class="page-head"><span class="eyebrow">Results</span></div>
-    <div class="card pad result-hero">
+  let html=`<div class="card pad result-hero">
       <div class="ring" style="--p:${pct}"><div class="rv"><b style="color:${passed?'var(--ok)':'var(--accent2)'}">${pct}%</b><span>score</span></div></div>
       <div><div class="verdict-msg">${r.score.correct} / ${r.score.total} correct</div>
         <div class="sub">${msg} · ${fmtTime(r.time_spent_seconds)}${r.over_time?' · ⏳ over time':(r.limit_seconds?' · within time':'')} · ${esc(r.mode)} mode</div></div>
