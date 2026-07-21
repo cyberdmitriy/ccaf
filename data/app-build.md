@@ -31,7 +31,7 @@ it never invents focus.
 ## Step 3 — Build & open with one deterministic script
 Do NOT hand-copy the question bank or hand-edit the template. Run this Python verbatim (no values to
 edit). It reads the bank + `stats.json` + `profile.md`, composes the authoritative `HISTORY` object
-exactly as the template expects, injects both placeholders, writes the single app file, and validates it.
+exactly as the template expects, injects all three placeholders (bank, history, reference), writes the single app file, and validates it.
 
 ```bash
 python3 - <<'PY'
@@ -60,6 +60,10 @@ PROFILE_FOCUS = parse_profile_focus(f"{STORE}/profile.md")
 # ---------------------------------------------------------------------------------------------
 
 bank = json.load(open(f"{ROOT}/data/questions.json"))["questions"]
+try:
+    REFERENCE = json.load(open(f"{ROOT}/data/quick-reference.json"))  # bundled see→answer map
+except Exception:
+    REFERENCE = {}   # graceful: the Reference tab shows a hint if the file is missing/unreadable
 stats = json.load(open(f"{STORE}/stats.json"))
 
 # ---- learning-progress (tutor task-statement coverage + drills); READ-ONLY here, never written ----
@@ -156,14 +160,16 @@ HISTORY = {
 }
 
 tpl = open(f"{ROOT}/data/app-template.html").read()
-# The bank + HISTORY are injected inside a <script> tag, so escape any "</" (e.g. a stray
+# The bank + HISTORY + REFERENCE are injected inside a <script> tag, so escape any "</" (e.g. a stray
 # "</script>" in a question or an external result's free-text label) — "<\/" is an identical
 # JS string but can't terminate the script early. Also neutralise "<!--".
 def js_safe(obj):
     return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\!--")
 out = tpl.replace("/*__BANK__*/[]", js_safe(bank))
 out = out.replace("/*__HISTORY__*/{}", js_safe(HISTORY))
-assert "/*__BANK__*/[]" not in out and "/*__HISTORY__*/{}" not in out, "placeholder not replaced"
+out = out.replace("/*__REFERENCE__*/{}", js_safe(REFERENCE))
+assert "/*__BANK__*/[]" not in out and "/*__HISTORY__*/{}" not in out \
+    and "/*__REFERENCE__*/{}" not in out, "placeholder not replaced"
 dest = f"{STORE}/ccaf-exam.html"
 open(dest, "w").write(out)
 print("wrote", dest, "| questions:", len(bank), "| answered:", len(answered),
