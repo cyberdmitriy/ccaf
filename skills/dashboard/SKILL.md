@@ -1,6 +1,6 @@
 ---
 name: dashboard
-description: CCAF study app — builds and opens your offline study app (Dashboard, Weak spots, Cheatsheet; start a mock exam from the in-app "Mock Exam" button) and prints a short progress recap. Read-only; run /ccaf:dashboard.
+description: CCAF study app — generates & opens your offline study app with your progress dashboard (accuracy, per-domain stats, exam history) AND a configurable mock exam (start it from the in-app "Mock Exam" button), plus Weak spots and a Cheatsheet reference. Prints a short text recap. Read-only; run /ccaf:dashboard.
 disable-model-invocation: true
 allowed-tools: Bash, Read, Write
 ---

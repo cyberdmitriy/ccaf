@@ -6,6 +6,9 @@
 # fallback build. We never exit 2 (which would block the prompt). build-app.py guards the GUI on TTY.
 set -uo pipefail
 INPUT="$(cat)"
+# Cheap bash prefilter: if the raw stdin can't possibly contain our command, skip python entirely
+# (saves a ~30–80ms python cold-start on the ~99% of prompts that aren't /ccaf:*).
+case "$INPUT" in *ccaf*) ;; *) exit 0 ;; esac
 # Extract the prompt field without requiring jq (python3 is already a plugin dependency).
 PROMPT="$(printf '%s' "$INPUT" | python3 -c 'import sys,json; print((json.load(sys.stdin).get("prompt") or "").strip())' 2>/dev/null || true)"
 case "$PROMPT" in

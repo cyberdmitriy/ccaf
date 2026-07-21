@@ -15,6 +15,7 @@ Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-veri
 ### Fixed
 - **Auto-open actually works.** `build-app.py --open` no longer gates on `sys.stdout.isatty()` (always false under a hook / the Bash tool, which wrongly suppressed the GUI); it opens unless `CCAF_NO_OPEN` is set.
 - **Malformed `stats.json` no longer crashes the build or fails silently.** It's backed up to `.bak` and surfaced via a dashboard banner (God Rule #11), building with empty stats instead of aborting. `HOME` unset falls back to `~` instead of a raw `KeyError`.
+- **Hook overhead + discoverability.** The hook now runs a cheap pure-bash prefilter (skips the python cold-start on the ~99% of prompts that don't mention `ccaf`). The `/ccaf:dashboard` skill description now names both the stats dashboard and the configurable mock exam, so the merged command still advertises exam-taking in the command list.
 
 ## [0.13.0] — 2026-07-21
 ### Added
