@@ -21,7 +21,7 @@
     --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
     --font-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
     --font-mono:"SF Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
-    --maxw:940px;
+    --maxw:min(94vw, 1240px);
   }
   *{box-sizing:border-box}
   html,body{margin:0;overflow-x:hidden}
@@ -407,6 +407,33 @@
   .hint{color:var(--ink2);font-size:.9rem;line-height:1.5}
   .kbd{font-family:var(--font-mono);background:var(--paper2);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:.08rem .4rem;font-size:.82em}
   hr.soft{border:none;border-top:1px solid var(--line);margin:1.6rem 0}
+
+  /* ---------- reference (see → answer, aligned zebra dictionary) ---------- */
+  .ref-lead{font-family:var(--font-display);font-size:1.05rem;color:var(--ink);margin:0 0 1rem;line-height:1.4}
+  .ref-filters{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:0 0 1.5rem}
+  .ref-search{flex:1;min-width:12rem;padding:.5rem .8rem;border:1px solid var(--line);border-radius:9px;
+    font:inherit;font-size:.88rem;color:var(--ink);background:var(--surface)}
+  .ref-search:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px var(--accent-soft)}
+  .ref-dom{margin:0 0 2.1rem}
+  .ref-dom-h{font-family:var(--font-display);font-weight:700;font-size:1.12rem;color:var(--ink);
+    display:flex;align-items:center;gap:.55rem;margin:0 0 .1rem;padding-bottom:.55rem;border-bottom:2px solid var(--line2)}
+  .ref-dnum{display:inline-flex;align-items:center;justify-content:center;padding:.12rem .5rem;border-radius:7px;
+    color:#fff;font-size:.76rem;font-weight:700;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+  .ref-sec{margin:1.35rem 0 0}
+  .ref-sec-h{font-family:var(--font-display);font-weight:700;font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--muted);margin:0 0 .5rem}
+  .ref-tbl{width:100%;border-collapse:collapse;table-layout:fixed;background:var(--surface);
+    border-radius:var(--radius-sm);overflow:hidden}
+  .ref-tbl td{padding:.6rem .85rem;vertical-align:top;font-size:.87rem;line-height:1.5;overflow-wrap:break-word}
+  .ref-tbl td.see{width:42%;color:var(--muted);border-right:1px solid var(--line2)}
+  .ref-tbl td.ans{color:var(--ink);font-weight:500}
+  .ref-tbl td.ans .arw{color:var(--accent2);font-weight:800;margin-right:.35rem}
+  .ref-tbl tr:nth-child(even) td{background:var(--accent-soft)}
+  .ref-tbl tr:nth-child(even) td.see{color:var(--ink2)}
+  .ref-tbl code{font-family:var(--font-mono);font-size:.8em;background:var(--paper2);padding:.03rem .28rem;border-radius:3px}
+  .ref-tbl strong{color:var(--ink);font-weight:700}
+  .ref-empty{color:var(--muted);font-size:.9rem;padding:1rem 0}
+
   @media (max-width:640px){
     .dname{white-space:normal}
     .ddesc{margin-left:0}
@@ -432,6 +459,7 @@
       <button class="tab active" data-view="dashboard">Dashboard</button>
       <button class="tab" data-view="config">New exam</button>
       <button class="tab" data-view="cheatsheet">Cheatsheet</button>
+      <button class="tab" data-view="reference">Reference</button>
     </nav>
     <div class="exam-controls" id="examControls" style="display:none">
       <span class="prog-mini" id="progMini">0/0</span>
@@ -469,6 +497,7 @@
 
   <!-- ============ CHEATSHEET ============ -->
   <div class="view" id="view-cheatsheet"></div>
+  <div class="view" id="view-reference"></div>
 </main>
 
 <div id="overlay">
@@ -666,7 +695,7 @@ function showView(name){
   if(name!=="exam"){ const view=$("#view-"+name), h=view&&view.querySelector("h1,h2,.eyebrow");
     if(h){ h.setAttribute("tabindex","-1"); try{h.focus({preventScroll:true});}catch(e){} } }
 }
-$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="config") renderConfig(); if(t.dataset.view==="cheatsheet") renderCheatsheet(); showView(t.dataset.view); });
+$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="config") renderConfig(); if(t.dataset.view==="cheatsheet") renderCheatsheet(); if(t.dataset.view==="reference") renderReference(); showView(t.dataset.view); });
 /* logo + wordmark → dashboard. During a live exam it behaves like Quit (confirm + save progress). */
 $("#brandBtn").onclick=()=>{
   if(currentView==="exam" && exam && !exam.submitted){ quitExam(); return; }
@@ -920,6 +949,40 @@ function availByMode(domains,merged){
   };
 }
 /* ---------- Cheatsheet view (miss-driven trigger→rule table) ---------- */
+let refState = { domain:"all", q:"" };
+function refMatchesQuery(row, q){
+  if(!q) return true;
+  q=q.toLowerCase();
+  return (row.see||"").toLowerCase().includes(q) || (row.answer||"").toLowerCase().includes(q);
+}
+function renderReference(){
+  const root=$("#view-reference");
+  const doms=(REFERENCE&&REFERENCE.domains)||{};
+  const domKeys=Object.keys(doms).sort();
+  if(!domKeys.length){ root.innerHTML=`<p class="ref-empty">The reference is built from the bundled quick-reference file; it isn't available in this build.</p>`; return; }
+  const chip=(active,val,label)=>`<button class="miss-chip${active?" active":""}" data-ref-dom="${val}">${esc(label)}</button>`;
+  let filters=chip(refState.domain==="all","all","All")+domKeys.map(d=>chip(refState.domain===d,d,"D"+d)).join("");
+  let html=`<p class="ref-lead">Signal phrases in the stem <b>&rarr;</b> the answer. Grouped by domain.</p>`
+    +`<div class="ref-filters">${filters}<input class="ref-search" id="ref-q" type="search" placeholder="Search triggers or answers…" value="${esc(refState.q)}"></div>`;
+  const show=domKeys.filter(d=>refState.domain==="all"||refState.domain===d);
+  let any=false;
+  show.forEach(d=>{
+    const dv=doms[d]; const dvar=DOMAIN_VAR[d];
+    const secs=(dv.sections||[]).map(sec=>{
+      const rows=(sec.rows||[]).filter(r=>refMatchesQuery(r,refState.q));
+      if(!rows.length) return "";
+      const trs=rows.map(r=>`<tr><td class="see">${rich(r.see||"")}</td><td class="ans"><span class="arw">→</span>${rich(r.answer||"")}</td></tr>`).join("");
+      return `<div class="ref-sec"><div class="ref-sec-h">${esc(sec.title||"")}</div><table class="ref-tbl"><tbody>${trs}</tbody></table></div>`;
+    }).filter(Boolean).join("");
+    if(!secs) return;
+    any=true;
+    html+=`<div class="ref-dom"><div class="ref-dom-h"><span class="ref-dnum" style="background:var(${dvar})">D${d}</span>${esc(dv.title||"")}</div>${secs}</div>`;
+  });
+  if(!any) html+=`<p class="ref-empty">No rows match “${esc(refState.q)}”.</p>`;
+  root.innerHTML=html;
+  $$("#view-reference [data-ref-dom]").forEach(b=>b.onclick=()=>{ refState.domain=b.dataset.refDom; renderReference(); });
+  const qi=$("#ref-q"); if(qi){ qi.oninput=()=>{ refState.q=qi.value; renderReference(); const n=$("#ref-q"); if(n){ n.focus(); const v=n.value.length; n.setSelectionRange(v,v);} }; }
+}
 let cheatState = { domain:"all", axis:"all", q:"" };
 
 function cheatList(){
