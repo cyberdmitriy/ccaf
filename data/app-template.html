@@ -511,7 +511,7 @@
 
 <script>
 "use strict";
-/* ==== Injected by /ccaf:exam. Empty literals keep the raw template valid. ==== */
+/* ==== Injected by /ccaf:dashboard. Empty literals keep the raw template valid. ==== */
 const BANK = /*__BANK__*/[];
 const HISTORY = /*__HISTORY__*/{};
 const REFERENCE = /*__REFERENCE__*/{};   // bundled quick-reference (see→answer by domain)
@@ -742,7 +742,7 @@ function renderDashboard(){
   /* empty state */
   if(bankTotal===0){
     v.innerHTML=`<div class="empty"><div class="em-ic">📭</div><h3>No question bank loaded</h3>
-      <p class="hint">This page was generated without questions. Regenerate it with <span class="kbd">/ccaf:exam</span>.</p></div>`;
+      <p class="hint">This page was generated without questions. Regenerate it with <span class="kbd">/ccaf:dashboard</span>.</p></div>`;
     return;
   }
   if(examsTaken===0 && answeredUnique===0){

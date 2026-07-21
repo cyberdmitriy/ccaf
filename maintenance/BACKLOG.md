@@ -11,7 +11,7 @@ ships, move it to `CHANGELOG.md` and delete it here.
 **Logged:** 2026-07-20 · **Priority:** medium · **Owner:** unassigned
 
 **Problem.** Two failures the learner hit, same underlying cause:
-1. `/ccaf:stats` **opened a stale `ccaf-exam.html`** instead of rebuilding it, so a new view
+1. `/ccaf:dashboard` **opened a stale `ccaf-exam.html`** instead of rebuilding it, so a new view
    (Cheatsheet) appeared "missing" after a plugin update. (Proof: the store's `cheatsheet.json`
    was never even bootstrapped, so Steps 1–4 of `app-build.md` never ran.)
 2. **Tutor learning progress was lost** — `teaching-method.md`'s recording contract wrote
@@ -34,7 +34,7 @@ These reduce recurrence but **do not eliminate** it — a model can still ignore
 - **Rebuild determinism:** ship a single wrapper script (e.g. `data/build-app.sh`) that does
   bootstrap → build → open in one deterministic call, and have the `exam`/`stats` skills invoke
   *that one command* instead of a multi-step recipe the model can partially execute. Or a
-  command/PreToolUse hook that regenerates `ccaf-exam.html` whenever `/ccaf:exam` or `/ccaf:stats`
+  command/PreToolUse hook that regenerates `ccaf-exam.html` whenever `/ccaf:dashboard` or `/ccaf:dashboard`
   is invoked.
 - **Progress persistence:** the tutor's *judgement* (what was truly taught + check-questioned)
   can't be fully mechanised, but the *write* can — ship a tiny helper (e.g.

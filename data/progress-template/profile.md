@@ -1,6 +1,6 @@
 # CCAF — My Study Profile
 
-Set from YOUR results by `/ccaf:result` (and `/ccaf:init`). The teacher skills and `/ccaf:exam` read the **Focus domains** below to personalise — nothing else here is required.
+Set from YOUR results by `/ccaf:result` (and `/ccaf:init`). The teacher skills and `/ccaf:dashboard` read the **Focus domains** below to personalise — nothing else here is required.
 
 ## Self-reported weak domains
 _(ranked; updated by init and after mock exams)_

@@ -25,16 +25,16 @@ Then run **`/ccaf:init`** to set up and get routed.
 |--------|--------------|
 | `/ccaf:init` | Onboarding hub: creates your progress store, shows bank stats, and routes you to the right activity (records results via `/ccaf:result`). |
 | `/ccaf:d1-teacher` … `/ccaf:d5-teacher` | Interactive domain tutors (D1 Agentic Arch · D2 Tool Design/MCP · D3 Config & Workflows · D4 Prompt Eng & Structured Output · D5 Context & Reliability). |
-| `/ccaf:exam` | Build & open your offline study app. Pick a mode (`weak`/`unseen`/`random`/`review`), narrow to domains, choose a length **on the page**, sit it with a timer (pause/resume, resume-later, and an optional **2-min-per-question time limit**: at zero it tells you "time's up" and flags the attempt as *over time*, but never submits for you — you always finish every question). **Sit it from the keyboard:** `1`–`4`/`A`–`D` answer the current question, `J`/`K` (or `↑`/`↓`) move between questions, the nav highlights where you are, and **Jump to unanswered** skips to the first blank. `weak` mode now also resurfaces questions you haven't seen in a while (light spaced repetition). Copy the results JSON when done and record it with `/ccaf:result`. |
+| `/ccaf:dashboard` | Build & open your offline study app. Pick a mode (`weak`/`unseen`/`random`/`review`), narrow to domains, choose a length **on the page**, sit it with a timer (pause/resume, resume-later, and an optional **2-min-per-question time limit**: at zero it tells you "time's up" and flags the attempt as *over time*, but never submits for you — you always finish every question). **Sit it from the keyboard:** `1`–`4`/`A`–`D` answer the current question, `J`/`K` (or `↑`/`↓`) move between questions, the nav highlights where you are, and **Jump to unanswered** skips to the first blank. `weak` mode now also resurfaces questions you haven't seen in a while (light spaced repetition). Copy the results JSON when done and record it with `/ccaf:result`. |
 | `/ccaf:result` | **The single recorder.** Records ANY result — the study app's results JSON (one sitting or a batch), or an external attempt (official/other practice) from a screenshot or pasted breakdown — and re-ranks your focus domains. |
-| `/ccaf:stats` | Opens the same offline app on its **Dashboard** — accuracy, per-domain accuracy vs blueprint weight, coverage, exam history (mock vs external kept separate) with a **score-trend sparkline**, 5-axis trap tally, recurring fails — plus a **Cheatsheet** tab: your personal *trigger keyword → pick this, not that → why* table, built from the questions you've missed (active on top, mastered ones collapsed once you later answer them right; filter by domain/axis/search). It's populated by `/ccaf:result` — including a backfill of misses you recorded before the cheatsheet existed. Plus a short text summary. There's also a **Reference** tab — a curated *signal phrase in the question → the answer* cheat sheet across all five domains (a study aid built from the exam traps; distinct from the personal, miss-driven Cheatsheet), with a domain filter and search. |
+| `/ccaf:dashboard` | Opens the same offline app on its **Dashboard** — accuracy, per-domain accuracy vs blueprint weight, coverage, exam history (mock vs external kept separate) with a **score-trend sparkline**, 5-axis trap tally, recurring fails — plus a **Cheatsheet** tab: your personal *trigger keyword → pick this, not that → why* table, built from the questions you've missed (active on top, mastered ones collapsed once you later answer them right; filter by domain/axis/search). It's populated by `/ccaf:result` — including a backfill of misses you recorded before the cheatsheet existed. Plus a short text summary. There's also a **Reference** tab — a curated *signal phrase in the question → the answer* cheat sheet across all five domains (a study aid built from the exam traps; distinct from the personal, miss-driven Cheatsheet), with a domain filter and search. |
 
 **Reviewing results:** the results page opens on your **misses only** (no more scrolling a whole 60-question exam); flip to **All** or filter by domain with one click, and each question shows the **axis** its trap trips on so you learn the pattern, not just the answer.
 
 ## How focus works
 
 There are **no hardcoded focus domains** — focus is data-driven per user. All results go through
-`/ccaf:result`: a `/ccaf:exam` JSON updates per-question stats + fails, while an external screenshot/text
+`/ccaf:result`: a `/ccaf:dashboard` JSON updates per-question stats + fails, while an external screenshot/text
 records a per-domain snapshot. Either way it writes a ranked weak-domain list to `profile.md` and a
 distinct, timestamped entry to `stats.json` (mock and external are never averaged together). Every
 teacher/exam reads those on startup and biases toward your weakest domains. During onboarding `/ccaf:init`
@@ -51,7 +51,7 @@ uninstalls:
 - `fails-tracker.md` — verbatim missed questions
 - `trap-log.md` — trap types by axis + tally
 - `stats.json` — machine-readable per-question/-domain stats + exam history (the app's authoritative source)
-- `ccaf-exam.html` — the generated offline study app (rebuilt each `/ccaf:exam` or `/ccaf:stats`; holds in-progress + unrecorded sittings in its own `localStorage` until you record them)
+- `ccaf-exam.html` — the generated offline study app (rebuilt each `/ccaf:dashboard` or `/ccaf:dashboard`; holds in-progress + unrecorded sittings in its own `localStorage` until you record them)
 
 ## The 5-axis framework
 

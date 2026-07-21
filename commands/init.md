@@ -1,6 +1,6 @@
 ---
 name: init
-description: Set up the CCAF exam tutor — creates your progress store, shows your bank/stats, and routes you to the right study activity.
+description: Set up the CCAF exam tutor — creates your progress store, rebuilds & opens your dashboard, shows your bank/stats, and routes you to the right study activity.
 disable-model-invocation: true
 allowed-tools: Bash, Read, Write
 argument-hint: "(no arguments needed)"
@@ -13,6 +13,9 @@ You are onboarding the user to the CCAF (Claude Certified Architect – Foundati
 ## Step 1 — Create the per-user progress store (idempotent)
 Run bash: `mkdir -p "$HOME/.claude/ccaf-progress" && cp -rn "${CLAUDE_PLUGIN_ROOT}/data/progress-template/." "$HOME/.claude/ccaf-progress/"`
 This creates `~/.claude/ccaf-progress/` from the template on first run and never overwrites existing files. Confirm to the user where their progress lives.
+
+## Step 1.5 — Always rebuild & open the visual dashboard
+The dashboard `~/.claude/ccaf-progress/ccaf-exam.html` is a **disposable artifact** — rebuild it on **every** `/ccaf:init` so it reflects both the latest plugin version (e.g. right after a `/plugin marketplace update`) and the user's latest recorded stats. Follow **`${CLAUDE_PLUGIN_ROOT}/data/app-build.md` verbatim (its Steps 1–4)** to rebuild **and open** it — this is the *same* build `/ccaf:dashboard` runs. **Never** open a pre-existing `ccaf-exam.html` because "it already exists" (that is exactly how a stale dashboard hides new features/stats after a plugin update). Running the build is read-only w.r.t. the store. If the build errors, surface the error — do not fall back to opening the old file.
 
 ## Step 2 — Detect returning vs new user
 Read `$HOME/.claude/ccaf-progress/{profile.md, stats.json}`.
@@ -48,8 +51,8 @@ Present the menu and, based on their choice + the weak domains recorded in `prof
 - **(a) Record a prior result first** — if they have an official/practice score, recommend `/ccaf:result` so the rest of the plugin can bias toward *their* weak domains.
 - **(b) Guided full curriculum** — domain by domain. Start `/ccaf:d1-teacher`, then d2…d5. If their files already flag weak domains, suggest starting there instead.
 - **(c) Targeted drill** — one domain. Recommend their weakest *from the data* (`/ccaf:dN-teacher`); if no data yet, let them pick.
-- **(d) Mock exam** — a generated, configurable exam biased to weak areas. Command: `/ccaf:exam`.
-- **(e) Progress dashboard** — visual breakdown once they have history. Command: `/ccaf:stats`.
+- **(d) Mock exam** — a generated, configurable exam biased to weak areas. Command: `/ccaf:dashboard`.
+- **(e) Progress dashboard** — the visual dashboard is **already open** (rebuilt fresh in Step 1.5). `/ccaf:dashboard` reopens/rebuilds it anytime.
 
 End by restating the single command you recommend they type next, and remind them their progress is tracked automatically in `~/.claude/ccaf-progress/`.
 

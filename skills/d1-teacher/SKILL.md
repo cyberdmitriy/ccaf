@@ -47,4 +47,4 @@ If the user misses anything, offer to append it:
 
 ## Hand-off
 First **record learning progress** — follow the "Recording learning progress" contract in `${CLAUDE_PLUGIN_ROOT}/data/teaching-method.md` (read-modify-write only D1's entry of `$HOME/.claude/ccaf-progress/learning-progress.json` + shared `axis_mastery`).
-When done, tell the user their next best step (e.g. `/ccaf:exam` for a mock, or another `/ccaf:dN-teacher`). Do not auto-invoke other skills — instruct the user to run them.
+When done, tell the user their next best step (e.g. `/ccaf:dashboard` for a mock, or another `/ccaf:dN-teacher`). Do not auto-invoke other skills — instruct the user to run them.

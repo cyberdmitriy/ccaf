@@ -39,4 +39,4 @@ Append misses to `$HOME/.claude/ccaf-progress/fails-tracker.md` and a trap-type 
 
 ## Hand-off
 First **record learning progress** — follow the "Recording learning progress" contract in `${CLAUDE_PLUGIN_ROOT}/data/teaching-method.md` (read-modify-write only D2's entry of `$HOME/.claude/ccaf-progress/learning-progress.json` + shared `axis_mastery`).
-When done, suggest the user's next step (e.g. `/ccaf:exam` or another `/ccaf:dN-teacher`). Never auto-invoke; instruct the user.
+When done, suggest the user's next step (e.g. `/ccaf:dashboard` or another `/ccaf:dN-teacher`). Never auto-invoke; instruct the user.
