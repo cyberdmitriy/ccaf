@@ -6,6 +6,14 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.13.0] — 2026-07-21
+### Added
+- **Reference tab — a curated "signal phrase → answer" cheat sheet across all five domains.** A new **Reference** view in the offline app (distinct from the personal, miss-driven **Cheatsheet**): per-domain, per-subtopic tables of *See in the question → Answer*, with a domain filter and search. Rendered as an aligned **zebra dictionary** (`table-layout:fixed` so long `code` tokens wrap instead of overflowing), accent arrow on each answer, coloured domain badges. Content lives in a new bundled **`data/quick-reference.json`** (83 rows, a curated projection of `exam-traps.md`; rows carry `see`/`answer`/`q_ids` — `q_ids` hand-picked or empty, never keyword-grepped; no `axis` field). Injected via a third build placeholder `/*__REFERENCE__*/{}` (a sibling of the bank, not per-user state; graceful `{}` when absent). The bank is untouched.
+- **`maintenance/reference-coverage.py`** — a deterministic report (pure set arithmetic, no agents) of `quick-reference.json` coverage vs the bank: stale `q_ids` + per-domain unreferenced questions. Run it when the bank grows to see which criteria still need a Reference row.
+### Changed
+- **App content width is now fluid** — `--maxw` is `min(94vw, 1240px)` (was a fixed 940px), so the app uses more of a wide screen while staying readable on smaller ones.
+- **`data/validate.py`** now also validates `quick-reference.json` (domains 1–5, non-empty see/answer, `q_ids` exist in the bank). New maintainer **God Rule #13**: propose 2–3 UI/UX options before building; readability and usability first.
+
 ## [0.12.0] — 2026-07-20
 ### Changed
 - **5 axes reframed from "what the wrong option looks like" → "why the right answer beats the near-miss".** Each axis is now taught on one template — a plain **one-liner** (what the right answer wins on), a **quick test** (the one question to ask the distractor), **stem triggers**, **wrong-looks-like**, and a **❌→✅ example** drawn from a spread of domains (hook vs CLAUDE.md, forced-specific `tool_choice`, plan-mode vs interview, subagent-for-one-file, one-prompt vs TDD). Added a **decision order** ("which axis is it? ask in order"). Term **"Litmus" → "Quick test"**. Applied consistently across `data/axes.md` (canon), `data/teaching-method.md` (the 5-axis table), and the dashboard card.
