@@ -42,13 +42,15 @@ progress is per-user and lives OUTSIDE the plugin.
 ```
 .claude-plugin/{plugin.json, marketplace.json}   # manifest + single-plugin marketplace
 commands/{init.md, result.md}                     # /ccaf:init (hub), /ccaf:result (single result recorder)
-skills/{d1..d5-teacher, exam, stats}/SKILL.md     # tutors + study-app (exam) + dashboard (stats)
+skills/{d1..d5-teacher, dashboard}/SKILL.md       # tutors + the single study-app/dashboard command
+hooks/{hooks.json, ccaf-build.sh}                 # UserPromptSubmit hook: deterministic rebuild on /ccaf:{init,dashboard}
 data/
   questions.json        # CANONICAL question bank (the thing you'll extend most)
   quick-reference.json  # curated see→answer map (domain→section→row); projection of exam-traps.md; injected via /*__REFERENCE__*/
   validate.py           # read-only validator: bank + quick-reference.json (run after every edit: python3 data/validate.py)
   app-template.html     # the self-contained study app (dashboard+select+exam+cheatsheet+reference); 3 inject points
-  app-build.md          # SHARED build recipe both /ccaf:dashboard and /ccaf:dashboard follow (injects bank+history+reference)
+  build-app.py          # deterministic builder (bootstrap→build→open); single source of truth, run by the hook + skills
+  app-build.md          # SHARED build recipe (thin: runs build-app.py) that /ccaf:dashboard follows
   teaching-method.md    # HOW the d1..d5 tutors teach (shared Concept→Axis→Apply→Check pedagogy)
   tutor-prompts.md      # per-domain lesson script (task statements) — the WHAT the tutors teach
   exam-traps.md         # verbatim "Exam Trap" + core rule per lesson, 5 domains
@@ -74,9 +76,9 @@ never create a `docs/` tree. If a skill defaults to `docs/superpowers/…`, redi
 2. **No skill→skill calls:** Claude Code can't invoke one skill from another. `/ccaf:init` routes by *instructing* the user which command to type. Keep hand-offs as instructions.
 3. **Focus is data-driven, never hardcoded:** teachers/exam read the user's `~/.claude/ccaf-progress/{profile.md,stats.json}` and bias toward THEIR weak domains. Do not bake any person's results (percentages, "focus domain") into skills.
 4. **Progress lives at `~/.claude/ccaf-progress/`**, never in the plugin dir (plugin dirs are wiped on update). Skills bootstrap it from `data/progress-template/` with `cp -rn` (never overwrite).
-5. **`/ccaf:result` is the single recorder** (mock JSON — one sitting or a batch array — or external screenshot). `/ccaf:dashboard`, `/ccaf:dashboard` **and `/ccaf:init`** all **build & open the same app** (`ccaf-exam.html`) via the shared `data/app-build.md` recipe (always rebuild — never open a stale file) and never write to the store; the app hands results back only via copy-JSON. The app itself does question selection + scoring client-side. `/ccaf:result` also upserts a per-user `cheatsheet.json` — the app's miss-driven *trigger→rule* table — on each mock miss (additive, never in the bank; the app reads it read-only).
+5. **`/ccaf:result` is the single recorder** (mock JSON — one sitting or a batch array — or external screenshot). `/ccaf:dashboard` and `/ccaf:init` **build & open the same app** (`ccaf-exam.html`); the rebuild is **enforced deterministically by the `UserPromptSubmit` hook** (`hooks/ccaf-build.sh` → `data/build-app.py`), with the skills' `data/app-build.md` recipe (also `build-app.py`) as a fallback if hooks are disabled — never open a stale file, never write to the store; the app hands results back only via copy-JSON. The app itself does question selection + scoring client-side. `/ccaf:result` also upserts a per-user `cheatsheet.json` — the app's miss-driven *trigger→rule* table — on each mock miss (additive, never in the bank; the app reads it read-only).
 6. **Path refs:** bundled files via `${CLAUDE_PLUGIN_ROOT}/data/...`; progress via `$HOME/.claude/ccaf-progress/...`.
-7. **One app file, no archive:** `/ccaf:dashboard` & `/ccaf:dashboard` overwrite a single `$HOME/.claude/ccaf-progress/ccaf-exam.html`. No per-exam files. `stats.json` is the authoritative history; the app reconciles unrecorded local sittings against `recorded_exam_ids` so nothing is double-counted. To change the app UI/logic, edit `data/app-template.html` (keep the `/*__BANK__*/[]`, `/*__HISTORY__*/{}` and `/*__REFERENCE__*/{}` placeholders valid as empty literals); to change what data it gets, edit `data/app-build.md`. The **Reference** tab renders `/*__REFERENCE__*/` (bundled `quick-reference.json`, a see→answer map) — bundled content, a sibling of `BANK`, not per-user `HISTORY`.
+7. **One app file, no archive:** `/ccaf:dashboard` & `/ccaf:init` (via the hook / `build-app.py`) overwrite a single `$HOME/.claude/ccaf-progress/ccaf-exam.html`. No per-exam files. `stats.json` is the authoritative history; the app reconciles unrecorded local sittings against `recorded_exam_ids` so nothing is double-counted. To change the app UI/logic, edit `data/app-template.html` (keep the `/*__BANK__*/[]`, `/*__HISTORY__*/{}` and `/*__REFERENCE__*/{}` placeholders valid as empty literals); to change what data it gets, edit `data/app-build.md`. The **Reference** tab renders `/*__REFERENCE__*/` (bundled `quick-reference.json`, a see→answer map) — bundled content, a sibling of `BANK`, not per-user `HISTORY`.
 
 ## App UI internals
 The offline study app (`data/app-template.html`) has many client-side features (results review, 5-axis
@@ -114,7 +116,7 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 ```
 /plugin marketplace add /Users/dmitryantonenko/exam/ccaf-plugin
 /plugin install ccaf@ccaf-marketplace
-/ccaf:init            # then /ccaf:dashboard (pick mode/length on the page) → copy JSON → /ccaf:result → /ccaf:dashboard
+/ccaf:init            # opens the app (hook rebuild); click Mock Exam → sit it → copy JSON → /ccaf:result → /ccaf:dashboard
 ```
 Reinstall after edits: `/plugin marketplace update ccaf-marketplace`.
 

@@ -25,9 +25,8 @@ Then run **`/ccaf:init`** to set up and get routed.
 |--------|--------------|
 | `/ccaf:init` | Onboarding hub: creates your progress store, shows bank stats, and routes you to the right activity (records results via `/ccaf:result`). |
 | `/ccaf:d1-teacher` … `/ccaf:d5-teacher` | Interactive domain tutors (D1 Agentic Arch · D2 Tool Design/MCP · D3 Config & Workflows · D4 Prompt Eng & Structured Output · D5 Context & Reliability). |
-| `/ccaf:dashboard` | Build & open your offline study app. Pick a mode (`weak`/`unseen`/`random`/`review`), narrow to domains, choose a length **on the page**, sit it with a timer (pause/resume, resume-later, and an optional **2-min-per-question time limit**: at zero it tells you "time's up" and flags the attempt as *over time*, but never submits for you — you always finish every question). **Sit it from the keyboard:** `1`–`4`/`A`–`D` answer the current question, `J`/`K` (or `↑`/`↓`) move between questions, the nav highlights where you are, and **Jump to unanswered** skips to the first blank. `weak` mode now also resurfaces questions you haven't seen in a while (light spaced repetition). Copy the results JSON when done and record it with `/ccaf:result`. |
+| `/ccaf:dashboard` | Build & open your offline study app (rebuilt fresh each time by the hook), opening on the **Dashboard** — accuracy, per-domain accuracy vs blueprint weight, coverage, exam history (mock vs external kept separate) with a **score-trend sparkline**, 5-axis trap tally — plus a short text recap in chat. Tabs: **Weak spots** (your personal *trigger → pick this, not that → why* table, built from questions you've missed; active on top, mastered collapsed; filter by domain/axis/search) and **Cheatsheet** (a curated *signal phrase → the answer* reference across all five domains, with a domain filter + search). **To sit an exam,** click **Mock Exam**: pick a mode (`weak`/`unseen`/`random`/`review`), narrow to domains, choose a length, sit it with a timer (pause/resume, resume-later, optional **2-min/question** limit that flags *over time* but never submits for you). **From the keyboard:** `1`–`4`/`A`–`D` answer, `J`/`K` (or `↑`/`↓`) move, **Jump to unanswered** skips to the first blank. On Submit → scored review + **Copy results as JSON**; record it with `/ccaf:result`. |
 | `/ccaf:result` | **The single recorder.** Records ANY result — the study app's results JSON (one sitting or a batch), or an external attempt (official/other practice) from a screenshot or pasted breakdown — and re-ranks your focus domains. |
-| `/ccaf:dashboard` | Opens the same offline app on its **Dashboard** — accuracy, per-domain accuracy vs blueprint weight, coverage, exam history (mock vs external kept separate) with a **score-trend sparkline**, 5-axis trap tally, recurring fails — plus a **Cheatsheet** tab: your personal *trigger keyword → pick this, not that → why* table, built from the questions you've missed (active on top, mastered ones collapsed once you later answer them right; filter by domain/axis/search). It's populated by `/ccaf:result` — including a backfill of misses you recorded before the cheatsheet existed. Plus a short text summary. There's also a **Reference** tab — a curated *signal phrase in the question → the answer* cheat sheet across all five domains (a study aid built from the exam traps; distinct from the personal, miss-driven Cheatsheet), with a domain filter and search. |
 
 **Reviewing results:** the results page opens on your **misses only** (no more scrolling a whole 60-question exam); flip to **All** or filter by domain with one click, and each question shows the **axis** its trap trips on so you learn the pattern, not just the answer.
 
@@ -51,7 +50,7 @@ uninstalls:
 - `fails-tracker.md` — verbatim missed questions
 - `trap-log.md` — trap types by axis + tally
 - `stats.json` — machine-readable per-question/-domain stats + exam history (the app's authoritative source)
-- `ccaf-exam.html` — the generated offline study app (rebuilt each `/ccaf:dashboard` or `/ccaf:dashboard`; holds in-progress + unrecorded sittings in its own `localStorage` until you record them)
+- `ccaf-exam.html` — the generated offline study app (rebuilt on each `/ccaf:init` or `/ccaf:dashboard` by the hook; holds in-progress + unrecorded sittings in its own `localStorage` until you record them)
 
 ## The 5-axis framework
 
@@ -80,8 +79,9 @@ something plugin users run.
 ccaf-plugin/
 ├─ .claude-plugin/{plugin.json, marketplace.json}
 ├─ commands/{init.md, result.md}
-├─ skills/{d1..d5-teacher, exam, stats}/SKILL.md
-├─ data/{questions.json, validate.py, tutor-prompts.md, exam-traps.md, axes.md, teaching-method.md,
-│        app-template.html, app-build.md, progress-template/}
-└─ maintenance/  # maintainer-only: RUNBOOK.md, sources.md, bank-coverage-audit.workflow.js (see CLAUDE.md)
+├─ skills/{d1..d5-teacher, dashboard}/SKILL.md
+├─ hooks/{hooks.json, ccaf-build.sh}   # deterministic app rebuild on /ccaf:{init,dashboard}
+├─ data/{questions.json, quick-reference.json, validate.py, tutor-prompts.md, exam-traps.md, axes.md,
+│        teaching-method.md, app-template.html, build-app.py, app-build.md, progress-template/}
+└─ maintenance/  # maintainer-only: RUNBOOK.md, sources.md, *-audit.workflow.js, reference-coverage.py (see CLAUDE.md)
 ```

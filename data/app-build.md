@@ -1,11 +1,11 @@
 # Shared build recipe — the CCAF study app (`ccaf-exam.html`)
 
-Both `/ccaf:dashboard` and `/ccaf:dashboard` build the **same** self-contained offline app from
+`/ccaf:dashboard` (and `/ccaf:init`) build the **same** self-contained offline app from
 `app-template.html` + the user's progress store, then open it. This file is the single source of
 truth for that build so the two skills stay in sync. Follow it verbatim.
 
 > **ALWAYS REBUILD — never open a stale file.** `ccaf-exam.html` is a disposable build artifact.
-> On **every** `/ccaf:dashboard` and `/ccaf:dashboard`, run Steps 1–4 in full and **overwrite** any existing
+> On **every** `/ccaf:dashboard` (and `/ccaf:init`), run Steps 1–4 in full and **overwrite** any existing
 > `ccaf-exam.html`. **Do NOT** shortcut to `open`-ing a pre-existing `ccaf-exam.html` because "the
 > file already exists" — a stale file silently hides newly-recorded history and new app features
 > (this is exactly how a new tab/view appears "missing" after a plugin update). Running the build is
