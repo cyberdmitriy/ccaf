@@ -63,6 +63,40 @@ def main():
     if meta_pd != dict(actual_pd):
         errors.append(f"meta.per_domain {meta_pd} != actual {dict(sorted(actual_pd.items()))}")
 
+    # quick-reference.json (curated see→answer map): domains 1–5, non-empty see/answer,
+    # q_ids a list of ids that exist in the bank. No axis field (axis lives in questions.json).
+    ref_path = os.path.join(HERE, "quick-reference.json")
+    ref_rows = None
+    if os.path.exists(ref_path):
+        ref_rows = 0
+        try:
+            ref = json.load(open(ref_path))
+        except Exception as e:
+            errors.append(f"reference: cannot parse quick-reference.json: {e}")
+            ref = None
+        if ref is not None:
+            bank_ids = set(ids)
+            for dk, dv in (ref.get("domains") or {}).items():
+                if dk not in {"1", "2", "3", "4", "5"}:
+                    errors.append(f"reference: bad domain key {dk!r}")
+                if not dv.get("title"):
+                    errors.append(f"reference: domain {dk} missing title")
+                for si, sec in enumerate(dv.get("sections", [])):
+                    if not sec.get("title"):
+                        errors.append(f"reference: domain {dk} section {si} missing title")
+                    for ri, row in enumerate(sec.get("rows", [])):
+                        ref_rows += 1
+                        loc = f"reference: D{dk} sec{si} row{ri}"
+                        if not row.get("see") or not row.get("answer"):
+                            errors.append(f"{loc}: missing see/answer")
+                        q_ids = row.get("q_ids", [])
+                        if not isinstance(q_ids, list):
+                            errors.append(f"{loc}: q_ids must be a list")
+                        else:
+                            for qid in q_ids:
+                                if qid not in bank_ids:
+                                    errors.append(f"{loc}: q_id {qid} not in bank")
+
     # correct-answer-letter balance (report; warn on heavy skew)
     letters = collections.Counter(q.get("correct") for q in qs)
     hi, lo = max(letters.values()), min(letters.values())
@@ -72,6 +106,8 @@ def main():
     print(f"bank: {len(qs)} questions | per_domain: {dict(sorted(actual_pd.items()))}")
     print(f"correct-letter: {dict(sorted(letters.items()))}")
     print("axis: " + str(dict(sorted(collections.Counter(q.get('axis') for q in qs).items()))))
+    if ref_rows is not None:
+        print(f"reference: {ref_rows} rows")
     for w in warnings:
         print(f"WARN: {w}")
     if errors:
