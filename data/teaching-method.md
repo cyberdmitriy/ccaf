@@ -157,9 +157,13 @@ instead of running the axis drill. Hold every generated question to the same rul
    axis. If you can't name the axis a distractor fails on, it isn't exam-grade — rewrite it.
 2. **No length tell.** All four options comparable in length/specificity. Never make the correct one
    the longest, most-qualified option while distractors are short stubs.
-3. **One clear winning condition in the stem** (*guarantee · first step · most effective · root
+3. **No formatting tell.** Render options and stem as PLAIN text — no `**bold**`, italics, or other
+   emphasis that spotlights a term. Bolding a phrase in the correct option (e.g. **Plan mode**) hands
+   the answer away; the real exam formats every option identically. Keep any inline `code` uniform
+   across all four (or none), never only on the answer.
+4. **One clear winning condition in the stem** (*guarantee · first step · most effective · root
    cause · without relying on the model*) so the axis drill has something to bite on.
-4. **Anchor in one of the six scenarios (S1–S6)** as a concrete production situation — not an
+5. **Anchor in one of the six scenarios (S1–S6)** as a concrete production situation — not an
    abstract "which is true" quiz.
 
 Self-check before showing a generated question: *for each of the three distractors, can I name the
