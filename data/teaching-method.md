@@ -144,6 +144,40 @@ test-takers pick on reflex), the *plausible-but-probabilistic* fix (prompt/CLAUD
 hook is required), the *right-area-wrong-target* option (`tool_choice:any` vs a forced specific
 tool), the *over-engineered* option, and the *symptom-not-cause* option.
 
+## Writing a FRESH practice question (exam-realistic, never a giveaway)
+When the bank is exhausted and you invent a question for a weak spot, it must look like a real
+exam item — the whole difficulty of this exam is that ALL FOUR options are plausible. A question
+with three obviously-silly options teaches nothing: the learner just "picks the sensible one"
+instead of running the axis drill. Hold every generated question to the same rules the bank follows:
+
+1. **Three real near-misses, one axis each — no throwaways.** Every distractor must be a genuine
+   mistake a *well-prepared* candidate could make: a real Claude Code / Agent-SDK mechanism aimed
+   slightly wrong, each tripping on exactly one axis (1–5). BANNED: joke options ("reinstall Claude
+   Code", "wrong model tier", "restart"), off-topic options, and any option wrong for no nameable
+   axis. If you can't name the axis a distractor fails on, it isn't exam-grade — rewrite it.
+2. **No length tell.** All four options comparable in length/specificity. Never make the correct one
+   the longest, most-qualified option while distractors are short stubs.
+3. **One clear winning condition in the stem** (*guarantee · first step · most effective · root
+   cause · without relying on the model*) so the axis drill has something to bite on.
+4. **Anchor in one of the six scenarios (S1–S6)** as a concrete production situation — not an
+   abstract "which is true" quiz.
+
+Self-check before showing a generated question: *for each of the three distractors, can I name the
+axis it fails on AND why a prepared candidate might pick it?* Any "no" → it's a giveaway; fix first.
+
+**Example — giveaway vs exam-grade (D3, CLAUDE.md hierarchy):**
+Giveaway — three throwaways, answer obvious:
+> A ✅ conventions live in A's user-level `~/.claude/CLAUDE.md`, not shared via git
+> B ✗ B needs to reinstall Claude Code            ← joke
+> C ✗ project CLAUDE.md has a syntax error only B triggers  ← implausible
+> D ✗ B is on a different model tier               ← off-topic
+
+Exam-grade — every option a real mechanism, one axis each:
+> A ✅ the conventions live in A's user-level `~/.claude/CLAUDE.md`, which git never shares
+> B ✗ the project `CLAUDE.md` `@import`s a path that resolves only in A's checkout  [axis 3 — real mechanism, wrong diagnosis: would break for A too]
+> C ✗ the rules sit in `.claude/rules/*.md` whose glob doesn't match B's new files   [axis 2 — right area, wrong instance]
+> D ✗ B skipped `/memory`, so the project CLAUDE.md never loaded                      [axis 5 — invented symptom: CLAUDE.md auto-loads]
+
 ## Anchor everything in the six exam scenarios
 The real exam frames every question inside one of six production cases and presents four of
 the six. Teach concepts THROUGH the scenarios relevant to your domain, not with abstract toy
