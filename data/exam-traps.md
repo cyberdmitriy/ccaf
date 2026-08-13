@@ -1,6 +1,9 @@
 # CCAF — Exam Traps (from claudecertificationguide.com)
 
-Verbatim "Exam Trap" callouts + core rule for all 30 lessons across the 5 domains.
+Verbatim "Exam Trap" callouts + core rule for all 32 lessons across the 5 domains
+(D1 7 · D2 6 · D3 7 · D4 6 · D5 6). These are the study guide's **lessons**, not the official
+blueprint's 30 **task statements** (D1 7 · D2 5 · D3 6 · D4 6 · D5 6 — see `maintenance/sources.md`),
+so the two counts differ on purpose.
 Source: https://claudecertificationguide.com/learn (scanned 2026-07). **Focus domains from official fail: D3 (59%) and D4 (57%).**
 
 How to use with `trap-log.md`: each trap below maps to one of the 5 axes —

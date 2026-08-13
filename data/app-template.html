@@ -1004,14 +1004,6 @@ function renderDashboard(){
   const projScored=allExams.filter(e=>examPct(e)!=null).slice().sort((a,b)=>new Date(b.ts||0)-new Date(a.ts||0));
   const projRecent=projScored.slice(0,3);
   const proj=projRecent.length?Math.round(projRecent.reduce((s,e)=>s+examPct(e),0)/projRecent.length):null;
-  const projColor=proj==null?"":(proj>=PASS_PCT?"var(--ok)":(proj>=PASS_PCT-5?"var(--warn)":"var(--bad)"));
-  const kpis=[
-    {k:"Overall accuracy", v: overallPct==null?"—":overallPct+"<small>%</small>", foot: seen?correct+" / "+seen+" answered":"no answers yet"},
-    {k:"Bank covered", v: answeredUnique+"<small>/"+bankTotal+"</small>", foot: Math.round(100*answeredUnique/bankTotal)+"% of questions seen"},
-    {k:"Exams taken", v: String(examsTaken), foot: mockExams.length+" mock · "+(allExams.length-mockExams.length)+" external"},
-    {k:"Projected score", v: proj==null?"—":`<span style="color:${projColor}">${proj}<small>%</small></span>`,
-      foot: proj==null?"no exams yet":(proj>=PASS_PCT?`recent form · clears ${PASS_PCT}% pass`:`recent form · ${PASS_PCT-proj} pts under pass`)},
-  ];
 
   let html="";
 

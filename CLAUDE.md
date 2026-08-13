@@ -51,7 +51,7 @@ data/
   app-template.html     # the self-contained study app (dashboard+select+exam+cheatsheet+reference); 3 inject points
   build-app.py          # deterministic builder (bootstrap→build→open); single source of truth, run by the hook + skills
   app-build.md          # SHARED build recipe (thin: runs build-app.py) that /ccaf:dashboard follows
-  teaching-method.md    # HOW the d1..d5 tutors teach (shared Concept→Axis→Apply→Check pedagogy)
+  teaching-method.md    # HOW the d1..d5 tutors teach (Rule 0b plain-language register + Concept→Axis→Apply→Check)
   tutor-prompts.md      # per-domain lesson script (task statements) — the WHAT the tutors teach
   exam-traps.md         # verbatim "Exam Trap" + core rule per lesson, 5 domains
   axes.md               # the 5-axis distractor framework (+ cross-domain signatures)
@@ -110,7 +110,7 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 - Validated by `data/validate.py`; coverage vs the bank reported by `python3 maintenance/reference-coverage.py`. When you change a core rule in `exam-traps.md`, update the matching reference row so the projection doesn't drift.
 
 ## Extending lessons / traps
-`data/tutor-prompts.md` (lesson scripts) and `data/exam-traps.md` (verbatim traps + core rules) are organised by `## Domain N`. Add/refine within the right domain section; the skills read their domain's section by `${CLAUDE_PLUGIN_ROOT}/data/...`. The 5 axes live in `data/axes.md`. **`data/teaching-method.md` is the shared *pedagogy* (HOW every `/ccaf:dN-teacher` teaches — the Concept→Axis→Apply→Check loop); edit it to change teaching style for all domains at once, not per-domain content.**
+`data/tutor-prompts.md` (lesson scripts) and `data/exam-traps.md` (verbatim traps + core rules) are organised by `## Domain N`. Add/refine within the right domain section; the skills read their domain's section by `${CLAUDE_PLUGIN_ROOT}/data/...`. The 5 axes live in `data/axes.md`. **`data/teaching-method.md` is the shared *pedagogy* (HOW every `/ccaf:dN-teacher` teaches — the Concept→Axis→Apply→Check loop); edit it to change teaching style for all domains at once, not per-domain content.** **Rule 0b** in that file sets the plain-language register for every learner-facing explanation (the app's UI copy follows the same rule — see `maintenance/app-internals.md`); exam terms and bank question text stay exact.
 
 ## Test locally before publishing
 ```
