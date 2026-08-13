@@ -6,6 +6,22 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.15.0] — 2026-08-13
+### Added
+- **Rule 0b: one plain-language register for every explanation a learner reads.** New section in `data/teaching-method.md`: one idea per sentence, active voice, everyday words, fact then consequence, no em dashes, no filler. A 12-year-old should follow any sentence that is not a technical term. It lives in ONE place (all five tutors already read that file), so `skills/dN-teacher/SKILL.md` only gained a pointer to it. Two hard boundaries stated in the rule itself: exam vocabulary keeps its exact English form inline (`stop_reason`, `tool_choice`, `PreToolUse`, *winning condition*, *axis*, every flag/field/file name), and question stems, options and the bank's `explanation` field are exam artefacts that stay exactly as `questions.json` has them.
+- **Exam-realistic fresh-question rules.** When the bank runs dry and a tutor invents a question, it must hold to the bank's own bar: three genuine near-misses (each tripping exactly one axis, no joke or off-topic options), no length tell, no formatting tell (plain text everywhere, since bolding a phrase in the correct option hands the answer away), one clear winning condition, anchored in one of the six scenarios. Includes a giveaway-vs-exam-grade worked example.
+- **Copy register for the app**, documented as its own section in `maintenance/app-internals.md`, so future UI edits hold the same bar.
+
+### Changed
+- **Every learner-facing string in the offline app rewritten to the register**: the 5-axis explainer (`AXIS_DESC` / `AXIS_ONELINE` / `AXIS_INFO`), the coach banner, the readiness verdict, the three malformed-JSON banners, all empty states, the mock-exam modes, the timer hint, the review-before-submit gate, the confirm dialogs, and the results + export screens. Layout, CSS classes and logic are untouched: only strings changed.
+- **`data/quick-reference.json`: all 83 `answer` rows rewritten** (the app's Cheatsheet/Reference tab), and **`data/exam-traps.md`: all 32 `Core rule` lines rewritten** so the projection does not drift from its source. The verbatim **"Exam Trap"** callouts are quotations from claudecertificationguide.com and were deliberately left as they are.
+- **`data/exam-traps.md` header: lesson count corrected from 30 to 32** (D1 7 · D2 6 · D3 7 · D4 6 · D5 6), with a note that these are the study guide's *lessons*, not the official blueprint's 30 *task statements* (D1 7 · D2 5 · D3 6 · D4 6 · D5 6), so the two counts differ on purpose.
+
+### Fixed
+- **`renderResults` hardcoded the pass line.** The verdict read "Above the 72% line" as a literal while `PASS_PCT` already existed, so changing the threshold would have left the text lying. It now reads from `PASS_PCT`.
+- **Dead code removed from the dashboard.** The v0.14 cinematic redesign replaced the 4-tile KPI strip with the readiness orb plus stat tiles but left the `kpis` array and `projColor` unread. Both are gone; `proj` stays, since the orb, verdict and hero subtitle use it.
+- Documented that **`AXIS_INFO.triggers` is data, not prose**: `axisTriggers()` splits the trigger chips from the trailing note on `" — "`, so that one em dash must survive any future copy pass. Noted in the code and in `maintenance/app-internals.md`.
+
 ## [0.14.0] — 2026-07-21
 ### Changed
 - **Merged `/ccaf:exam` + `/ccaf:stats` into a single `/ccaf:dashboard`.** Both opened the same app on the Dashboard; the merged skill opens it (Dashboard · Weak spots · Cheatsheet) and prints the text recap, and an exam is started from the in-app **Mock Exam** button. The old skills are deleted; all forward-facing refs repointed.
