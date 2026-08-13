@@ -23,12 +23,11 @@ to do next. From there the loop is:
 
 ```mermaid
 flowchart LR
-  A["/ccaf:init"] --> B["/ccaf:dN-teacher<br/>learn one domain"]
-  B --> C["/ccaf:dashboard<br/>Mock Exam"]
-  C --> D["copy the results JSON"]
-  D --> E["/ccaf:result<br/>record it"]
-  E --> F["/ccaf:dashboard<br/>see your weak spots"]
-  F --> B
+  A["/ccaf:init"] -->|set up| B["/ccaf:dN-teacher"]
+  B -->|learn a domain| C["/ccaf:dashboard"]
+  C -->|Mock Exam| D["copy the results JSON"]
+  D --> E["/ccaf:result"]
+  E -->|see your weak spots| B
 ```
 
 To update later: `/plugin marketplace update ccaf-marketplace`.
