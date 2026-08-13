@@ -5,27 +5,27 @@
       "title": "Agentic Architecture & Orchestration",
       "sections": [
         { "title": "Agentic loops (when to stop)", "rows": [
-          { "see": "how to know the agentic loop is done / when to terminate", "answer": "check the deterministic `stop_reason` field — never text presence, iteration caps, or “task complete” phrasing", "q_ids": [] },
-          { "see": "prevent the agent returning text (force a tool)", "answer": "don't force `tool_choice:'any'` to stop text — it causes infinite loops; stop on `stop_reason`", "q_ids": [] }
+          { "see": "how to know the agentic loop is done / when to terminate", "answer": "Check the `stop_reason` field. Never use text presence, an iteration cap, or 'task complete' phrasing.", "q_ids": [] },
+          { "see": "prevent the agent returning text (force a tool)", "answer": "Do not force `tool_choice:'any'` to stop text. That loops forever. Stop on `stop_reason`.", "q_ids": [] }
         ] },
         { "title": "Multi-agent orchestration & context passing", "rows": [
-          { "see": "coverage gaps in a multi-agent system / subagents missed things", "answer": "fix the coordinator's decomposition — don't blame subagents or add more", "q_ids": [] },
-          { "see": "make subagents talk to each other / share memory", "answer": "no — subagents are isolated; they communicate only through the coordinator and don't inherit its history", "q_ids": [] },
-          { "see": "subagent can't see the coordinator's history / other outputs", "answer": "pass complete context explicitly (incl. metadata) — nothing is auto-shared", "q_ids": [] },
-          { "see": "missing citations in the synthesis output", "answer": "root cause is context passed without metadata, not the synthesis agent", "q_ids": [] },
-          { "see": "independent tasks running one after another", "answer": "parallelise — issue parallel Task calls in one response", "q_ids": [] },
-          { "see": "`fork_session` vs `--resume`", "answer": "`--resume` = continue; `fork_session` = explore divergent branches", "q_ids": [] }
+          { "see": "coverage gaps in a multi-agent system / subagents missed things", "answer": "Fix how the coordinator splits the work. Do not blame the subagents or add more of them.", "q_ids": [] },
+          { "see": "make subagents talk to each other / share memory", "answer": "No. Subagents are isolated. They talk only through the coordinator and inherit none of its history.", "q_ids": [] },
+          { "see": "subagent can't see the coordinator's history / other outputs", "answer": "Pass the full context in the prompt, metadata included. Nothing is shared for you.", "q_ids": [] },
+          { "see": "missing citations in the synthesis output", "answer": "The cause is context passed without metadata, not the synthesis agent.", "q_ids": [] },
+          { "see": "independent tasks running one after another", "answer": "Run them at the same time. Issue parallel Task calls in one response.", "q_ids": [] },
+          { "see": "`fork_session` vs `--resume`", "answer": "`--resume` continues the same session. `fork_session` branches off to explore.", "q_ids": [] }
         ] },
         { "title": "Hooks & workflow enforcement", "rows": [
-          { "see": "high-stakes compliance must not fail / drop to 0%", "answer": "deterministic enforcement (a hook) — not a stronger prompt / few-shot / routing (those stay probabilistic)", "q_ids": [] },
-          { "see": "block a policy-violating action before it runs", "answer": "a PreToolUse hook (blocks before). PostToolUse is too late — the action already ran", "q_ids": [] },
-          { "see": "normalise / transform tool output consistently", "answer": "a PostToolUse hook (after) — not model-side transformation", "q_ids": [] },
-          { "see": "handing off to a human", "answer": "carry every critical field (customer ID, recommended action) — the human can't see the transcript", "q_ids": [] }
+          { "see": "high-stakes compliance must not fail / drop to 0%", "answer": "Use a hook. A stronger prompt, few-shot or routing can still fail, because the model can ignore text.", "q_ids": [] },
+          { "see": "block a policy-violating action before it runs", "answer": "A PreToolUse hook. It blocks before. PostToolUse is too late, the action already ran.", "q_ids": [] },
+          { "see": "normalise / transform tool output consistently", "answer": "A PostToolUse hook. It runs after. Do not ask the model to do it.", "q_ids": [] },
+          { "see": "handing off to a human", "answer": "Carry every important field, like customer ID and recommended action. The human cannot see the transcript.", "q_ids": [] }
         ] },
         { "title": "Decomposition & session state", "rows": [
-          { "see": "attention dilution / the model loses focus across many files", "answer": "multi-pass decomposition (+ a cross-batch integration pass) — not a bigger model or larger window", "q_ids": [] },
-          { "see": "open-ended investigation", "answer": "an adaptable flow, not a fixed pipeline", "q_ids": [] },
-          { "see": "only 3 of 50 files changed", "answer": "fresh start + inject a summary of the 3 — don't re-explore everything or `--resume` (stale tool results)", "q_ids": [] }
+          { "see": "attention dilution / the model loses focus across many files", "answer": "Split the work into passes, then add one pass that joins the batches. A bigger model or window does not fix it.", "q_ids": [] },
+          { "see": "open-ended investigation", "answer": "Use a flow that adapts, not a fixed pipeline.", "q_ids": [] },
+          { "see": "only 3 of 50 files changed", "answer": "Start a fresh session and inject a summary of the 3 files. Do not re-explore everything, and do not `--resume`, because its tool results are stale.", "q_ids": [] }
         ] }
       ]
     },
@@ -33,28 +33,28 @@
       "title": "Tool Design & MCP Integration",
       "sections": [
         { "title": "Tool interface & errors", "rows": [
-          { "see": "the agent picks the wrong tool / misroutes", "answer": "clarify and enrich the tool descriptions first — they're the primary selection mechanism (not few-shot or a classifier)", "q_ids": [] },
-          { "see": "a tool failed — how should the agent recover", "answer": "return structured error metadata (`errorCategory`, `isRetryable`, `description`) so the agent picks the right recovery", "q_ids": [] },
-          { "see": "empty result from a *successful* query", "answer": "don't retry — a valid empty result isn't a failure", "q_ids": [] }
+          { "see": "the agent picks the wrong tool / misroutes", "answer": "Improve the tool descriptions first. Claude picks tools from them, not from few-shot or a classifier.", "q_ids": [] },
+          { "see": "a tool failed — how should the agent recover", "answer": "Return structured error fields: `errorCategory`, `isRetryable`, `description`. Then the agent can pick the right recovery.", "q_ids": [] },
+          { "see": "empty result from a *successful* query", "answer": "Do not retry. An empty result from a successful query is not a failure.", "q_ids": [] }
         ] },
         { "title": "Tool choice & distribution", "rows": [
-          { "see": "the agent has too many tools (e.g. 18) / unreliable selection", "answer": "~4–5 role-specific tools per agent (scope cross-role tools)", "q_ids": [] },
-          { "see": "structured output is required", "answer": "a `tool_choice` that guarantees a call — `'auto'` may return text", "q_ids": [] }
+          { "see": "the agent has too many tools (e.g. 18) / unreliable selection", "answer": "Give each agent about 4 or 5 tools for its own role. Split the tools that cross roles.", "q_ids": [] },
+          { "see": "structured output is required", "answer": "Use a `tool_choice` that forces a call. `'auto'` can return text instead.", "q_ids": [] }
         ] },
         { "title": "MCP integration", "rows": [
-          { "see": "MCP available to the whole team", "answer": "project `.mcp.json` (committed). `~/.claude.json` is user-level / personal", "q_ids": [] },
-          { "see": "a standard integration (e.g. Jira)", "answer": "use the existing/standard MCP server — don't build a custom one", "q_ids": [] },
-          { "see": "secrets in the MCP config", "answer": "env-var expansion `${VAR}` — never commit credentials", "q_ids": [] }
+          { "see": "MCP available to the whole team", "answer": "Commit a project `.mcp.json`. `~/.claude.json` is personal to one user.", "q_ids": [] },
+          { "see": "a standard integration (e.g. Jira)", "answer": "Use the standard MCP server that already exists. Do not build your own.", "q_ids": [] },
+          { "see": "secrets in the MCP config", "answer": "Use env-var expansion `${VAR}`. Never commit credentials.", "q_ids": [] }
         ] },
         { "title": "Built-in tools", "rows": [
-          { "see": "find where a function is called / search file *contents*", "answer": "Grep (searches contents). Glob searches paths", "q_ids": [] },
-          { "see": "find files by name / extension pattern", "answer": "Glob (paths). Grep is for contents", "q_ids": [] },
-          { "see": "modify a file", "answer": "try Edit first; widen context on a non-unique match before escalating to Read + Write", "q_ids": [] }
+          { "see": "find where a function is called / search file *contents*", "answer": "Grep searches file contents. Glob matches paths.", "q_ids": [] },
+          { "see": "find files by name / extension pattern", "answer": "Glob matches paths. Grep searches contents.", "q_ids": [] },
+          { "see": "modify a file", "answer": "Try Edit first. If the match is not unique, add more surrounding context before you fall back to Read plus Write.", "q_ids": [] }
         ] },
         { "title": "MCP protocol & tool search", "rows": [
-          { "see": "do all tool definitions load at connection time?", "answer": "no (with tool search on, the default) — only names + server instructions load; full schemas are deferred / on-demand", "q_ids": [] },
-          { "see": "expose read-only data", "answer": "a resource (app-controlled), not a tool — a tool causes exploratory calls", "q_ids": [] },
-          { "see": "many objects share the same shape", "answer": "one templated resource URI (`db://tables/{name}/schema`), not one resource per object", "q_ids": [] }
+          { "see": "do all tool definitions load at connection time?", "answer": "No. With tool search on (the default) only names and server instructions load. Full schemas load on demand.", "q_ids": [] },
+          { "see": "expose read-only data", "answer": "Use a resource, which the app controls. A tool makes the model call it just to look around.", "q_ids": [] },
+          { "see": "many objects share the same shape", "answer": "Use one templated resource URI, like `db://tables/{name}/schema`. Do not add one resource per object.", "q_ids": [] }
         ] }
       ]
     },
@@ -62,48 +62,48 @@
       "title": "Claude Code Configuration & Workflows",
       "sections": [
         { "title": "Files & standards (CLAUDE.md)", "rows": [
-          { "see": "shared with team / all developers / no manual setup", "answer": "project-level `.claude/…`, committed to git", "q_ids": [] },
-          { "see": "a new hire gets no instructions, same repo", "answer": "instructions live in personal `~/.claude/` (not in git) — move them to project-level", "q_ids": [] },
-          { "see": "first diagnostic step — works for one dev, not another", "answer": "the `/memory` command — shows which files are actually loaded", "q_ids": [] },
-          { "see": "guarantee / always / at every save / regardless of what Claude does", "answer": "a hook (auto-script on an event). Never CLAUDE.md / a rule / “mark as important”", "q_ids": [] },
-          { "see": "two rules conflict, must always hold", "answer": "a hook / `settings.json` (CLAUDE.md has no hard precedence)", "q_ids": [] },
-          { "see": "CLAUDE.md has grown to 400–500 lines, all mixed together", "answer": "split it: `@import` external files, or a `.claude/rules/` folder by topic", "q_ids": [] }
+          { "see": "shared with team / all developers / no manual setup", "answer": "Put it in the project `.claude/…` folder and commit it to git.", "q_ids": [] },
+          { "see": "a new hire gets no instructions, same repo", "answer": "The instructions sit in the personal `~/.claude/` folder, which git never shares. Move them into the project.", "q_ids": [] },
+          { "see": "first diagnostic step — works for one dev, not another", "answer": "Run `/memory`. It shows which files really loaded.", "q_ids": [] },
+          { "see": "guarantee / always / at every save / regardless of what Claude does", "answer": "Use a hook. It is a script that runs on an event. Never CLAUDE.md, a rule, or 'mark as important'.", "q_ids": [] },
+          { "see": "two rules conflict, must always hold", "answer": "Use a hook or `settings.json`. CLAUDE.md has no hard precedence.", "q_ids": [] },
+          { "see": "CLAUDE.md has grown to 400–500 lines, all mixed together", "answer": "Split it. Use `@import` for separate files, or a `.claude/rules/` folder by topic.", "q_ids": [] }
         ] },
         { "title": "Commands & skills", "rows": [
-          { "see": "available to the whole team (command / skill)", "answer": "`.claude/commands/` or `.claude/skills/` + git", "q_ids": [] },
-          { "see": "personal, without affecting teammates", "answer": "`~/.claude/…` (personal folder)", "q_ids": [] },
-          { "see": "noisy output / exploration clutters the conversation / keep the full analysis", "answer": "`context: fork` (the skill runs in a separate context; only the summary returns)", "q_ids": [] },
-          { "see": "a rule must ALWAYS apply automatically", "answer": "NOT a skill (a skill runs only when invoked) — use a hook", "q_ids": [] }
+          { "see": "available to the whole team (command / skill)", "answer": "Put it in `.claude/commands/` or `.claude/skills/` and commit it.", "q_ids": [] },
+          { "see": "personal, without affecting teammates", "answer": "Put it in your personal `~/.claude/…` folder.", "q_ids": [] },
+          { "see": "noisy output / exploration clutters the conversation / keep the full analysis", "answer": "Use `context: fork`. The skill runs in its own context and only the summary comes back.", "q_ids": [] },
+          { "see": "a rule must ALWAYS apply automatically", "answer": "Not a skill. A skill runs only when someone invokes it. Use a hook.", "q_ids": [] }
         ] },
         { "title": "Rules by file type", "rows": [
-          { "see": "conventions for one file type scattered across 50+ folders (.tf, SQL, Java)", "answer": "`.claude/rules/` with a glob (`paths: [\"**/*.test.tsx\"]`)", "q_ids": [] },
-          { "see": "…rather than a CLAUDE.md in every folder", "answer": "correct — a glob is better: one place, auto-loads, saves context", "q_ids": [] }
+          { "see": "conventions for one file type scattered across 50+ folders (.tf, SQL, Java)", "answer": "Use `.claude/rules/` with a glob, like `paths: [\"**/*.test.tsx\"]`.", "q_ids": [] },
+          { "see": "…rather than a CLAUDE.md in every folder", "answer": "Yes, the glob is better. One place, it loads by itself, and it saves context.", "q_ids": [] }
         ] },
         { "title": "Work mode", "rows": [
-          { "see": "multi-file / architecture / migration of 30–60 files", "answer": "plan mode (plan first)", "q_ids": [] },
-          { "see": "single-file fix, clear stack trace, one `if`", "answer": "direct execution (just do it)", "q_ids": [] },
-          { "see": "new to the domain / requirements unclear", "answer": "interview — Claude asks clarifying questions first", "q_ids": [] },
-          { "see": "design first, then implement", "answer": "plan → direct", "q_ids": [] },
-          { "see": "isolate noisy code exploration", "answer": "a subagent (context isolation)", "q_ids": [] }
+          { "see": "multi-file / architecture / migration of 30–60 files", "answer": "Use plan mode. Plan first, then build.", "q_ids": [] },
+          { "see": "single-file fix, clear stack trace, one `if`", "answer": "Just do it. Plan mode is too heavy here.", "q_ids": [] },
+          { "see": "new to the domain / requirements unclear", "answer": "Let Claude ask questions first to close the gap.", "q_ids": [] },
+          { "see": "design first, then implement", "answer": "Plan first, then execute directly.", "q_ids": [] },
+          { "see": "isolate noisy code exploration", "answer": "Use a subagent. It keeps the noise in its own context.", "q_ids": [] }
         ] },
         { "title": "Refining the result", "rows": [
-          { "see": "Claude reads the description differently each time", "answer": "give 2 concrete examples → done (don't rewrite the prose) — few-shot", "q_ids": [] },
-          { "see": "complex transform with many edge cases", "answer": "give Claude failing tests first (this is iterative refinement / TDD)", "q_ids": [] },
-          { "see": "edits are independent of each other", "answer": "give them one at a time", "q_ids": [] },
-          { "see": "edits affect each other", "answer": "give them all in one message", "q_ids": [] }
+          { "see": "Claude reads the description differently each time", "answer": "Give 2 concrete examples, which is few-shot. Do not rewrite the prose again.", "q_ids": [] },
+          { "see": "complex transform with many edge cases", "answer": "Give Claude failing tests first. This is TDD.", "q_ids": [] },
+          { "see": "edits are independent of each other", "answer": "Give them one at a time.", "q_ids": [] },
+          { "see": "edits affect each other", "answer": "Give them all in one message.", "q_ids": [] }
         ] },
         { "title": "CI/CD (the pipeline)", "rows": [
-          { "see": "the `claude` script hangs / waits for input", "answer": "the `-p` flag (non-interactive mode)", "q_ids": [] },
-          { "see": "need a machine-readable result for auto-comments", "answer": "`--output-format json`", "q_ids": [] },
-          { "see": "reviewing its own code in the same session", "answer": "not allowed — a separate, independent Claude run for review", "q_ids": [] },
-          { "see": "re-review after new commits, don't duplicate comments", "answer": "feed prior findings into context + “report only what's new”", "q_ids": [] }
+          { "see": "the `claude` script hangs / waits for input", "answer": "Add the `-p` flag. It runs without a prompt.", "q_ids": [] },
+          { "see": "need a machine-readable result for auto-comments", "answer": "Use `--output-format json`.", "q_ids": [] },
+          { "see": "reviewing its own code in the same session", "answer": "Do not do that. Use a separate, independent Claude run for the review.", "q_ids": [] },
+          { "see": "re-review after new commits, don't duplicate comments", "answer": "Feed the earlier findings into the context and ask for new findings only.", "q_ids": [] }
         ] },
         { "title": "Startup flags (CLI)", "rows": [
-          { "see": "add one or two rules, keep normal Claude", "answer": "`--append-system-prompt` (adds on top)", "q_ids": [] },
-          { "see": "the root persona is wrong (e.g. a release-notes generator starts running tests)", "answer": "`--system-prompt` (replaces entirely)", "q_ids": [] },
-          { "see": "same, but text from a file", "answer": "the `…-file` variants", "q_ids": [] },
-          { "see": "skip ALL auto-load (CLAUDE.md, skills, hooks, MCP) — fast repeated calls", "answer": "`--bare`", "q_ids": [] },
-          { "see": "use ONLY the MCP from this config, drop the rest", "answer": "`--strict-mcp-config`", "q_ids": [] }
+          { "see": "add one or two rules, keep normal Claude", "answer": "Use `--append-system-prompt`. It adds to the normal prompt.", "q_ids": [] },
+          { "see": "the root persona is wrong (e.g. a release-notes generator starts running tests)", "answer": "Use `--system-prompt`. It replaces the prompt completely.", "q_ids": [] },
+          { "see": "same, but text from a file", "answer": "Use the `…-file` variants of the same flags.", "q_ids": [] },
+          { "see": "skip ALL auto-load (CLAUDE.md, skills, hooks, MCP) — fast repeated calls", "answer": "Use `--bare`.", "q_ids": [] },
+          { "see": "use ONLY the MCP from this config, drop the rest", "answer": "Use `--strict-mcp-config`.", "q_ids": [] }
         ] }
       ]
     },
@@ -111,24 +111,24 @@
       "title": "Prompt Engineering & Structured Output",
       "sections": [
         { "title": "Criteria & few-shot", "rows": [
-          { "see": "too many false positives in review", "answer": "explicit categorical criteria (exactly what to flag/skip) + code examples — not “be conservative” or confidence thresholds", "q_ids": [] },
-          { "see": "inconsistent output formatting / detailed instructions didn't work", "answer": "few-shot examples (with reasoning) — the most effective first intervention, not “more instructions”", "q_ids": [] }
+          { "see": "too many false positives in review", "answer": "Write explicit criteria: exactly what to flag and what to skip, plus code examples. Not 'be conservative', and not a confidence threshold.", "q_ids": [] },
+          { "see": "inconsistent output formatting / detailed instructions didn't work", "answer": "Add few-shot examples with the reasoning shown. That works better than more instructions.", "q_ids": [] }
         ] },
         { "title": "Structured output", "rows": [
-          { "see": "guarantee a tool call / structured output", "answer": "`tool_choice:'any'` guarantees a call; `'auto'` may return text", "q_ids": [] },
-          { "see": "does a JSON schema prevent all extraction errors?", "answer": "no — it kills syntax errors only; semantic correctness still needs validation", "q_ids": [] },
-          { "see": "the model fabricates values when the source lacks info", "answer": "make fields optional / nullable — not all-required", "q_ids": [] }
+          { "see": "guarantee a tool call / structured output", "answer": "`tool_choice:'any'` forces a call. `'auto'` can return text.", "q_ids": [] },
+          { "see": "does a JSON schema prevent all extraction errors?", "answer": "No. A schema stops syntax errors only. You still validate that the values are right.", "q_ids": [] },
+          { "see": "the model fabricates values when the source lacks info", "answer": "Make the fields optional or nullable. Do not require every field.", "q_ids": [] }
         ] },
         { "title": "Validation & retry", "rows": [
-          { "see": "extraction failed — retry", "answer": "resend {original doc + failed extraction + the specific error}; blind retries repeat the mistake", "q_ids": [] },
-          { "see": "the information is genuinely absent", "answer": "can't be retried into existence — retries fix format/structure, not missing data", "q_ids": [] }
+          { "see": "extraction failed — retry", "answer": "Send the original document, the failed extraction and the exact error. A blind retry repeats the mistake.", "q_ids": [] },
+          { "see": "the information is genuinely absent", "answer": "A retry cannot invent it. Retries fix format and structure, never missing data.", "q_ids": [] }
         ] },
         { "title": "Batch processing", "rows": [
-          { "see": "cut cost — move everything to batch", "answer": "batch only for latency-tolerant async work; keep blocking/real-time & multi-turn flows synchronous (batch: 50% cost, up to 24h)", "q_ids": [] }
+          { "see": "cut cost — move everything to batch", "answer": "Use the Batch API only where waiting is fine. Keep real-time and multi-turn flows synchronous. Batch costs 50% less and can take up to 24 hours.", "q_ids": [] }
         ] },
         { "title": "Multi-pass review", "rows": [
-          { "see": "review its own code in the same session", "answer": "an independent instance (no prior context) — self-review's retained reasoning won't question itself", "q_ids": [] },
-          { "see": "large multi-file review", "answer": "per-file passes + a separate cross-file integration pass — not a single pass or a bigger-context model", "q_ids": [] }
+          { "see": "review its own code in the same session", "answer": "Use a separate instance with no prior context. In the same session the model keeps its own reasoning and will not question it.", "q_ids": [] },
+          { "see": "large multi-file review", "answer": "Review each file in its own pass, then add one pass across files. One big pass or a bigger-context model does not fix it.", "q_ids": [] }
         ] }
       ]
     },
@@ -136,30 +136,30 @@
       "title": "Context Management & Reliability",
       "sections": [
         { "title": "Context window management", "rows": [
-          { "see": "long conversation with transactional data (numbers / dates / IDs)", "answer": "extract facts into a persistent structured facts block sent every prompt — summarisation destroys them", "q_ids": [] },
-          { "see": "“lost in the middle”", "answer": "a structural fix — key facts first + section headers, not “pay attention”", "q_ids": [] }
+          { "see": "long conversation with transactional data (numbers / dates / IDs)", "answer": "Pull the facts into a structured block and send it with every prompt. Summarising loses them.", "q_ids": [] },
+          { "see": "“lost in the middle”", "answer": "Fix the structure. Put the key facts first and add section headers. Do not write 'pay attention'.", "q_ids": [] }
         ] },
         { "title": "Escalation & ambiguity", "rows": [
-          { "see": "the customer is frustrated / angry", "answer": "sentiment isn't a signal — escalate on explicit signals only (human request, policy gap, can't advance)", "q_ids": [] },
-          { "see": "self-reported confidence as an escalation signal", "answer": "poorly calibrated — not a valid escalation signal", "q_ids": [] },
-          { "see": "an explicit human request to escalate", "answer": "escalate immediately — don't try to resolve first", "q_ids": [] },
-          { "see": "an ambiguous customer match", "answer": "ask for more identifiers — don't guess via heuristics (privacy risk)", "q_ids": [] }
+          { "see": "the customer is frustrated / angry", "answer": "Mood is not a signal. Escalate only on explicit ones: the customer asks for a human, policy has no answer, or the agent cannot go further.", "q_ids": [] },
+          { "see": "self-reported confidence as an escalation signal", "answer": "Self-reported confidence is badly calibrated. It is not a valid escalation signal.", "q_ids": [] },
+          { "see": "an explicit human request to escalate", "answer": "Escalate at once. Do not try to solve it first.", "q_ids": [] },
+          { "see": "an ambiguous customer match", "answer": "Ask for another identifier. Guessing risks showing the wrong person's data.", "q_ids": [] }
         ] },
         { "title": "Error propagation (multi-agent)", "rows": [
-          { "see": "a subagent times out / errors", "answer": "propagate structured error context (type, action, partial results, alternatives); don't return empty-as-success or kill the whole pipeline", "q_ids": [] }
+          { "see": "a subagent times out / errors", "answer": "Pass on structured error context: the type, the action, any partial results and the alternatives. Never report empty as success, and never kill the whole pipeline.", "q_ids": [] }
         ] },
         { "title": "Codebase exploration & degradation", "rows": [
-          { "see": "context degradation exploring a large codebase", "answer": "an attention-quality problem — scratchpad files, subagent context isolation, state manifests; not a bigger window", "q_ids": [] },
-          { "see": "why delegate to a subagent", "answer": "the primary benefit is context isolation, not just parallelisation", "q_ids": [] }
+          { "see": "context degradation exploring a large codebase", "answer": "This is an attention problem. Use scratchpad files, subagents for isolation, and state manifests. A bigger window does not fix it.", "q_ids": [] },
+          { "see": "why delegate to a subagent", "answer": "The main gain is context isolation, not speed.", "q_ids": [] }
         ] },
         { "title": "Human review & calibration", "rows": [
-          { "see": "97% aggregate accuracy — automate everything?", "answer": "validate per document-type / field (one type could be 40%); calibrate on labelled data", "q_ids": [] },
-          { "see": "which items to send for human review", "answer": "stratified sampling on the highest-uncertainty items — not only low-confidence, not spread evenly", "q_ids": [] }
+          { "see": "97% aggregate accuracy — automate everything?", "answer": "No. Check accuracy per document type and per field, because one type could sit at 40%. Calibrate on labelled data.", "q_ids": [] },
+          { "see": "which items to send for human review", "answer": "Use stratified sampling and take the most uncertain items. Not only the low-confidence ones, and not an even spread.", "q_ids": [] }
         ] },
         { "title": "Provenance & synthesis", "rows": [
-          { "see": "two credible sources conflict", "answer": "annotate both with source + date and let the consumer decide — don't pick the most recent", "q_ids": [] },
-          { "see": "different numbers across sources", "answer": "not necessarily contradictions — different dates explain them; require dates in the output", "q_ids": [] },
-          { "see": "the synthesis agent paraphrases", "answer": "preserve claim→source mappings through the pipeline — attribution dies in summarisation", "q_ids": [] }
+          { "see": "two credible sources conflict", "answer": "Report both with their source and date, and let the reader decide. Do not just take the newest.", "q_ids": [] },
+          { "see": "different numbers across sources", "answer": "They may not contradict at all. Different dates explain most of it, so require dates in the output.", "q_ids": [] },
+          { "see": "the synthesis agent paraphrases", "answer": "Keep the claim to source mapping all the way through. Summarising loses the attribution.", "q_ids": [] }
         ] }
       ]
     }

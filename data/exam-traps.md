@@ -17,7 +17,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Parsing natural-language phrases like "I'm done" / "task complete" to decide termination.
 - Forcing `tool_choice: 'any'` to prevent the agent returning text — creates infinite loops.
 
-**Core rule:** Terminate on the deterministic `stop_reason` field, not text presence, iteration caps, NL phrases, or forced tool_choice.
+**Core rule:** Stop on the `stop_reason` field. Never stop on text presence, an iteration cap, a natural-language phrase, or a forced `tool_choice`.
 
 ### 1.2 Multi-Agent Orchestration
 **Exam Traps:**
@@ -26,7 +26,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Proposing direct inter-subagent communication as an efficiency improvement.
 - Adding more subagents to fix a decomposition problem.
 
-**Core rule:** Coverage is set by the coordinator's decomposition; subagents are isolated and talk only through the coordinator — fix decomposition, don't add/wire agents.
+**Core rule:** The coordinator's decomposition sets the coverage. Subagents are isolated and talk only through the coordinator. Fix the decomposition. Do not add agents or wire them to each other.
 
 ### 1.3 Subagent Invocation and Context Passing
 **Exam Traps:**
@@ -35,7 +35,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Proposing sequential invocation for tasks that can run independently (use parallel Task calls in one response).
 - Confusing `fork_session` with `--resume`.
 
-**Core rule:** Subagents receive only what the coordinator explicitly passes (incl. metadata); pass complete context, parallelise independent work.
+**Core rule:** A subagent gets only what the coordinator passes it, metadata included. Pass the full context, and run independent work in parallel.
 
 ### 1.4 Workflow Enforcement and Handoff
 **Exam Traps:**
@@ -44,7 +44,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Routing classifiers to fix per-agent compliance (failure is within the agent sequence, not routing).
 - Handoff summaries that omit critical fields (customer ID, recommended action) — the human can't see the transcript.
 
-**Core rule:** High-stakes compliance = deterministic enforcement (not prompts/few-shot/routing); handoffs must carry every critical field.
+**Core rule:** High-stakes compliance needs deterministic enforcement, not prompts, few-shot or routing. Every handoff must carry every critical field.
 
 ### 1.5 Agent SDK Hooks
 **Exam Traps:**
@@ -53,7 +53,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Model-side data transformation instead of PostToolUse hooks for normalisation — model normalisation is inconsistent.
 - Confusing hook direction — PreToolUse blocks *before*, PostToolUse transforms *after*.
 
-**Core rule:** PreToolUse = block before execution; PostToolUse = normalise after. Hooks, not prompts, give 100% enforcement.
+**Core rule:** PreToolUse blocks before the action runs. PostToolUse normalises after it. Only hooks enforce 100%. Prompts never do.
 
 ### 1.6 Task Decomposition Strategies
 **Exam Traps:**
@@ -62,7 +62,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Fixed pipelines for open-ended investigation (open-ended needs adaptability).
 - Batching files without a cross-file integration pass (misses cross-batch issues).
 
-**Core rule:** Attention dilution → multi-pass decomposition (+ cross-batch integration, adaptable flows), not bigger models/prompts/windows.
+**Core rule:** Attention dilution needs multi-pass decomposition, a cross-batch integration pass, and flows that adapt. A bigger model, prompt or window does not fix it.
 
 ### 1.7 Session State and Resumption
 **Exam Traps:**
@@ -71,7 +71,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Confusing `fork_session` (divergent branches) with `--resume` (continuation).
 - Using `fork_session` for stale context after file changes — the fork inherits stale results.
 
-**Core rule:** After file changes → fresh start with summary injection (not `--resume`/`fork_session`); `--resume` = continue, `fork_session` = explore branches.
+**Core rule:** After files change, start a fresh session and inject a summary. Do not use `--resume` or `fork_session`. `--resume` continues a session, `fork_session` branches off to explore.
 
 ---
 
@@ -84,7 +84,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Consolidating similar tools into one as the first step.
 - Ignoring system-prompt wording after updating tool descriptions.
 
-**Core rule:** Tool descriptions are the primary selection mechanism — clarify/enrich descriptions first.
+**Core rule:** Claude picks tools from their descriptions. Improve the descriptions first.
 
 ### 2.2 Structured Error Responses
 **Exam Traps:**
@@ -93,7 +93,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Treating business errors as retryable.
 - Silently suppressing subagent errors by returning empty results as success.
 
-**Core rule:** Structured error metadata (`errorCategory`, `isRetryable`, `description`) lets the agent pick the right recovery instead of uniform retries.
+**Core rule:** Structured error fields (`errorCategory`, `isRetryable`, `description`) let the agent pick the right recovery. Uniform retries cannot.
 
 ### 2.3 Tool Distribution & Tool Choice
 **Exam Traps:**
@@ -102,7 +102,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Giving an agent 18 tools and expecting reliable selection.
 - Giving a subagent a generic `fetch_url` when a constrained `load_document` would suffice.
 
-**Core rule:** ~4-5 role-specific tools per agent (scoped cross-role tools) balances functionality vs. selection reliability/latency.
+**Core rule:** Give each agent about 4 or 5 tools for its own role, and scope down the tools that cross roles. That keeps selection reliable and latency low.
 
 ### 2.4 MCP Server Integration
 **Exam Traps:**
@@ -111,7 +111,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Committing credentials in `.mcp.json` instead of env-var expansion.
 - Sparse MCP tool descriptions → agent prefers built-in tools.
 
-**Core rule:** Project `.mcp.json` = team-wide; user `~/.claude.json` = personal; protect secrets with `${VAR}` expansion.
+**Core rule:** A project `.mcp.json` serves the whole team. A user `~/.claude.json` is personal. Keep secrets in `${VAR}` expansion.
 
 ### 2.5 Built-in Tools
 **Exam Traps:**
@@ -121,7 +121,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Defaulting to Read + Write for every modification instead of trying Edit first.
 - Jumping to Read + Write the moment Edit reports a non-unique match (widen context first).
 
-**Core rule:** Grep = contents, Glob = paths; Edit first, widen context before escalating to Read + Write.
+**Core rule:** Grep searches contents. Glob matches paths. Try Edit first, and widen the context before you fall back to Read plus Write.
 
 ### 2.6 MCP Tool Search & Protocol Mechanics
 **Exam Traps:**
@@ -131,7 +131,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - One direct resource per object when many share the same shape → use a single templated URI (`db://tables/{name}/schema`).
 - Assuming the client re-requests `tools/list` every turn (the server notifies via `list_changed`).
 
-**Core rule:** Three primitives by initiator — tool (model-controlled action), resource (app-controlled read-only data), prompt (user-controlled template = slash command in Claude Code). Sequence: `initialize` → `*/list` discovery at connect → `tools/call` on use → `list_changed` on change. `ENABLE_TOOL_SEARCH`: unset/`true` defer, `false` load upfront, `auto` load-if-small-else-defer.
+**Core rule:** Three primitives, told apart by who starts them. A tool is an action the model controls. A resource is read-only data the app controls. A prompt is a template the user controls, which is a slash command in Claude Code. The order is `initialize`, then `*/list` discovery at connect, then `tools/call` on use, then `list_changed` when something changes. `ENABLE_TOOL_SEARCH`: unset or `true` defers the schemas, `false` loads them upfront, `auto` loads them if the set is small and defers otherwise.
 
 ---
 
@@ -143,7 +143,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Thinking `/memory` *triggers* configuration loading.
 - Assuming a directory-level CLAUDE.md is best for cross-directory conventions.
 
-**Core rule:** CLAUDE.md concatenates across 3 levels (user/project/directory) with **no strict precedence** → enforce conflicting rules via `settings.json`/hooks, not scoping.
+**Core rule:** CLAUDE.md joins up across 3 levels (user, project, directory) and has **no strict precedence**. Enforce conflicting rules with `settings.json` or a hook, not with scoping.
 
 ### 3.2 Custom Slash Commands and Skills
 **Exam Traps:**
@@ -152,7 +152,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Not knowing when to use `context: fork`.
 - Putting task-specific workflows in CLAUDE.md.
 
-**Core rule:** Skills = on-demand, task-specific (explicit/intent-matched); CLAUDE.md = always-loaded universal standards.
+**Core rule:** A skill runs on demand for one task, when you call it or it matches your intent. CLAUDE.md always loads and holds the universal standards.
 
 ### 3.3 Path-Specific Rules for Conditional Convention Loading
 **Exam Traps:**
@@ -160,7 +160,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Placing file-type-specific conventions in root CLAUDE.md.
 - Confusing skills with path-specific rules for automatic convention application.
 
-**Core rule:** Path-specific rules (glob frontmatter) load conventions only when editing matching file types — token-efficient across dirs.
+**Core rule:** Path-specific rules use a glob in the frontmatter. They load conventions only when you edit a matching file type, so they stay cheap across many folders.
 
 ### 3.4 Plan Mode vs Direct Execution
 **Exam Traps:**
@@ -169,7 +169,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Not recognising the plan-then-execute hybrid pattern.
 - Starting direct execution and switching to plan mode only when complexity emerges.
 
-**Core rule:** Choose by **ambiguity/scope, not difficulty** — plan mode for multi-file/architectural, direct for well-scoped fixes.
+**Core rule:** Choose by **scope and ambiguity, not difficulty**. Plan mode for multi-file or architectural work, direct execution for a well-scoped fix.
 
 ### 3.5 Iterative Refinement Techniques
 **Exam Traps:**
@@ -177,7 +177,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Not recognising when to batch vs sequence feedback.
 - Confusing the interview pattern with the examples technique.
 
-**Core rule:** Concrete I/O examples for inconsistent interpretation; test-driven iteration for complex transformations; **interview pattern for unfamiliar domains**.
+**Core rule:** Inconsistent interpretation needs concrete input and output examples. A complex transform needs test-driven iteration. **An unfamiliar domain needs the interview pattern.**
 
 ### 3.6 CI/CD Integration
 **Exam Traps:**
@@ -186,7 +186,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Using the Batch API for pre-merge CI checks (no latency SLA → use real-time API for blocking flows).
 - Not including prior review findings in later runs → duplicate comments erode trust.
 
-**Core rule:** `-p` = non-interactive, `--output-format json` = machine-parseable, session isolation + incremental context = effective automated review.
+**Core rule:** `-p` runs without a prompt. `--output-format json` gives a machine-readable result. Automated review needs a separate session plus the earlier findings as context.
 
 ### 3.7 System-Prompt & Startup Flags (CLI)
 **Exam Traps:**
@@ -195,7 +195,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Reaching for `--strict-mcp-config` or `--disable-slash-commands` (each skips only PART of discovery) when the scenario wants the ENTIRE startup pipeline skipped → that's `--bare`.
 - Using `--bare` when the job still needs CLAUDE.md/skills/hooks and only wants to scope MCP config → that's `--strict-mcp-config`.
 
-**Core rule:** Append = layer on the default (keep identity); Replace = swap the base (you own tool guidance/safety). `-file` variants read from a file; append composes with one replacement base, but there is only one base identity. `--bare` skips ALL auto-discovery (CLAUDE.md, skills, hooks, plugins, MCP) leaving Bash + file tools — for scripted `-p` runs.
+**Core rule:** Append layers on top of the default and keeps the identity. Replace swaps the base, so you own the tool guidance and the safety text. The `-file` variants read the text from a file. Append composes with one replacement base, but there is only ever one base identity. `--bare` skips ALL auto-discovery (CLAUDE.md, skills, hooks, plugins, MCP) and leaves Bash plus the file tools, which suits scripted `-p` runs.
 
 ---
 
@@ -207,7 +207,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Assuming confidence thresholds fix false-positive problems.
 - Keeping all review categories active while iterating on a high-false-positive category.
 
-**Core rule:** Explicit categorical criteria (exactly what to flag/skip) + concrete code examples beat vague instructions and confidence filtering.
+**Core rule:** Explicit criteria (exactly what to flag and what to skip) plus concrete code examples beat vague instructions and confidence filtering.
 
 ### 4.2 Few-Shot Prompting
 **Exam Traps:**
@@ -215,7 +215,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Thinking few-shot examples only teach literal pattern-matching (they teach judgment criteria that generalise).
 - Using confidence thresholds to fix inconsistent judgement calls.
 
-**Core rule:** When detailed instructions fail to give consistent output, few-shot examples (with reasoning) are the most effective first intervention.
+**Core rule:** When detailed instructions still give inconsistent output, few-shot examples with the reasoning shown are the best first move.
 
 ### 4.3 Structured Output with Tool Use
 **Exam Traps:**
@@ -223,7 +223,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Confusing `tool_choice: 'auto'` (may return text) with `'any'` (guarantees a tool call).
 - Making all schema fields required → model fabricates values when the source lacks info (use optional/nullable).
 
-**Core rule:** tool_use + optional/nullable fields kills syntax errors & fabrication; semantic correctness still needs separate validation.
+**Core rule:** `tool_use` with optional or nullable fields stops syntax errors and fabrication. You still validate the values separately.
 
 ### 4.4 Validation, Retry, and Feedback Loops
 **Exam Traps:**
@@ -231,7 +231,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Retrying without including the specific validation error → identical mistakes repeat.
 - Relying on schema validation alone without semantic checks.
 
-**Core rule:** Effective retry resends {original doc + failed extraction + specific error}; absent info can't be retried into existence.
+**Core rule:** A good retry resends the original document, the failed extraction and the exact error. A retry cannot invent information that is not there.
 
 ### 4.5 Batch Processing Strategies
 **Exam Traps:**
@@ -239,7 +239,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Assuming batch results arrive quickly (no latency SLA; up to 24h).
 - Using batch API for workflows needing multi-turn tool calling (unsupported in a single request).
 
-**Core rule:** Batch API = latency-tolerant, async-consumed work only; synchronous API when someone's blocked waiting or multi-turn tool calling is needed. (50% cost, `custom_id`, 24h window.)
+**Core rule:** Use the Batch API only where waiting is fine and the results are read later. Use the synchronous API when someone waits on the answer, or when you need multi-turn tool calling. Batch costs 50% less, uses `custom_id`, and has a 24-hour window.
 
 ### 4.6 Multi-Instance and Multi-Pass Review
 **Exam Traps:**
@@ -248,7 +248,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Switching to a larger-context model to fix attention dilution.
 - Uncalibrated confidence scores for automated review routing.
 
-**Core rule:** Independent instances (no prior context) beat self-review; large reviews need per-file passes + a separate cross-file integration pass.
+**Core rule:** An independent instance with no prior context beats self-review. A large review needs one pass per file plus a separate pass across files.
 
 ---
 
@@ -261,7 +261,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Keeping full tool results "in case" (40+ field lookups exhaust the budget).
 - Believing history can be selectively truncated freely (API is stateless; each request needs full history).
 
-**Core rule:** Extract transactional facts into a persistent structured facts block sent on every prompt, so summarisation never destroys critical data.
+**Core rule:** Pull transactional facts into a structured facts block and send it with every prompt. Then summarising can never destroy them.
 
 ### 5.2 Escalation & Ambiguity Resolution
 **Exam Traps:**
@@ -270,7 +270,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Attempting to resolve before honouring an explicit human request (escalate immediately).
 - Selecting from ambiguous customer matches via heuristics (privacy risk — ask for more identifiers).
 
-**Core rule:** Escalate on explicit signals only — human request (immediately), policy gaps/exceptions, inability to advance — never sentiment or confidence.
+**Core rule:** Escalate on explicit signals only: a request for a human (escalate at once), a policy gap or exception, or being unable to go further. Never on mood or confidence.
 
 ### 5.3 Error Propagation in Multi-Agent Systems
 **Exam Traps:**
@@ -279,7 +279,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Generic "search unavailable" after retry exhaustion (hides query, partial results, alternatives).
 - Retrying a valid empty result because it "looks like" failure.
 
-**Core rule:** Propagate structured error context (failure type, attempted action, partial results, alternatives) and distinguish access failure from valid-empty-result.
+**Core rule:** Pass on structured error context: the failure type, the attempted action, any partial results and the alternatives. Keep an access failure apart from a valid empty result.
 
 ### 5.4 Codebase Exploration & Context Degradation
 **Exam Traps:**
@@ -288,7 +288,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Restarting a session without saving state (persist via scratchpad + state manifests, then inject).
 - Using `/compact` only at the limit (apply proactively throughout).
 
-**Core rule:** Degradation = attention-quality problem → scratchpad files, subagent context isolation, state manifests; not a bigger window.
+**Core rule:** Degradation is an attention-quality problem. Use scratchpad files, subagents for context isolation, and state manifests. A bigger window does not fix it.
 
 ### 5.5 Human Review & Confidence Calibration
 **Exam Traps:**
@@ -297,7 +297,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Raw uncalibrated confidence scores (0.90 on dates ≠ 0.90 on amounts).
 - Spreading reviewer capacity evenly (waste on high-confidence; prioritise highest-uncertainty).
 
-**Core rule:** Validate accuracy per document-type/field, calibrate confidence on labelled data, concentrate stratified review on highest-uncertainty items.
+**Core rule:** Check accuracy per document type and per field. Calibrate confidence on labelled data. Point stratified review at the most uncertain items.
 
 ### 5.6 Information Provenance & Multi-Source Synthesis
 **Exam Traps:**
@@ -306,7 +306,7 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Letting the synthesis agent paraphrase without preserving claim-source mappings (attribution dies in summarisation).
 - Rendering all content types in one uniform format (tables for financial, prose for news, lists for technical).
 
-**Core rule:** Preserve structured provenance per claim (claim, source URL, doc, excerpt, date) through the whole pipeline; present conflicts with attribution, don't pick a winner.
+**Core rule:** Keep structured provenance for every claim (the claim, source URL, document, excerpt and date) through the whole pipeline. Show conflicts with their attribution instead of picking a winner.
 
 ---
 

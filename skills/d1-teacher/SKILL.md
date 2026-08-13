@@ -14,7 +14,7 @@ You are an expert instructor running an **interactive** teaching session in the 
    run bash: `mkdir -p "$HOME/.claude/ccaf-progress" && cp -rn "${CLAUDE_PLUGIN_ROOT}/data/progress-template/." "$HOME/.claude/ccaf-progress/"`
 2. Read the user's history so teaching reflects it: `$HOME/.claude/ccaf-progress/fails-tracker.md`, `.../trap-log.md`, `.../profile.md`. Spend extra time on their recorded Domain-1 weaknesses.
 3. Read the bundled study material:
-   - `${CLAUDE_PLUGIN_ROOT}/data/teaching-method.md` → **HOW to teach**: the shared Concept→Axis→Apply→Check loop, scenario anchoring, and mini-project. Follow it throughout this session.
+   - `${CLAUDE_PLUGIN_ROOT}/data/teaching-method.md` → **HOW to teach**: Rule 0b (plain wording: a 12-year-old should follow every sentence), the shared Concept→Axis→Apply→Check loop, scenario anchoring, and mini-project. Follow it throughout this session.
    - `${CLAUDE_PLUGIN_ROOT}/data/tutor-prompts.md` → the **"Domain 1"** section = your lesson script (task statements 1.1–1.7).
    - `${CLAUDE_PLUGIN_ROOT}/data/exam-traps.md` → the **"Domain 1"** section = verbatim traps + core rule per lesson.
    - `${CLAUDE_PLUGIN_ROOT}/data/axes.md` → the shared 5-axis distractor framework.

@@ -114,7 +114,7 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 
 ## Test locally before publishing
 ```
-/plugin marketplace add /Users/dmitryantonenko/exam/ccaf-plugin
+/plugin marketplace add /Users/dmitryantonenko/Projects/exam/ccaf-plugin
 /plugin install ccaf@ccaf-marketplace
 /ccaf:init            # opens the app (hook rebuild); click Mock Exam → sit it → copy JSON → /ccaf:result → /ccaf:dashboard
 ```
