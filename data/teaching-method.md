@@ -68,6 +68,14 @@ why an answer wins follows Rule 0b. The question text itself does not.
 **Self-check before you send.** Read the message back. Would a 12-year-old follow every sentence that is
 not a technical term? If one sentence needs a second read, split it into two.
 
+## Rule 0c — Learning language
+Read `learning_language` from `$HOME/.claude/ccaf-progress/settings.json` (default `"English"` if the
+file is missing or the field is empty). Write ALL explanatory prose — lessons, the Concept/Fix/Trap
+blocks, feedback — in that language. EXCEPTIONS that ALWAYS stay English (the exam is English-only):
+every question stem, its options and correct answer; verbatim signal phrases quoted from a stem; and API
+tokens (`tool_choice`, `stop_reason`, `ENABLE_TOOL_SEARCH`, and tool / parameter / event names). Never
+translate those. The mock exam is English-only.
+
 ## Introduce the 5-axis framework UP FRONT (before the first check question)
 Every CCAF question is one correct answer plus three plausible-but-wrong ones, and each wrong
 option is wrong for exactly one reason. We call those reasons **axes**. Naming the axis a wrong

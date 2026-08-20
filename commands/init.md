@@ -24,6 +24,14 @@ A plugin **hook** (`hooks/ccaf-build.sh` → `data/build-app.py`) rebuilds **and
   update` before a reinstall), run the fallback build yourself once:
   `python3 "${CLAUDE_PLUGIN_ROOT}/data/build-app.py" --open`. Never open a pre-existing file without rebuilding.
 
+## Step 1.6 — Learning language (once)
+Read `$HOME/.claude/ccaf-progress/settings.json`. If `learning_language` is unset, empty, or still the
+default `"English"` on a first run (no history in `stats.json`), ask ONE question: "Which language should
+explanations use? Exam questions, options and answers always stay English." Write the answer verbatim
+with `Write` to `settings.json` as `{"schema":1,"learning_language":"<answer>"}`. On later runs, state
+the current language in one line and how to change it (re-run `/ccaf:init` or edit the file). Default to
+`"English"` if they skip. Do not translate any exam content.
+
 ## Step 2 — Detect returning vs new user
 Read `$HOME/.claude/ccaf-progress/{profile.md, stats.json}`.
 - If `stats.json` has history (exam_history non-empty or answered non-empty), greet as a returning user and summarise: overall accuracy, per-domain accuracy, weakest domains, questions answered vs. remaining.
