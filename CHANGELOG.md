@@ -6,6 +6,17 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.16.0] — 2026-08-20
+### Added
+- **Learning-language setting (content-only localization).** New per-user `~/.claude/ccaf-progress/settings.json` (`{"schema":1,"learning_language":"English"}`, free-form, default English), bootstrapped via the existing non-overwriting template copy. The read contract lives in ONE place — new **Rule 0c** in `data/teaching-method.md`: all explanatory prose follows `learning_language`, while question stems/options/answers, verbatim signal phrases, and API tokens stay English always, and the mock exam is English-only. `/ccaf:init` asks for the language once (Step 1.6). New **Invariant 8** in `CLAUDE.md` states the exam-English/prose-localized split; the app chrome is not localized.
+- **`/ccaf:fail-analysis` — review my own misses.** New cross-domain skill that gathers the learner's currently-failed questions (latest-wrong in `stats.json`), teaches each grouped by axis as **Concept / Fix / Trap** in the learner's language, re-drills, and persists a localized triple back into `cheatsheet.json`. If there are no misses, it says so and points at a mock (never fabricates a drill). Optional domain/axis argument to focus. Added to the `/ccaf:init` route menu.
+- **Shared "Miss-review procedure"** in `data/teaching-method.md` (gather → teach Concept/Fix/Trap → persist), cited by `/ccaf:fail-analysis` and by all five tutors — one source of truth, no duplication.
+- **`cheatsheet.json` gains optional localized fields** `concept` / `fix` / `trap` (prose in `learning_language`) plus `explain_lang` (language stamp; the app ignores it). Additive: the English discriminator fields (`decision`/`rule`/`signal`/`answer`/`flip`) authored by `/ccaf:result` are unchanged and still power the Detailed view.
+
+### Changed
+- **Tutors drill YOUR misses first.** Each `skills/dN-teacher/SKILL.md` gains a **Step 0.5** that runs the shared Miss-review procedure scoped to its domain before the lesson, and now reads `settings.json` for the language. Personalisation is no longer just weak-domain bias — the session starts from the learner's real gaps.
+- **Weak spots tab: Detailed / Compact toggle.** New compact review mode groups the learner's misses by axis and shows the short **Concept / Fix / Trap** triple (with an inline label gutter), falling back to `decision` / `answer` / `flip`+`signal` for misses not yet run through `/ccaf:fail-analysis`. Chrome stays English; only the data values are localized. No `build-app.py` change — the whole `cheatsheet` object was already injected, so the new fields ride along.
+
 ## [0.15.0] — 2026-08-13
 ### Added
 - **Rule 0b: one plain-language register for every explanation a learner reads.** New section in `data/teaching-method.md`: one idea per sentence, active voice, everyday words, fact then consequence, no em dashes, no filler. A 12-year-old should follow any sentence that is not a technical term. It lives in ONE place (all five tutors already read that file), so `skills/dN-teacher/SKILL.md` only gained a pointer to it. Two hard boundaries stated in the rule itself: exam vocabulary keeps its exact English form inline (`stop_reason`, `tool_choice`, `PreToolUse`, *winning condition*, *axis*, every flag/field/file name), and question stems, options and the bank's `explanation` field are exam artefacts that stay exactly as `questions.json` has them.

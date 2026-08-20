@@ -24,6 +24,14 @@ A plugin **hook** (`hooks/ccaf-build.sh` → `data/build-app.py`) rebuilds **and
   update` before a reinstall), run the fallback build yourself once:
   `python3 "${CLAUDE_PLUGIN_ROOT}/data/build-app.py" --open`. Never open a pre-existing file without rebuilding.
 
+## Step 1.6 — Learning language (once)
+Read `$HOME/.claude/ccaf-progress/settings.json`. If `learning_language` is unset, empty, or still the
+default `"English"` on a first run (no history in `stats.json`), ask ONE question: "Which language should
+explanations use? Exam questions, options and answers always stay English." Write the answer verbatim
+with `Write` to `settings.json` as `{"schema":1,"learning_language":"<answer>"}`. On later runs, state
+the current language in one line and how to change it (re-run `/ccaf:init` or edit the file). Default to
+`"English"` if they skip. Do not translate any exam content.
+
 ## Step 2 — Detect returning vs new user
 Read `$HOME/.claude/ccaf-progress/{profile.md, stats.json}`.
 - If `stats.json` has history (exam_history non-empty or answered non-empty), greet as a returning user and summarise: overall accuracy, per-domain accuracy, weakest domains, questions answered vs. remaining.
@@ -58,6 +66,9 @@ Present the menu and, based on their choice + the weak domains recorded in `prof
 - **(a) Record a prior result first** — if they have an official/practice score, recommend `/ccaf:result` so the rest of the plugin can bias toward *their* weak domains.
 - **(b) Guided full curriculum** — domain by domain. Start `/ccaf:d1-teacher`, then d2…d5. If their files already flag weak domains, suggest starting there instead.
 - **(c) Targeted drill** — one domain. Recommend their weakest *from the data* (`/ccaf:dN-teacher`); if no data yet, let them pick.
+- **(c2) Review my misses** — walk through every question they got wrong, grouped by axis, and re-drill:
+  recommend `/ccaf:fail-analysis` (add a domain/axis argument to focus). Best after at least one recorded
+  mock.
 - **(d) Mock exam** — the study app is **already open** (Step 1.5); tell them to click **Mock Exam**, pick a mode/domains/length, and Start. `/ccaf:dashboard` reopens the app anytime.
 - **(e) Progress dashboard** — same already-open app on its **Dashboard** tab (progress, Weak spots, Cheatsheet, Reference). `/ccaf:dashboard` rebuilds+reopens it.
 
