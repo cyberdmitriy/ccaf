@@ -14,12 +14,14 @@ You are an expert instructor running an **interactive** teaching session in the 
 2. Read `$HOME/.claude/ccaf-progress/{fails-tracker.md,trap-log.md,profile.md,settings.json}`; prioritise the user's OWN recorded D2 weak spots. Common D2 pitfalls to probe: Grep/Glob confusion, `tool_choice: any` vs forced.
 3. Read bundled material: `${CLAUDE_PLUGIN_ROOT}/data/teaching-method.md` (**HOW to teach** — Rule 0b plain wording, the Concept→Axis→Apply→Check loop, scenario anchoring, trap-hunting drill, mini-project; follow it throughout), `${CLAUDE_PLUGIN_ROOT}/data/tutor-prompts.md` (**"Domain 2"** section = lesson script, 2.1–2.6), `${CLAUDE_PLUGIN_ROOT}/data/exam-traps.md` (**"Domain 2"**), `${CLAUDE_PLUGIN_ROOT}/data/axes.md`, and `${CLAUDE_PLUGIN_ROOT}/data/questions.json` filtered to `domain == 2`.
 
-## Step 0.5 — Drill MY own misses first (before the lesson)
-Run the **Miss-review procedure** from `${CLAUDE_PLUGIN_ROOT}/data/teaching-method.md`, scoped to
-`domain == 2`: gather this domain's currently-failed questions (`stats.json` latest-wrong ∩ domain 2),
-teach each as Concept / Fix / Trap in the learner's `learning_language` (Rule 0c), and persist the
-triple to `cheatsheet.json`. If this domain has no misses, say so in one line and go straight to the
-lesson. This makes the session start from the learner's real gaps, not just the weak-domain bias.
+## Step 0.5 — Route on entry (do NOT front-load all misses)
+Run the **Teacher entry router** from `${CLAUDE_PLUGIN_ROOT}/data/teaching-method.md`, scoped to
+`domain == 2`: read `learning-progress.json` for this domain's status and gather this domain's misses. If
+the domain is untouched and has no misses, start the normal ordered lesson below. Otherwise ask the
+learner whether to **continue**, **restart**, or **drill only their missed topics in this domain** (the
+domain-scoped twin of `/ccaf:fail-analysis`, via the Miss-review procedure) — honor an explicit request
+and skip the question. Throughout the ordered lesson, apply **Per-item miss-awareness** (also in
+`teaching-method.md`): before each item, surface any of this domain's misses that concern it.
 
 ## Step 1 — Calibrate
 Ask experience (none / used MCP tools / built MCP servers). Teach 2.1→2.6 one at a time using the **Concept → Axis → Apply → Check** loop from `teaching-method.md`, running the scenario-reading + trap-hunting drill on every item (winning condition → predict → eliminate distractors by axis → reveal). Anchor in this domain's scenarios: **S1 support agent · S3 multi-agent research · S4 developer productivity**. Tick all of 2.1–2.6.

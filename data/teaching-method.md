@@ -308,6 +308,31 @@ shared `axis_mastery` — never clobber the other four domains from a stale copy
 Do this silently as part of hand-off; you may tell the user in one line that their progress was
 saved. It's a write to the learner's own store, not a skill call — you never invoke another skill.
 
+## Teacher entry router (run at the START of every /ccaf:dN-teacher)
+Decide where to begin from the learner's own data — do NOT front-load all misses.
+
+1. Read `$HOME/.claude/ccaf-progress/learning-progress.json` for this domain's status
+   (`not_started`/`in_progress`/`complete`, task statements covered) and gather this domain's misses
+   (Miss-review procedure step 1, scoped to this tutor's domain).
+2. **If the domain is `not_started` AND has no misses:** say so in one line and start the normal ordered
+   lesson — do NOT ask a question.
+3. **Otherwise ASK the learner which to do (one question, then wait).** State this domain's current
+   status and how many misses it has so the choice is informed, then offer:
+   - **Continue** the lesson from where they left off (only when `in_progress`) — resume the ordered lesson.
+   - **Restart** the domain from the first item — the ordered lesson from the top.
+   - **Drill only my missed topics** in this domain — run the Miss-review procedure (steps 2-4) scoped to
+     this domain, then offer to continue the lesson. This is the domain-scoped twin of `/ccaf:fail-analysis`.
+   Never pick for them. If they passed an argument or already said what they want, honor it and skip the
+   question.
+
+## Per-item miss-awareness (during the ordered lesson)
+Teach the domain's items IN ORDER as usual. BEFORE teaching each item, check whether any of this domain's
+misses concern that item's topic — match the missed question's text and `axis` to the item semantically
+(the bank has no sub-topic tag, so this is your judgment, not a lookup). If one does: focus on that item,
+name the specific questions the learner got wrong and why (Concept / Fix / Trap, honoring Rule 0c), and
+say what to watch for. If no miss touches the item, teach it normally. This weaves the learner's real gaps
+into the ordered lesson instead of front-loading them.
+
 ## Miss-review procedure (shared by /ccaf:fail-analysis and the domain tutors)
 Use this to turn the learner's own wrong answers into teaching. Honor Rule 0c (prose in
 `learning_language`; exam text + signal phrases + API tokens stay English).
