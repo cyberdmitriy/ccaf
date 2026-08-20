@@ -209,6 +209,13 @@
   .cs-o.cs-o-pick{border-color:#d8bd83}
   .cs-mastered{margin-top:1.4rem}
   .cs-mastered summary{cursor:pointer;font-weight:600;color:var(--ink2);padding:.4rem 0}
+  .cs-mode{display:inline-flex;gap:.25rem;margin-left:auto}
+  .cs-mode button{font:inherit;padding:.2rem .6rem;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:.4rem;cursor:pointer}
+  .cs-mode button.on{background:var(--ink2);color:#fff;border-color:var(--ink2)}
+  .cs-compact{padding:.6rem .8rem}
+  .cs-compact .cs-beat{margin:.25rem 0}
+  .cs-compact .cs-beat b{display:inline-block;min-width:4.2rem;color:var(--accent)}
+  .cs-axis-h{font-family:var(--font-display);margin:1rem 0 .4rem}
 
   /* ---------- axis framework ---------- */
   .axis-lead{font-family:var(--font-display);font-size:1.05rem;color:var(--ink);margin:0 0 1rem;line-height:1.4}
@@ -1237,7 +1244,7 @@ function renderReference(){
   $$("#view-reference [data-ref-dom]").forEach(b=>b.onclick=()=>{ refState.domain=b.dataset.refDom; renderReference(); });
   const qi=$("#ref-q"); if(qi){ qi.oninput=()=>{ refState.q=qi.value; renderReference(); const n=$("#ref-q"); if(n){ n.focus(); const v=n.value.length; n.setSelectionRange(v,v);} }; }
 }
-let cheatState = { domain:"all", axis:"all", q:"" };
+let cheatState = { domain:"all", axis:"all", q:"", mode:"detailed" };
 
 function cheatList(){
   const cs=(HISTORY.cheatsheet&&HISTORY.cheatsheet.entries)||{};
@@ -1297,6 +1304,26 @@ function cheatScenario(e){
     ${opts?`<ul class="cs-opts">${opts}</ul>`:""}</details>`;
 }
 function cheatCards(rows){ return `<div class="cs-cards">${rows.map(cheatCard).join("")}</div>`; }
+// Compact review blocks: prefer the localized triple; fall back to the English discriminator fields
+// so misses never run through /ccaf:fail-analysis still show something useful.
+function cheatTriple(e){
+  const dash='<span class="cs-dim">—</span>';
+  const concept = e.concept ? rich(e.concept) : (e.decision ? rich(e.decision) : dash);
+  const fix     = e.fix     ? rich(e.fix)     : (e.answer   ? rich(e.answer)   : dash);
+  const trapSrc = e.trap    ? e.trap : [e.flip, e.signal].filter(Boolean).join(" ");
+  const trap    = trapSrc ? rich(trapSrc) : dash;
+  return {concept, fix, trap};
+}
+function renderCheatCompact(e){
+  const t=cheatTriple(e);
+  const n = e.miss_count ? ` <span class="cs-dim">×${e.miss_count}</span>` : "";
+  return `<div class="cs-card cs-compact">
+    <div class="cs-decision">D${e.domain||"?"} · ${e.status==="mastered"?"✓ ":""}axis ${e.axis||"?"}${n}</div>
+    <div class="cs-beat"><b>Concept</b> ${t.concept}</div>
+    <div class="cs-beat"><b>Fix</b> ${t.fix}</div>
+    <div class="cs-beat cs-flip"><b>Trap</b> ${t.trap}</div>
+  </div>`;
+}
 function renderCheatsheet(){
   const v=$("#view-cheatsheet");
   const head="";
@@ -1319,17 +1346,34 @@ function renderCheatsheet(){
   const shown=all.filter(cheatMatches);
   const active=shown.filter(e=>e.status!=="mastered");
   const mastered=shown.filter(e=>e.status==="mastered");
+  const modeToggle = `<div class="cs-mode">
+    <button data-cs-mode="detailed" class="${cheatState.mode!=='compact'?'on':''}">Detailed</button>
+    <button data-cs-mode="compact"  class="${cheatState.mode==='compact'?'on':''}">Compact</button>
+  </div>`;
+  let body;
+  if(cheatState.mode==="compact"){
+    const byAxis={};
+    shown.forEach(e=>{ (byAxis[e.axis||"?"]=byAxis[e.axis||"?"]||[]).push(e); });
+    body = Object.keys(byAxis).sort().map(ax=>{
+      const cards=byAxis[ax].map(renderCheatCompact).join("");
+      return `<h3 class="cs-axis-h">Axis ${ax} <span class="cs-dim">· ${byAxis[ax].length}</span></h3>${cards}`;
+    }).join("") || '<p class="hint">Nothing active for this filter.</p>';
+  } else {
+    body = `<section class="block"><h2>Active <span class="count">${active.length} to refresh</span></h2>
+      ${active.length?cheatCards(active):'<p class="hint">Nothing active for this filter.</p>'}</section>
+    ${mastered.length?`<details class="cs-mastered"><summary>Mastered · ${mastered.length} ✓</summary>${cheatCards(mastered)}</details>`:""}`;
+  }
   v.innerHTML=head+`<p class="cs-sub">Which answer to pick, built from the questions you got wrong. ${active.length} active · ${mastered.length} mastered.</p>
     <div class="cs-filters">
       <div class="cs-chips">${domChips}</div>
       <div class="cs-chips">${axChips}</div>
       <input id="csSearch" class="cs-search" type="search" placeholder="Search trigger / rule…" value="${esc(cheatState.q)}" aria-label="Search cheatsheet">
+      ${modeToggle}
     </div>
-    <section class="block"><h2>Active <span class="count">${active.length} to refresh</span></h2>
-      ${active.length?cheatCards(active):'<p class="hint">Nothing active for this filter.</p>'}</section>
-    ${mastered.length?`<details class="cs-mastered"><summary>Mastered · ${mastered.length} ✓</summary>${cheatCards(mastered)}</details>`:""}`;
+    ${body}`;
   $$("#view-cheatsheet [data-cs-dom]").forEach(b=>b.onclick=()=>{cheatState.domain=b.dataset.csDom;renderCheatsheet();});
   $$("#view-cheatsheet [data-cs-axis]").forEach(b=>b.onclick=()=>{cheatState.axis=b.dataset.csAxis;renderCheatsheet();});
+  $$("#view-cheatsheet [data-cs-mode]").forEach(b=>b.onclick=()=>{cheatState.mode=b.dataset.csMode;renderCheatsheet();});
   const srch=$("#csSearch");
   if(srch){ srch.oninput=()=>{ const val=srch.value; cheatState.q=val; renderCheatsheet();
     const s2=$("#csSearch"); if(s2){ s2.focus(); try{s2.setSelectionRange(val.length,val.length);}catch(e){} } }; }
