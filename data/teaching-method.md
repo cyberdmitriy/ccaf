@@ -330,5 +330,8 @@ Use this to turn the learner's own wrong answers into teaching. Honor Rule 0c (p
 4. **Persist the triple.** For each miss, read-modify-write `$HOME/.claude/ccaf-progress/cheatsheet.json`
    and set on `entries["<id>"]`: `concept`, `fix`, `trap` (in `learning_language`) and
    `explain_lang:"<learning_language>"`. Preserve all existing fields; create the entry if absent using
-   the same lookups `/ccaf:result` uses. Regenerate the triple when `explain_lang` differs from the
+   the same lookups `/ccaf:result` uses. If the entry already exists but is missing/empty any of the
+   standard English discriminator fields (`decision`/`rule`/`signal`/`answer`/`flip`), author those too
+   using the same lookups, without overwriting any existing non-empty English field, so the app's
+   Detailed view stays whole. Regenerate the triple when `explain_lang` differs from the
    current `learning_language`. Write valid JSON (no trailing commas); never wipe a readable file.
