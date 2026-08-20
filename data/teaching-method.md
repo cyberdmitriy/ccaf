@@ -307,3 +307,28 @@ shared `axis_mastery` — never clobber the other four domains from a stale copy
 
 Do this silently as part of hand-off; you may tell the user in one line that their progress was
 saved. It's a write to the learner's own store, not a skill call — you never invoke another skill.
+
+## Miss-review procedure (shared by /ccaf:fail-analysis and the domain tutors)
+Use this to turn the learner's own wrong answers into teaching. Honor Rule 0c (prose in
+`learning_language`; exam text + signal phrases + API tokens stay English).
+
+1. **Gather misses.** Read `$HOME/.claude/ccaf-progress/stats.json`. A miss = an id in `answered` whose
+   LATEST attempt is wrong (`last_correct:false`). For a domain tutor, keep only ids whose
+   `questions.json` `domain` equals that tutor's domain. Enrich each id from
+   `${CLAUDE_PLUGIN_ROOT}/data/questions.json` (stem, options, `correct`, `axis`, `domain`,
+   `explanation`) and from `$HOME/.claude/ccaf-progress/cheatsheet.json` (`your_pick`, any existing card
+   fields). If there are no misses, say so plainly — do not invent a drill.
+2. **Teach, grouped by axis** (`${CLAUDE_PLUGIN_ROOT}/data/axes.md` for axis names). For each miss give
+   three short blocks:
+   - **Concept** — the idea in one phrase (what mechanism/rule is in play).
+   - **Fix** — which mechanism is correct and why it satisfies the deciding property.
+   - **Trap** — why the learner's pick (`your_pick`) is tempting, which axis it fails on, and the
+     concrete condition under which that pick WOULD be right.
+   Quote the stem's signal phrases verbatim (English) so the learner learns to recognize them.
+3. **Re-drill.** Have the learner predict the failing axis and eliminate distractors BEFORE the reveal,
+   on the missed items and, if useful, on fresh same-axis questions from the bank.
+4. **Persist the triple.** For each miss, read-modify-write `$HOME/.claude/ccaf-progress/cheatsheet.json`
+   and set on `entries["<id>"]`: `concept`, `fix`, `trap` (in `learning_language`) and
+   `explain_lang:"<learning_language>"`. Preserve all existing fields; create the entry if absent using
+   the same lookups `/ccaf:result` uses. Regenerate the triple when `explain_lang` differs from the
+   current `learning_language`. Write valid JSON (no trailing commas); never wipe a readable file.

@@ -66,6 +66,9 @@ Present the menu and, based on their choice + the weak domains recorded in `prof
 - **(a) Record a prior result first** — if they have an official/practice score, recommend `/ccaf:result` so the rest of the plugin can bias toward *their* weak domains.
 - **(b) Guided full curriculum** — domain by domain. Start `/ccaf:d1-teacher`, then d2…d5. If their files already flag weak domains, suggest starting there instead.
 - **(c) Targeted drill** — one domain. Recommend their weakest *from the data* (`/ccaf:dN-teacher`); if no data yet, let them pick.
+- **(c2) Review my misses** — walk through every question they got wrong, grouped by axis, and re-drill:
+  recommend `/ccaf:fail-analysis` (add a domain/axis argument to focus). Best after at least one recorded
+  mock.
 - **(d) Mock exam** — the study app is **already open** (Step 1.5); tell them to click **Mock Exam**, pick a mode/domains/length, and Start. `/ccaf:dashboard` reopens the app anytime.
 - **(e) Progress dashboard** — same already-open app on its **Dashboard** tab (progress, Weak spots, Cheatsheet, Reference). `/ccaf:dashboard` rebuilds+reopens it.
 
