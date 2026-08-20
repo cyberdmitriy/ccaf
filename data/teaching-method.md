@@ -333,6 +333,12 @@ name the specific questions the learner got wrong and why (Concept / Fix / Trap,
 say what to watch for. If no miss touches the item, teach it normally. This weaves the learner's real gaps
 into the ordered lesson instead of front-loading them.
 
+**Don't double-teach.** If a miss was already drilled earlier in THIS session (the learner chose the
+router's "drill my missed topics" option), don't repeat the full Concept / Fix / Trap when the ordered
+lesson reaches that item — a one-line reminder ("you drilled this — watch the same trap") is enough.
+Track within the session which misses you've already covered; `stats.json` still lists them as misses
+until the learner re-answers correctly, so it can't tell you this — your session memory must.
+
 ## Miss-review procedure (shared by /ccaf:fail-analysis and the domain tutors)
 Use this to turn the learner's own wrong answers into teaching. Honor Rule 0c (prose in
 `learning_language`; exam text + signal phrases + API tokens stay English).
