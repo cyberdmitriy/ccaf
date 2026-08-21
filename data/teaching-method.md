@@ -188,6 +188,16 @@ test-takers pick on reflex), the *plausible-but-probabilistic* fix (prompt/CLAUD
 hook is required), the *right-area-wrong-target* option (`tool_choice:any` vs a forced specific
 tool), the *over-engineered* option, and the *symptom-not-cause* option.
 
+## Match the practice question to the topic being taught
+During a task statement's Check step, only use a question whose tested concept belongs to THAT task
+statement, or to a task statement you have ALREADY taught this session. Never quiz a topic with a question
+that turns on a concept from a later, not-yet-covered task statement — that violates Rule 0 (you'd be asking
+the learner to apply something you haven't introduced), and it teaches nothing about the current topic. Real
+sessions have used a `Task`-tool question (topic 1.3) during 1.2 practice; that is the failure to avoid.
+Before you show a bank question for a topic's Check, ask: "what concept does this question actually test,
+and have I taught it yet?" If the deciding concept is from a later topic, pick a different question or write
+a fresh one on the current topic. A question that also touches an earlier, covered topic is fine.
+
 ## Writing a FRESH practice question (exam-realistic, never a giveaway)
 When the bank is exhausted and you invent a question for a weak spot, it must look like a real
 exam item — the whole difficulty of this exam is that ALL FOUR options are plausible. A question
@@ -259,10 +269,20 @@ the familiarity level they report. Focus is data-driven — never assume a fixed
 For a beginner (or a flagged weak domain), assume *nothing* is known: introduce every term from
 scratch per Rule 0, and lean harder on legends.
 
-## Coverage
+## Coverage — every task statement AND every bullet under it
 Each tutor lists its domain's task statements. Tick every one before declaring the domain
 done — do not skip a sub-topic just because the learner scores well overall; the exam samples
 across all task statements.
+
+**Cover the whole topic, not the headline.** A task statement is not "done" when you have named it. For
+each task statement, `tutor-prompts.md` lists several bullets (concepts, fields, distinctions) and
+`exam-traps.md` lists its traps. You MUST teach EVERY bullet of that topic's `tutor-prompts.md` section and
+walk through EVERY trap in that topic's `exam-traps.md` section before moving to the next task statement.
+Missing one is a coverage failure — real sessions have skipped, for example, the model-driven vs
+pre-configured decision-trees distinction and the `tool_choice: 'any'` trap while claiming the topic was
+taught. **Self-check before you leave any task statement:** list its `tutor-prompts.md` bullets and its
+`exam-traps.md` traps, and confirm you taught each one. If you can't point to where you covered a bullet,
+you skipped it — go back and teach it.
 
 ## Recording learning progress (checkpoint AS YOU GO — not only at hand-off)
 Teacher sessions are otherwise stateless — their progress dies on `/clear`, and a session
@@ -311,9 +331,13 @@ saved. It's a write to the learner's own store, not a skill call — you never i
 ## Teacher entry router (run at the START of every /ccaf:dN-teacher)
 Decide where to begin from the learner's own data — do NOT front-load all misses.
 
-1. Read `$HOME/.claude/ccaf-progress/learning-progress.json` for this domain's status
-   (`not_started`/`in_progress`/`complete`, task statements covered) and gather this domain's misses
-   (Miss-review procedure step 1, scoped to this tutor's domain).
+1. Read TWO different files for two different things, and don't confuse them:
+   - `$HOME/.claude/ccaf-progress/learning-progress.json` → only this domain's **teaching status**
+     (`not_started`/`in_progress`/`complete`, task statements covered). It does NOT record exam misses.
+   - `$HOME/.claude/ccaf-progress/stats.json` → this domain's **misses** (Miss-review procedure step 1,
+     scoped to this tutor's domain: ids in `answered` whose latest attempt is `last_correct:false`, kept to
+     this domain). This is the ONLY source of misses. Never conclude "no misses" from `learning-progress.json`
+     — it can't tell you that. If `stats.json` has this domain's misses, the learner HAS misses here.
 2. **If the domain is `not_started` AND has no misses:** say so in one line and start the normal ordered
    lesson — do NOT ask a question.
 3. **Otherwise ASK the learner which to do (one question, then wait).** State this domain's current
@@ -325,18 +349,34 @@ Decide where to begin from the learner's own data — do NOT front-load all miss
    Never pick for them. If they passed an argument or already said what they want, honor it and skip the
    question.
 
-## Per-item miss-awareness (during the ordered lesson)
-Teach the domain's items IN ORDER as usual. BEFORE teaching each item, check whether any of this domain's
-misses concern that item's topic — match the missed question's text and `axis` to the item semantically
-(the bank has no sub-topic tag, so this is your judgment, not a lookup). If one does: focus on that item,
-name the specific questions the learner got wrong and why (Concept / Fix / Trap, honoring Rule 0c), and
-say what to watch for. If no miss touches the item, teach it normally. This weaves the learner's real gaps
-into the ordered lesson instead of front-loading them.
+## Per-item miss-awareness (during the ordered lesson) — MANDATORY, runs on every item
+Teach the domain's items IN ORDER as usual. This step is not optional and not a re-quiz. Do it on EVERY
+task statement, out loud, so the learner sees you connect the lesson to their real exam misses.
 
-**Don't double-teach.** If a miss was already drilled earlier in THIS session (the learner chose the
+**Where the misses come from: `stats.json`, never `learning-progress.json`.** Load the misses from
+`$HOME/.claude/ccaf-progress/stats.json` (Miss-review procedure step 1, scoped to this domain). A miss = an
+id in `answered` whose LATEST attempt is wrong (`last_correct:false`). `learning-progress.json` records only
+what you have TAUGHT — it says nothing about exam misses, so it can never tell you a topic was missed. If you
+read only `learning-progress.json` you will wrongly announce "no misses here". Always check `stats.json`.
+
+BEFORE teaching each item, check whether any of this domain's `stats.json` misses concern that item's topic —
+match the missed question's text and `axis` to the item semantically (the bank has no sub-topic tag, so this
+is your judgment, not a lookup).
+
+- **If a miss touches the item — do an error-review, NOT a re-quiz.** Do not show the missed question again
+  and make the learner answer it. Instead explain, like a teacher walking through a marked paper: which
+  question they got wrong (name it in plain words), the answer they chose vs the correct one, WHY the correct
+  one wins, and the exact signal to watch for next time so they don't repeat it (Concept / Fix / Trap,
+  honoring Rule 0c). Then teach the rest of the item normally. No prediction step, no "pick the answer" — the
+  point is the correction, not another test.
+- **If no miss touches the item,** teach it normally.
+
+This weaves the learner's real gaps into the ordered lesson instead of front-loading them.
+
+**Don't double-teach.** If a miss was already reviewed earlier in THIS session (the learner chose the
 router's "drill my missed topics" option), don't repeat the full Concept / Fix / Trap when the ordered
-lesson reaches that item — a one-line reminder ("you drilled this — watch the same trap") is enough.
-Track within the session which misses you've already covered; `stats.json` still lists them as misses
+lesson reaches that item — a one-line reminder ("you got this one wrong before — watch the same trap") is
+enough. Track within the session which misses you've already covered; `stats.json` still lists them as misses
 until the learner re-answers correctly, so it can't tell you this — your session memory must.
 
 ## Miss-review procedure (shared by /ccaf:fail-analysis and the domain tutors)
@@ -358,11 +398,18 @@ Use this to turn the learner's own wrong answers into teaching. Honor Rule 0c (p
    Quote the stem's signal phrases verbatim (English) so the learner learns to recognize them.
 3. **Re-drill.** Have the learner predict the failing axis and eliminate distractors BEFORE the reveal,
    on the missed items and, if useful, on fresh same-axis questions from the bank.
-4. **Persist the triple.** For each miss, read-modify-write `$HOME/.claude/ccaf-progress/cheatsheet.json`
-   and set on `entries["<id>"]`: `concept`, `fix`, `trap` (in `learning_language`) and
-   `explain_lang:"<learning_language>"`. Preserve all existing fields; create the entry if absent using
-   the same lookups `/ccaf:result` uses. If the entry already exists but is missing/empty any of the
-   standard English discriminator fields (`decision`/`rule`/`signal`/`answer`/`flip`), author those too
-   using the same lookups, without overwriting any existing non-empty English field, so the app's
-   Detailed view stays whole. Regenerate the triple when `explain_lang` differs from the
-   current `learning_language`. Write valid JSON (no trailing commas); never wipe a readable file.
+4. **Persist.** For each miss, read-modify-write `$HOME/.claude/ccaf-progress/cheatsheet.json` and set on
+   `entries["<id>"]` the SAME fields `/ccaf:result` authors — author them exactly as its Step 3A cheatsheet
+   block specifies, as prose in the learner's `learning_language` (exam text, the `signal` quotes, and API
+   tokens stay English). Two groups of fields feed two app tabs:
+   - **Failed Questions** (per question): `decision` (суть), `rule`, `signal`, `answer` (как фиксить),
+     `flip` (ловушка).
+   - **Failed Topics** (generalized per-topic note): `task` (the `"<d>.<n> <label>"` task statement) and
+     `note` (the markdown study note — `## title` → суть+инсайт → **Как правильно** → Ловушки bullets with
+     the learner's pick prefixed `[you] ` → где ловят → ось N). This tab is EMPTY without `note`/`task`, so
+     author both — never skip them. See `/ccaf:result` Step 3A for the exact `note` shape and rules.
+   Preserve non-text fields (`qid`/`domain`/`axis`/`correct`/`your_pick`/`status`/`miss_count`/`first_ts`/
+   `last_ts`); create the entry if absent using the same lookups `/ccaf:result` uses. If existing fields are
+   in a different language than the current `learning_language`, rewrite them. Write valid JSON (no trailing
+   commas); never wipe a readable file. The fields themselves are in `learning_language` — no separate
+   localized copy and no English fallback.

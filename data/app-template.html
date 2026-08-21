@@ -209,14 +209,20 @@
   .cs-o.cs-o-pick{border-color:#d8bd83}
   .cs-mastered{margin-top:1.4rem}
   .cs-mastered summary{cursor:pointer;font-weight:600;color:var(--ink2);padding:.4rem 0}
-  .cs-mode{display:inline-flex;gap:.25rem;margin-left:auto}
-  .cs-mode button{font:inherit;padding:.2rem .6rem;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:.4rem;cursor:pointer}
-  .cs-mode button.on{background:var(--ink2);color:#fff;border-color:var(--ink2)}
-  .cs-compact{padding:.6rem .8rem}
-  .cs-compact .cs-beat{margin:.25rem 0}
-  .cs-compact .cs-beat{flex-direction:row;gap:.4rem}
-  .cs-compact .cs-beat b{display:inline-block;min-width:4.2rem;color:var(--accent)}
-  .cs-axis-h{font-family:var(--font-display);margin:1rem 0 .4rem}
+  .cs-compact{padding:1.1rem 1.25rem}
+  .cs-compact + .cs-compact{margin-top:.7rem}
+  .cs-c-tag{font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.7rem;padding-bottom:.55rem;border-bottom:1px solid var(--line)}
+  .cs-c-tag code{color:var(--muted);text-transform:none}
+  .cs-c-h{font-family:var(--font-display);font-size:.95rem;font-weight:700;color:var(--accent);margin:1rem 0 .35rem;letter-spacing:.01em}
+  .cs-c-h:first-child{margin-top:0}
+  .cs-c-p{margin:.5rem 0;line-height:1.62;color:var(--ink);font-size:.96rem}
+  .cs-c-p strong,.cs-c-ul strong{color:var(--ink);font-weight:700}
+  .cs-c-p code,.cs-c-ul code{color:var(--accent)}
+  .cs-c-ul{margin:.3rem 0 .3rem 1.15rem;padding:0}
+  .cs-c-ul li{margin:.3rem 0;line-height:1.55;color:var(--ink);font-size:.96rem}
+  .cs-c-ul li.cs-c-hit{list-style:none;margin-left:-1.15rem;padding:.4rem .7rem;background:color-mix(in srgb,var(--accent2) 15%,transparent);border-left:3px solid var(--accent2);border-radius:6px}
+  .cs-c-hit-b{display:inline-block;margin-left:.45rem;font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent2);vertical-align:middle;white-space:nowrap}
+  .cs-c-trap{color:var(--ink2)}
 
   /* ---------- axis framework ---------- */
   .axis-lead{font-family:var(--font-display);font-size:1.05rem;color:var(--ink);margin:0 0 1rem;line-height:1.4}
@@ -696,7 +702,8 @@ button.ghost:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var
     </button>
     <nav class="tabs" id="tabs">
       <button class="tab active" data-view="dashboard">Dashboard</button>
-      <button class="tab" data-view="cheatsheet">Weak spots</button>
+      <button class="tab" data-view="cheatsheet">Failed Questions</button>
+      <button class="tab" data-view="topics">Failed Topics</button>
       <button class="tab" data-view="reference">Cheatsheet</button>
     </nav>
     <button class="tt" id="themeToggle" type="button" title="Toggle light / dark" aria-label="Toggle light or dark theme">◑</button>
@@ -736,6 +743,7 @@ button.ghost:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var
 
   <!-- ============ CHEATSHEET ============ -->
   <div class="view" id="view-cheatsheet"></div>
+  <div class="view" id="view-topics"></div>
   <div class="view" id="view-reference"></div>
 </main>
 
@@ -933,11 +941,11 @@ function showView(name){
   /* a11y: announce the route change and move focus to the view heading (the exam view
      manages its own focus in renderCurrentQuestion, so skip it here). */
   const st=$("#srStatus");
-  if(st){ const titles={dashboard:"Dashboard",config:"Mock Exam",exam:"Exam",results:"Results",cheatsheet:"Weak spots",reference:"Cheatsheet"}; st.textContent=(titles[name]||name)+" loaded"; }
+  if(st){ const titles={dashboard:"Dashboard",config:"Mock Exam",exam:"Exam",results:"Results",cheatsheet:"Failed Questions",topics:"Failed Topics",reference:"Cheatsheet"}; st.textContent=(titles[name]||name)+" loaded"; }
   if(name!=="exam"){ const view=$("#view-"+name), h=view&&view.querySelector("h1,h2,.eyebrow");
     if(h){ h.setAttribute("tabindex","-1"); try{h.focus({preventScroll:true});}catch(e){} } }
 }
-$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="cheatsheet") renderCheatsheet(); if(t.dataset.view==="reference") renderReference(); showView(t.dataset.view); });
+$$("#tabs .tab").forEach(t=>t.onclick=()=>{ if(t.dataset.view==="dashboard") renderDashboard(); if(t.dataset.view==="cheatsheet") renderCheatsheet(); if(t.dataset.view==="topics") renderTopics(); if(t.dataset.view==="reference") renderReference(); showView(t.dataset.view); });
 /* logo + wordmark → dashboard. During a live exam it behaves like Quit (confirm + save progress). */
 $("#brandBtn").onclick=()=>{
   if(currentView==="exam" && exam && !exam.submitted){ quitExam(); return; }
@@ -948,6 +956,7 @@ $("#brandBtn").onclick=()=>{
 function reRenderCurrentView(){
   if(currentView==="dashboard") renderDashboard();
   else if(currentView==="cheatsheet") renderCheatsheet();
+  else if(currentView==="topics") renderTopics();
   else if(currentView==="reference") renderReference();
   else if(currentView==="config") renderConfig();
   else if(currentView==="results" && lastResult) renderResults(lastResult);
@@ -1245,11 +1254,12 @@ function renderReference(){
   $$("#view-reference [data-ref-dom]").forEach(b=>b.onclick=()=>{ refState.domain=b.dataset.refDom; renderReference(); });
   const qi=$("#ref-q"); if(qi){ qi.oninput=()=>{ refState.q=qi.value; renderReference(); const n=$("#ref-q"); if(n){ n.focus(); const v=n.value.length; n.setSelectionRange(v,v);} }; }
 }
-let cheatState = { domain:"all", axis:"all", q:"", mode:"detailed" };
+let cheatState = { domain:"all", axis:"all", q:"" };
 
 function cheatList(){
   const cs=(HISTORY.cheatsheet&&HISTORY.cheatsheet.entries)||{};
-  return Object.keys(cs).map(k=>cs[k]).filter(e=>e&&typeof e==="object");
+  return Object.keys(cs).map(k=>cs[k]).filter(e=>e&&typeof e==="object")
+    .sort((a,b)=>String(b.last_ts||b.first_ts||"").localeCompare(String(a.last_ts||a.first_ts||"")));  // newest miss first
 }
 function cheatOptText(qid,letter){
   const q=BANK.find(x=>String(x.id)===String(qid));
@@ -1305,25 +1315,26 @@ function cheatScenario(e){
     ${opts?`<ul class="cs-opts">${opts}</ul>`:""}</details>`;
 }
 function cheatCards(rows){ return `<div class="cs-cards">${rows.map(cheatCard).join("")}</div>`; }
-// Compact review blocks: prefer the localized triple; fall back to the English discriminator fields
-// so misses never run through /ccaf:fail-analysis still show something useful.
-function cheatTriple(e){
-  const dash='<span class="cs-dim">—</span>';
-  const concept = e.concept ? rich(e.concept) : (e.decision ? rich(e.decision) : dash);
-  const fix     = e.fix     ? rich(e.fix)     : (e.answer   ? rich(e.answer)   : dash);
-  const trapSrc = e.trap    ? e.trap : [e.flip, e.signal].filter(Boolean).join(" ");
-  const trap    = trapSrc ? rich(trapSrc) : dash;
-  return {concept, fix, trap};
-}
-function renderCheatCompact(e){
-  const t=cheatTriple(e);
-  const n = e.miss_count ? ` <span class="cs-dim">×${e.miss_count}</span>` : "";
-  return `<div class="cs-card cs-compact">
-    <div class="cs-decision">D${e.domain||"?"} · ${e.status==="mastered"?"✓ ":""}axis ${e.axis||"?"}${n}</div>
-    <div class="cs-beat"><b>Concept</b> ${t.concept}</div>
-    <div class="cs-beat"><b>Fix</b> ${t.fix}</div>
-    <div class="cs-beat cs-flip"><b>Trap</b> ${t.trap}</div>
-  </div>`;
+// Minimal block markdown for a cheatsheet note: `## heading`, `- bullet`, blank-line paragraphs;
+// inline `code`/**bold**/*italic* via rich(). No question, no answer letters — a topic study note.
+function mdBlock(md){
+  if(!md) return "";
+  let html="", li="";
+  const flush=()=>{ if(li){ html+='<ul class="cs-c-ul">'+li+"</ul>"; li=""; } };
+  String(md).split("\n").forEach(raw=>{
+    const line=raw.trim();
+    if(!line){ flush(); return; }
+    if(line.slice(0,3)==="## "){ flush(); html+='<h4 class="cs-c-h">'+rich(line.slice(3))+"</h4>"; }
+    else if(line.slice(0,2)==="- "){
+      let item=line.slice(2), hit=false;
+      if(item.slice(0,6)==="[you] "){ hit=true; item=item.slice(6); }   // the trap the learner fell for
+      li+= hit ? '<li class="cs-c-hit">'+rich(item)+'<span class="cs-c-hit-b">your pick</span></li>'
+               : "<li>"+rich(item)+"</li>";
+    }
+    else { flush(); html+='<p class="cs-c-p">'+rich(line)+"</p>"; }
+  });
+  flush();
+  return html;
 }
 function renderCheatsheet(){
   const v=$("#view-cheatsheet");
@@ -1347,37 +1358,65 @@ function renderCheatsheet(){
   const shown=all.filter(cheatMatches);
   const active=shown.filter(e=>e.status!=="mastered");
   const mastered=shown.filter(e=>e.status==="mastered");
-  const modeToggle = `<div class="cs-mode">
-    <button data-cs-mode="detailed" class="${cheatState.mode!=='compact'?'on':''}">Detailed</button>
-    <button data-cs-mode="compact"  class="${cheatState.mode==='compact'?'on':''}">Compact</button>
-  </div>`;
-  let body;
-  if(cheatState.mode==="compact"){
-    const byAxis={};
-    shown.forEach(e=>{ (byAxis[e.axis||"?"]=byAxis[e.axis||"?"]||[]).push(e); });
-    body = Object.keys(byAxis).sort().map(ax=>{
-      const cards=byAxis[ax].map(renderCheatCompact).join("");
-      return `<h3 class="cs-axis-h">Axis ${ax} <span class="cs-dim">· ${byAxis[ax].length}</span></h3>${cards}`;
-    }).join("") || '<p class="hint">Nothing active for this filter.</p>';
-  } else {
-    body = `<section class="block"><h2>Active <span class="count">${active.length} to refresh</span></h2>
+  const body = `<section class="block"><h2>Active <span class="count">${active.length} to refresh</span></h2>
       ${active.length?cheatCards(active):'<p class="hint">Nothing active for this filter.</p>'}</section>
     ${mastered.length?`<details class="cs-mastered"><summary>Mastered · ${mastered.length} ✓</summary>${cheatCards(mastered)}</details>`:""}`;
-  }
-  v.innerHTML=head+`<p class="cs-sub">Which answer to pick, built from the questions you got wrong. ${active.length} active · ${mastered.length} mastered.</p>
+  v.innerHTML=head+`<p class="cs-sub">The exact questions you got wrong, with how to choose next time. ${active.length} active · ${mastered.length} mastered.</p>
     <div class="cs-filters">
       <div class="cs-chips">${domChips}</div>
       <div class="cs-chips">${axChips}</div>
-      <input id="csSearch" class="cs-search" type="search" placeholder="Search trigger / rule…" value="${esc(cheatState.q)}" aria-label="Search cheatsheet">
-      ${modeToggle}
+      <input id="csSearch" class="cs-search" type="search" placeholder="Search…" value="${esc(cheatState.q)}" aria-label="Search failed questions">
     </div>
     ${body}`;
   $$("#view-cheatsheet [data-cs-dom]").forEach(b=>b.onclick=()=>{cheatState.domain=b.dataset.csDom;renderCheatsheet();});
   $$("#view-cheatsheet [data-cs-axis]").forEach(b=>b.onclick=()=>{cheatState.axis=b.dataset.csAxis;renderCheatsheet();});
-  $$("#view-cheatsheet [data-cs-mode]").forEach(b=>b.onclick=()=>{cheatState.mode=b.dataset.csMode;renderCheatsheet();});
   const srch=$("#csSearch");
   if(srch){ srch.oninput=()=>{ const val=srch.value; cheatState.q=val; renderCheatsheet();
     const s2=$("#csSearch"); if(s2){ s2.focus(); try{s2.setSelectionRange(val.length,val.length);}catch(e){} } }; }
+}
+
+// ---------- Failed Topics: per-topic study notes (deduped by topic) ----------
+function topicKey(e){
+  if(e.topic) return String(e.topic).trim().toLowerCase();
+  const m=String(e.note||"").match(/^\s*##\s*(.+)$/m);   // fall back to the note's first heading
+  return m?m[1].trim().toLowerCase():("q"+e.qid);
+}
+function renderTopics(){
+  const v=$("#view-topics");
+  if(HISTORY.cheatsheet_unreadable){
+    v.innerHTML=`<div class="banner warn"><span class="ic">⚠️</span>
+      <div><b>Your <span class="kbd">cheatsheet.json</span> could not be read.</b> Fix it, then record an exam to rebuild it.</div></div>`;
+    return;
+  }
+  const all=cheatList().filter(e=>e.note);   // topics need an authored note
+  if(!all.length){
+    v.innerHTML=`<div class="empty"><div class="em-ic">📘</div><h3>No failed topics yet</h3>
+      <p class="hint">Topic notes are written from the questions you get wrong. Record an exam with <span class="kbd">/ccaf:result</span> to build them.</p></div>`;
+    return;
+  }
+  const domains=[...new Set(all.map(e=>String(e.domain)))].sort();
+  const chip=(active,attr,val,label)=>`<button class="cs-chip${active?" on":""}" data-cs-${attr}="${esc(val)}">${esc(label)}</button>`;
+  const domChips=chip(cheatState.domain==="all","dom","all","All domains")+domains.map(d=>chip(cheatState.domain===d,"dom",d,"Domain "+d)).join("");
+  let shown=all.filter(e=>cheatState.domain==="all"||String(e.domain)===cheatState.domain);
+  if(cheatState.q){ const q=cheatState.q.toLowerCase(); shown=shown.filter(e=>String(e.note).toLowerCase().includes(q)); }
+  const seen=new Set(); const groups=[];   // one card per topic
+  shown.forEach(e=>{ const k=topicKey(e); if(!seen.has(k)){ seen.add(k); groups.push(e); } });
+  const body=groups.length
+    ? groups.map(e=>{
+        const tag=`Domain ${esc(e.domain||"?")}${e.task?" · "+rich(e.task):""}`;
+        return `<article class="cs-card cs-compact"><div class="cs-c-tag">${tag}</div>${mdBlock(e.note)}</article>`;
+      }).join("")
+    : '<p class="hint">Nothing matches this filter.</p>';
+  v.innerHTML=`<p class="cs-sub">Study notes on the topics you got wrong — one card per topic. ${groups.length} topic${groups.length===1?"":"s"}.</p>
+    <div class="cs-filters">
+      <div class="cs-chips">${domChips}</div>
+      <input id="topSearch" class="cs-search" type="search" placeholder="Search topics…" value="${esc(cheatState.q)}" aria-label="Search topics">
+    </div>
+    ${body}`;
+  $$("#view-topics [data-cs-dom]").forEach(b=>b.onclick=()=>{cheatState.domain=b.dataset.csDom;renderTopics();});
+  const srch=$("#topSearch");
+  if(srch){ srch.oninput=()=>{ const val=srch.value; cheatState.q=val; renderTopics();
+    const s2=$("#topSearch"); if(s2){ s2.focus(); try{s2.setSelectionRange(val.length,val.length);}catch(e){} } }; }
 }
 
 function renderConfig(){

@@ -30,11 +30,14 @@ Run the Miss-review procedure steps 2-3: for each miss, the three blocks (Concep
 `learning_language`, with the stem's signal phrases quoted in English, grouped by axis (most-failed axis
 first — rank by `stats.json` `axis_tally`). Make the learner predict the axis before each reveal.
 
-## Step 3 — Persist the triple
-Run the Miss-review procedure step 4: write `concept`/`fix`/`trap`/`explain_lang` back into each miss's
-`cheatsheet.json` entry (read-modify-write, preserve existing fields, valid JSON). This populates the
-app's compact Weak-spots review.
+## Step 3 — Persist
+Run the Miss-review procedure step 4: write ALL of `/ccaf:result`'s cheatsheet fields back into each miss's
+`cheatsheet.json` entry **in the learner's `learning_language`** (read-modify-write, preserve non-text
+fields, valid JSON). That is the five per-question fields (`decision`/`rule`/`signal`/`answer`/`flip`, which
+feed the app's **Failed Questions** tab) PLUS `task` and `note` (which feed the **Failed Topics** tab — that
+tab is empty without them, so author both). No English fallback.
 
 ## Hand-off
-Tell the user to run `/ccaf:dashboard` to see the compact review (Weak spots → Compact), or a
-`/ccaf:dN-teacher` for a weak domain. Never auto-invoke; instruct the user.
+Tell the user to run `/ccaf:dashboard` and open the **Failed Topics** tab (the per-topic study notes) or
+the **Failed Questions** tab (the per-question review), or a `/ccaf:dN-teacher` for a weak domain. Never
+auto-invoke; instruct the user.
