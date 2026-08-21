@@ -172,7 +172,7 @@ ccaf/
 ├─ commands/           /ccaf:init, /ccaf:result
 ├─ skills/             d1..d5-teacher, dashboard
 ├─ hooks/              rebuilds the app on /ccaf:init and /ccaf:dashboard
-├─ data/               question bank, lessons, traps, the 5 axes, the app template, the builder
+├─ data/               question bank, lessons, traps, the 5 axes, task statements, the app template, the builder
 └─ maintenance/        maintainer-only reference and audits
 ```
 

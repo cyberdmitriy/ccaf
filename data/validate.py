@@ -7,9 +7,10 @@ Usage:  python3 data/validate.py                     (validate the question bank
 
 Exits 0 if valid, 1 otherwise. Read-only — never mutates the file.
 Bank checks: unique sequential ids · A–D options · valid `correct` · `axis` 1–5 on every entry ·
+canonical `task` (a key in task-statements.json, domain-prefix matching `domain`) on every entry ·
 meta.total and meta.per_domain match reality · reports the correct-answer-letter distribution
 (overall + per domain) and warns on a heavy skew · flags any `</script>`/`<!--` that would break
-the injected HTML app · flags empty explanations.
+the injected HTML app · flags empty explanations. Also shape-checks task-statements.json itself.
 `--learning`: shape-checks a per-user learning-progress.json (schema · domains 1–5 with the right
 keys and a valid status · axis_mastery 1–5 with int seen/correct · drills/task_statements shape).
 Useful in the maintenance runbook and after hand-off writes.
@@ -28,6 +29,29 @@ def main():
     qs = d.get("questions", [])
     meta = d.get("meta", {})
     errors, warnings = [], []
+
+    # canonical task-statement map (single source of truth for the per-question `task` tag)
+    ts_path = os.path.join(HERE, "task-statements.json")
+    task_keys = set()
+    try:
+        tsdoc = json.load(open(ts_path))
+        statements = tsdoc.get("statements", {})
+        if not isinstance(statements, dict) or not statements:
+            errors.append("task-statements.json: 'statements' missing or empty")
+        else:
+            task_keys = set(statements)
+            for k, v in statements.items():
+                parts = str(k).split(".")
+                if len(parts) != 2 or parts[0] not in {"1", "2", "3", "4", "5"} or not parts[1].isdigit():
+                    errors.append(f"task-statements.json: bad key {k!r} (want <d>.<n>)")
+                if not (isinstance(v, str) and v.strip()):
+                    errors.append(f"task-statements.json: {k} has empty label")
+            ts_pd = collections.Counter(str(k).split(".")[0] for k in statements)
+            expected_ts_pd = {"1": 7, "2": 6, "3": 7, "4": 6, "5": 6}
+            if dict(ts_pd) != expected_ts_pd:
+                errors.append(f"task-statements.json: per-domain counts {dict(sorted(ts_pd.items()))} != {expected_ts_pd}")
+    except Exception as e:
+        errors.append(f"task-statements.json: cannot read/parse: {e}")
 
     # ids: unique + sequential 1..N
     ids = [q.get("id") for q in qs]
@@ -48,6 +72,13 @@ def main():
             errors.append(f"q{qid}: axis {q.get('axis')!r} not in 1–5")
         if q.get("domain") not in (1, 2, 3, 4, 5):
             errors.append(f"q{qid}: domain {q.get('domain')!r} not in 1–5")
+        t = q.get("task")
+        if not t:
+            errors.append(f"q{qid}: missing task")
+        elif task_keys and t not in task_keys:
+            errors.append(f"q{qid}: task {t!r} not in task-statements.json")
+        elif str(t).split(".")[0] != str(q.get("domain")):
+            errors.append(f"q{qid}: task {t!r} domain-prefix != domain {q.get('domain')}")
         if not q.get("explanation"):
             warnings.append(f"q{qid}: empty explanation")
         for field in ("stem", "explanation", *q.get("options", {}).values()):
@@ -106,6 +137,7 @@ def main():
     print(f"bank: {len(qs)} questions | per_domain: {dict(sorted(actual_pd.items()))}")
     print(f"correct-letter: {dict(sorted(letters.items()))}")
     print("axis: " + str(dict(sorted(collections.Counter(q.get('axis') for q in qs).items()))))
+    print("task: " + str(dict(sorted(collections.Counter(q.get('task') for q in qs).items(), key=lambda kv: (str(kv[0]))))))
     if ref_rows is not None:
         print(f"reference: {ref_rows} rows")
     for w in warnings:

@@ -47,7 +47,8 @@ hooks/{hooks.json, ccaf-build.sh}                 # UserPromptSubmit hook: deter
 data/
   questions.json        # CANONICAL question bank (the thing you'll extend most)
   quick-reference.json  # curated see→answer map (domain→section→row); projection of exam-traps.md; injected via /*__REFERENCE__*/
-  validate.py           # read-only validator: bank + quick-reference.json (run after every edit: python3 data/validate.py)
+  task-statements.json  # canonical <d>.<n> → label map (the ONE source of task-statement labels); referenced by questions.json `task`
+  validate.py           # read-only validator: bank + quick-reference.json + task-statements.json (run after every edit: python3 data/validate.py)
   app-template.html     # the self-contained study app (dashboard+select+exam+cheatsheet+reference); 3 inject points
   build-app.py          # deterministic builder (bootstrap→build→open); single source of truth, run by the hook + skills
   app-build.md          # SHARED build recipe (thin: runs build-app.py) that /ccaf:dashboard follows
@@ -99,14 +100,15 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 { "meta": { "total": 240, "per_domain": {"1":64,"2":47,"3":42,"4":41,"5":46} },
   "questions": [
     { "id": 1, "domain": 3, "stem": "…", "options": {"A":"…","B":"…","C":"…","D":"…"},
-      "correct": "A", "axis": 1, "explanation": "…" }
+      "correct": "A", "axis": 1, "task": "3.1", "explanation": "…" }
   ] }
 ```
 - **`id`** = sequential integer by array order. **APPEND new questions at the end with the next id. NEVER renumber or reorder existing entries** — `~/.claude/ccaf-progress/stats.json` references ids (`answered`), so changing them corrupts every user's history.
 - **`domain`** = integer 1–5. **`correct`** = single letter A–D. **`explanation`** verbatim (or "").
 - **`axis`** = integer **1–5** — the ONE axis (`data/axes.md`) the strongest near-miss distractor trips on: **1** Determinism · **2** Exact-hit · **3** Right-diagnosis · **4** Proportionality · **5** Root-cause. Every question carries exactly one; it powers the dashboard 5-axis tally + the results-review badge and is read directly by `/ccaf:result`.
+- **`task`** = the canonical task-statement string `"<d>.<n>"` (e.g. `"3.1"`) — a **key in `data/task-statements.json`** whose domain-prefix must equal `domain`. Every question carries exactly one. It is the single source of truth for which sub-topic a question tests, so `/ccaf:result` and the tutors **look it up** instead of guessing (fixes cross-session drift — the same question tagged `1.2` in one sitting and `1.6` in another). The number lives here; the human label lives once in `task-statements.json`.
 - Current count: **240** (D1:64 D2:47 D3:42 D4:41 D5:46).
-- **Detailed authoring rules** (answer-letter balance · real near-miss / length-tell · imported-vs-authored scope · axis detail · batch provenance) **and the full "extend the bank" workflow** (extract → classify → dedupe → assign ids+axis → `validate.py` → version bump) live in **`maintenance/authoring-questions.md`** — read it before adding/editing questions.
+- **Detailed authoring rules** (answer-letter balance · real near-miss / length-tell · imported-vs-authored scope · axis detail · batch provenance) **and the full "extend the bank" workflow** (extract → classify → dedupe → assign ids+axis+task → `validate.py` → version bump) live in **`maintenance/authoring-questions.md`** — read it before adding/editing questions.
 
 ## quick-reference.json — the Reference tab's see→answer map
 `{ "meta": {"version":1}, "domains": { "1".."5": { "title": "…", "sections": [ { "title": "…", "rows": [ { "see": "…", "answer": "…", "q_ids": [12,45] } ] } ] } } }`
@@ -114,6 +116,13 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 - **`q_ids`** = bank question ids the criterion reflects — **hand-picked or `[]`, NEVER keyword-grepped** (a substring match makes the coverage report lie). Audit-only; not shown in the UI.
 - **No `axis` field** (axis lives in `questions.json` — a copy here would be a second source of truth). **No `meta.last_verified`** (that stamp lives once, in `maintenance/sources.md`).
 - Validated by `data/validate.py`; coverage vs the bank reported by `python3 maintenance/reference-coverage.py`. When you change a core rule in `exam-traps.md`, update the matching reference row so the projection doesn't drift.
+
+## task-statements.json — the canonical <d>.<n> → label map
+`{ "meta": {"version":1}, "statements": { "1.1": "agentic loops", …, "5.6": "information provenance" } }`
+- The **single source of truth** for task-statement labels. Every `questions.json` `task` number resolves its human label here; `/ccaf:result` and the tutors read it to render `Domain <d> · <task>`.
+- **32 statements**, numbering mirrors the `TASK STATEMENT <d>.<n>` headers in `data/tutor-prompts.md` (D1:7 · D2:6 · D3:7 · D4:6 · D5:6). This is the study-guide numbering the tutors teach and `/ccaf:result` uses — NOT the official blueprint's 30 (D2:5, D3:6). The blueprint-30 stays the target of the maintenance coverage audit (`maintenance/bank-coverage-audit.workflow.js`), which folds `2.6`/`3.7` into their blueprint parents.
+- Labels are **English** (exam terminology, Invariant #8 — not localized). Keep them in sync with the `tutor-prompts.md` headers.
+- Validated by `data/validate.py` (key shape `<d>.<n>`, non-empty labels, per-domain counts 7/6/7/6/6, and every bank `task` ∈ these keys with a matching domain-prefix).
 
 ## Extending lessons / traps
 `data/tutor-prompts.md` (lesson scripts) and `data/exam-traps.md` (verbatim traps + core rules) are organised by `## Domain N`. Add/refine within the right domain section; the skills read their domain's section by `${CLAUDE_PLUGIN_ROOT}/data/...`. The 5 axes live in `data/axes.md`. **`data/teaching-method.md` is the shared *pedagogy* (HOW every `/ccaf:dN-teacher` teaches — the Concept→Axis→Apply→Check loop); edit it to change teaching style for all domains at once, not per-domain content.** **Rule 0b** in that file sets the plain-language register for every learner-facing explanation (the app's UI copy follows the same rule — see `maintenance/app-internals.md`); exam terms and bank question text stay exact.

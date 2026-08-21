@@ -1,3 +1,9 @@
+// NOTE (2026-08): questions.json now carries a canonical `task` (`"<d>.<n>"`, study-guide numbering
+// from data/task-statements.json — 32 statements, D1:7 D2:6 D3:7 D4:6 D5:6). This audit maps the bank to
+// the official BLUEPRINT-30 (D2:5, D3:6). The two agree except D2's `2.6` and D3's `3.7`, which the
+// blueprint folds into their parents — when using the bank `task` here, fold `2.6`→a 2.x parent and
+// `3.7`→a 3.x parent before comparing to the guide. Follow-up: an agent could read `task` directly instead
+// of re-classifying from wording. Not yet wired in.
 export const meta = {
   name: 'ccaf-bank-coverage-audit',
   description: 'Audit the CCAF question bank coverage against the official Exam Guide v1.0 task statements + sample questions (report-only, no edits)',

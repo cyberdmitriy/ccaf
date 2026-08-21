@@ -22,6 +22,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "1.3",
       "explanation": "Without the Task tool in allowedTools, the coordinator can talk about delegating but has no way to actually call a subagent — which matches the \"reasons about it, no execution, no errors\" symptom."
     },
     {
@@ -36,6 +37,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "1.3",
       "explanation": "Subagent invocations are isolated — nothing flows between them unless the coordinator explicitly puts it in the prompt. The message 'no findings provided' is exactly what you'd see."
     },
     {
@@ -50,6 +52,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "1.2",
       "explanation": "Executive briefings need mixed rendering: tables for numbers, prose for narrative. Asking synthesis to preserve the native format of each input is the right abstraction."
     },
     {
@@ -64,6 +67,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "1.2",
       "explanation": "Coordinator-managed parallelism fans out the work, keeps each subagent's scope tight, and preserves a single hub for monitoring and aggregation."
     },
     {
@@ -78,6 +82,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "1.2",
       "explanation": "Letting the coordinator LLM reason about each query and pick only the subagents it needs adapts naturally to an evolving, diverse query distribution — this is the strength of the orchestrator pattern."
     },
     {
@@ -92,6 +97,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "1.2",
       "explanation": "In an orchestrator-worker pattern the coordinator is the hub. It collects each subagent's output and explicitly forwards the relevant parts into the next subagent's prompt."
     },
     {
@@ -106,6 +112,7 @@
       },
       "correct": "A",
       "axis": 4,
+      "task": "1.2",
       "explanation": "If the coordinator already has the findings, spawning a subagent to re-ingest 80K tokens is pure overhead. Let the coordinator answer simple follow-ups itself."
     },
     {
@@ -120,6 +127,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "1.3",
       "explanation": "Delegate intent and quality bars, not procedures. The subagent can then choose queries, follow promising tangents, and recover from dead ends on its own."
     },
     {
@@ -134,6 +142,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "1.7",
       "explanation": "Keep the accumulated understanding, and give it a targeted delta about the renames so it can update its mental model — minimum waste, maximum accuracy."
     },
     {
@@ -148,6 +157,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "1.7",
       "explanation": "Forking gives each strategy its own independent context starting from the exact analysis baseline — no cross-contamination, no re-analysis."
     },
     {
@@ -162,6 +172,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "1.7",
       "explanation": "Keeps the expensive context you already built, while telling the agent exactly which 3 files to re-read — minimum waste, maximum accuracy."
     },
     {
@@ -176,6 +187,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "1.7",
       "explanation": "--resume with the session name is designed for exactly this: pick a specific prior session out of many, by the name you gave it."
     },
     {
@@ -190,6 +202,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "1.6",
       "explanation": "Start at entry points (login, token verify, middleware), then navigate outward following real code edges. Incremental, grounded, fits within context limits."
     },
     {
@@ -204,6 +217,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "1.2",
       "explanation": "Delegate well-scoped investigations to subagents with fresh context, while the main agent keeps the architectural overview. This is the pattern for scaling exploration beyond a single context window."
     },
     {
@@ -218,6 +232,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "1.6",
       "explanation": "Debugging is adaptive by nature — each file you read changes the most useful next step. Let the agent follow the evidence."
     },
     {
@@ -232,6 +247,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "1.7",
       "explanation": "Forking from yesterday's session gives each approach its own independent context starting from the same analysis baseline — clean, parallel, no contamination."
     },
     {
@@ -246,6 +262,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "1.1",
       "explanation": "The agentic loop works by appending tool_result messages to the conversation and letting the model decide the next step on each turn. That's how 45 days → refund vs. escalate gets resolved."
     },
     {
@@ -260,6 +277,7 @@
       },
       "correct": "D",
       "axis": 1,
+      "task": "1.5",
       "explanation": "Compliance-grade rules belong outside the model — a deterministic hook on the tool call is guaranteed to fire every time, independent of model behavior."
     },
     {
@@ -274,6 +292,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "2.1",
       "explanation": "Free-text instructions put the semantics in prose, which the model interprets inconsistently. Purpose-specific tools give the model an explicit, well-typed contract to pick between."
     },
     {
@@ -288,6 +307,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "2.5",
       "explanation": "When Edit's unique-match contract can't be satisfied in a repetitive file, fall back to Read → modify in memory at the intended line → Write the full file back."
     },
     {
@@ -302,6 +322,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "2.4",
       "explanation": "Tool selection is driven by the descriptions the model sees. A one-line description like 'Analyzes dependency graph' loses against Grep's rich description. Beef up the MCP tool's description."
     },
     {
@@ -316,6 +337,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "2.4",
       "explanation": "Tool selection is driven by the descriptions Claude sees. When the MCP tools say 'extracts a function from code' and Write/sed come with rich documentation, Claude picks Write/sed. Beef up the descriptions."
     },
     {
@@ -330,6 +352,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "2.5",
       "explanation": "You have to enumerate every name the function is exposed under — otherwise renamed wrappers hide callers. Read the relevant modules, gather all aliases, then grep for each."
     },
     {
@@ -344,6 +367,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "2.3",
       "explanation": "tool_choice=specific-tool deterministically forces extract_metadata on the first turn. Then you hand control back to auto to let the model use citations/DOI enrichment with the metadata in context."
     },
     {
@@ -358,6 +382,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "2.2",
       "explanation": "A retryable flag tells Claude deterministically 'don't retry,' and a ready-made customer-friendly message improves the outgoing reply. Fixes both problems at once."
     },
     {
@@ -372,6 +397,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "2.2",
       "explanation": "MCP's designed pattern: put the error text in the content field and mark isError=true. Claude sees both the failure flag and a readable message to reason about."
     },
     {
@@ -386,6 +412,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "2.2",
       "explanation": "Give the agent the information it needs to make the right decision: category, retryability, and a human-readable cause. That replaces guessing with deterministic policy."
     },
     {
@@ -400,6 +427,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "4.2",
       "explanation": "All three issues are about the model's interpretation of what counts as 'a skill.' Few-shot examples teach the pattern concretely — split vs. not-split, mentioned vs. inferred, appropriate granularity."
     },
     {
@@ -414,6 +442,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "4.4",
       "explanation": "Capturing both values makes the discrepancy a first-class signal — you catch OCR errors and extraction mistakes uniformly, and you can route only the mismatched 18% to humans."
     },
     {
@@ -428,6 +457,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "4.2",
       "explanation": "Few-shot examples demonstrate the exact canonical format you want ('cotton/polyester' as a normalized list), and they also raise recall on material info that was being skipped."
     },
     {
@@ -442,6 +472,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "4.3",
       "explanation": "Keeps the strong enum for the common cases (clean downstream joins) while giving a well-typed escape hatch that preserves detail. Stable long-term."
     },
     {
@@ -456,6 +487,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "4.4",
       "explanation": "No amount of retrying teaches the model information that isn't in the input. Retry-with-error-feedback only fixes mistakes the model could have gotten right from the source."
     },
     {
@@ -470,6 +502,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "4.5",
       "explanation": "Match latency profile to document urgency: batch for the bulk (cheap), real-time for the latency-sensitive exceptions (fast). Minimizes cost while meeting SLA."
     },
     {
@@ -484,6 +517,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "4.5",
       "explanation": "Targeted, and it addresses the actual cause (input too long). Chunk the oversized docs, extract per chunk, then merge — minimum tokens, fixes the specific failure mode."
     },
     {
@@ -498,6 +532,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "4.2",
       "explanation": "The failure mode is the model not recognizing varied formats. Concrete examples across the format distribution directly raise recall on the 5%."
     },
     {
@@ -512,6 +547,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "4.3",
       "explanation": "Strict schema + explicit normalization rules ('prices as decimal with two places', 'dietary as enumerated tags') lets the model both extract and normalize in one pass."
     },
     {
@@ -526,6 +562,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "4.3",
       "explanation": "The fields are already nullable; the model just needs an explicit instruction to prefer null over a plausible guess. This is the standard fix for schema-aware hallucination."
     },
     {
@@ -540,6 +577,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "4.5",
       "explanation": "Max 4-hour wait + up to 24-hour batch SLO = 28-hour worst case, leaving a 2-hour cushion under the 30-hour SLA to absorb batch variance and hit 99.9%."
     },
     {
@@ -554,6 +592,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "5.6",
       "explanation": "The synthesis agent misreads the data because it never sees the dates. Making each data point carry its own timestamp in the structured output lets synthesis reason about trends instead of contradictions."
     },
     {
@@ -568,6 +607,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "5.6",
       "explanation": "The synthesis gives the narrative; the source index gives the report generator exactly the binding it needs to cite without re-reading 120K tokens of raw content."
     },
     {
@@ -582,6 +622,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "5.6",
       "explanation": "Explicit claim-source mappings are a first-class output the synthesis agent can merge deterministically — no attribution gets dropped during summarization."
     },
     {
@@ -596,6 +637,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "5.4",
       "explanation": "Structured per-agent reports keep fidelity (the findings, with schema), let the coordinator stay in charge of orchestration, and keep each subagent's context focused. This is the orchestrator + compact artifact pattern."
     },
     {
@@ -610,6 +652,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "5.6",
       "explanation": "Report structure that keeps methodological context and separates settled vs. contested claims is how you get nuance without over-hedging."
     },
     {
@@ -624,6 +667,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "5.6",
       "explanation": "Structured content + separate source metadata preserves the mapping end-to-end, so the report generator receives both what was said and where it came from."
     },
     {
@@ -638,6 +682,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "5.4",
       "explanation": "Start from the architectural root (the interface), then navigate only the specific implementations that matter for invalidation — focused reading, low context cost."
     },
     {
@@ -652,6 +697,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "5.4",
       "explanation": "A scratchpad offloads findings to durable storage the agent can re-read on demand, giving it a stable 'memory' independent of how crowded the context window gets."
     },
     {
@@ -666,6 +712,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "5.4",
       "explanation": "Condense what you've learned about rendering into a compact summary, then give a fresh subagent that summary plus the physics task — you preserve the important signal and escape the degraded context."
     },
     {
@@ -680,6 +727,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "5.5",
       "explanation": "Aggregate accuracy hides segment failures — one document type could be 70% while others are 99%. Auto-routing by overall number alone risks systemic errors in the weak segments."
     },
     {
@@ -694,6 +742,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "5.5",
       "explanation": "Field-level confidence lets you route the low-confidence 20% — which is where the 12% semantic errors concentrate — to humans. Calibration makes the threshold choice data-driven."
     },
     {
@@ -708,6 +757,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "5.6",
       "explanation": "Amendments are structurally about versioned values. A schema with value + source location + effective date models the domain correctly and stops forcing the model to pick one."
     },
     {
@@ -722,6 +772,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "5.2",
       "explanation": "The customer has said 'twice' but you have no context yet. One acknowledging, focused question gives you a shot at first-contact resolution without dismissing the frustration or delaying a potential handoff."
     },
     {
@@ -736,6 +787,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "5.1",
       "explanation": "Progressive summarization compresses stable resolved topics while keeping the active thread verbatim — the classic pattern for long multi-issue conversations near the context limit."
     },
     {
@@ -750,6 +802,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "5.1",
       "explanation": "The API is stateless. Each request must include the full messages array. If you only send the latest turn, the model has no memory of earlier ones — exactly the 'ask for the name again' symptom."
     },
     {
@@ -764,6 +817,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "5.2",
       "explanation": "Escalation decisions are judgment calls about intent and progress — exactly what LLMs are good at. Clear criteria in natural language outperform rigid rules for the long tail."
     },
     {
@@ -778,6 +832,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "5.3",
       "explanation": "Deliver the partial value you can (explanation + eligibility), be honest about the failure, and let the customer choose between human escalation or a retry. Classic graceful degradation."
     },
     {
@@ -792,6 +847,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "5.1",
       "explanation": "Keep the fields that matter for the task and drop the rest. This directly addresses the context-bloat problem before you add two more lookups."
     },
     {
@@ -806,6 +862,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "5.2",
       "explanation": "A structured handoff with identifiers, cause, amount, and recommended action is what a human agent needs to pick up the case instantly without re-investigating."
     },
     {
@@ -820,6 +877,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "5.2",
       "explanation": "Honor the feeling, give them the fast resolution path in writing, and preserve their choice. That's the customer-respect move that still leverages the agent's capability."
     },
     {
@@ -834,6 +892,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "5.1",
       "explanation": "A clean session with a summary keeps the narrative continuity while guaranteeing the agent isn't reasoning over stale tool results."
     },
     {
@@ -848,6 +907,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "5.2",
       "explanation": "A structured brief (who, what order, what issue, why it exceeds auth) lets the human agent pick up instantly. That's the mid-process escalation pattern."
     },
     {
@@ -862,6 +922,7 @@
       },
       "correct": "A",
       "axis": 1,
+      "task": "1.4",
       "explanation": "When a specific tool sequence is required for critical business logic (like verifying customer identity before processing refunds), programmatic enforcement provides deterministic guarantees that prompt-based approaches cannot. Options B and C rely on probabilistic LLM compliance, which is insufficient when errors have financial consequences. Option D addresses tool availability rather than tool ordering, which is not the actual problem."
     },
     {
@@ -876,6 +937,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "1.1",
       "explanation": "The `stop_reason` field is Claude's explicit signal for loop control: \"tool_use\" means Claude wants to execute a tool and receive results, while \"end_turn\" means Claude has finished its response. Option B describes a safety guardrail, not the primary control mechanism. Option C relies on unreliable natural language parsing instead of structured API signals. Option D is incorrect because Claude often generates both text and tool calls in the same response—text presence doesn't indicate completion."
     },
     {
@@ -890,6 +952,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "1.4",
       "explanation": "Option B (decompose-parallelize-synthesize) directly addresses both problems: sequential investigation causing excessive tool calls, and redundant customer data gathering. By decomposing the request into distinct concerns first and reusing the same customer context across parallel investigations, the agent eliminates redundancy and reduces total calls. Option A would make the sequential problem worse by adding more gates. Option C doesn't systematically address context reuse or parallel investigation. Option D hides useful tool structure and doesn't address the workflow pattern issue."
     },
     {
@@ -904,6 +967,7 @@
       },
       "correct": "A",
       "axis": 4,
+      "task": "1.1",
       "explanation": "Claude can request multiple tools in a single response, and executors should return all results together before the next API call. Prompting Claude to batch related information-gathering calls leverages this native capability with minimal architecture changes. Speculative execution (B) wastes resources on unneeded calls and introduces complexity. Composite tools (C) reduce flexibility and create maintenance burden without addressing the root cause. Increasing max_tokens (D) doesn't affect tool batching behavior—it only limits output length."
     },
     {
@@ -918,6 +982,7 @@
       },
       "correct": "A",
       "axis": 1,
+      "task": "1.5",
       "explanation": "PostToolUse hooks provide a single, centralized point for data normalization that works uniformly across all tools (including third-party ones you cannot modify). This approach is deterministic—code transforms data reliably, unlike the option that relies on probabilistic LLM interpretation of a system-prompt instruction. Modifying some tools while wrapping others creates inconsistent dual approaches, violating maintainability principles. Requiring the agent to remember to call a normalisation tool after every retrieval doubles API calls and relies on unreliable agent behaviour for a deterministic transformation."
     },
     {
@@ -932,6 +997,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "1.2",
       "explanation": "The Explore subagent is designed for tasks producing verbose output you don't need retained, returning concise summaries. Keeping Phases 2 and 3 in the main conversation preserves context for iterative refinement and multi-phase work. Option B's /compact is lossy and may discard needed pattern details. Option C loses session context about edge case decisions across files. Option D adds manual overhead that subagents handle automatically and is designed for automation, not interactive work."
     },
     {
@@ -946,6 +1012,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "1.2",
       "explanation": "The coordinator's logs reveal the root cause directly: it decomposed \"creative industries\" into only visual arts subtasks (digital art, graphic design, photography), completely omitting music, writing, and film. The subagents executed their assigned tasks correctly—the problem is what they were assigned. This makes Option B clearly correct: the coordinator's task decomposition was too narrow. Options A, C, and D incorrectly blame downstream agents that are working correctly within their assigned scope. The synthesis agent can only combine findings it receives; the web search agent searched exactly what it was assigned; and there's no evidence of document filtering—the missing industries were never researched in the first place."
     },
     {
@@ -960,6 +1027,7 @@
       },
       "correct": "A",
       "axis": 4,
+      "task": "1.3",
       "explanation": "Option A addresses the root cause by having upstream agents output only what downstream agents need—structured facts, citations, and relevance scores rather than verbose content and reasoning traces. This reduces tokens at the source while preserving essential information. Option B adds latency, cost, and potential information loss through another agent that itself must process 155K tokens. Option C degrades synthesis quality since sequential batching prevents seeing all findings together to identify patterns and contradictions. Option D is over-engineered for this use case—RAG retrieval works for large knowledge bases, but synthesis requires comprehensive coverage of known inputs, not selective retrieval based on queries."
     },
     {
@@ -974,6 +1042,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "1.2",
       "explanation": "The coordinator pattern provides centralized visibility, consistent error handling, and control over information flow between subagents. Option B is wrong because serialization isn't unique to coordinators—any component can pass data. Option C is incorrect because routing through a coordinator adds overhead rather than reducing it. Option D creates a false dichotomy—retry logic can be implemented anywhere, not just in coordinators."
     },
     {
@@ -988,6 +1057,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "1.2",
       "explanation": "Option C correctly applies separation of concerns: the document analysis agent completes its core task (analyzing documents) without blocking, preserves all information with explicit conflict annotation, and defers the reconciliation decision to the coordinator which has broader context. Option A creates unnecessary workflow blocking. Option B has the wrong agent making credibility judgments that affect which data gets used. Option D risks the conflict being missed due to lack of annotation and inappropriately delegates the decision to the synthesis agent."
     },
     {
@@ -1002,6 +1072,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "1.2",
       "explanation": "The orchestrator-workers pattern requires the coordinator to maintain control of the workflow by collecting results from subagents and passing them to the appropriate specialized component. Option B correctly uses the synthesis agent for its intended purpose—integrating findings into a coherent output. Option A fails because concatenation is not integration and produces incoherent results. Options C and D violate the coordination pattern by having agents bypass the coordinator or communicate peer-to-peer, which breaks centralized control and creates architectural problems."
     },
     {
@@ -1016,6 +1087,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "1.2",
       "explanation": "Option A is correct because coordinator-level task partitioning addresses the root cause (unclear boundaries) before work begins, preserves parallelism, and prevents wasted tokens. Option B adds unnecessary complexity with shared state and race conditions. Option C fails to address the stated concern—tokens are still wasted even if results are deduplicated afterward. Option D unnecessarily sacrifices parallelism when simple partitioning achieves the same deduplication benefit."
     },
     {
@@ -1030,6 +1102,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "1.6",
       "explanation": "Splitting reviews into focused passes directly addresses the root cause: attention dilution when processing many files at once. File-by-file analysis ensures consistent depth, while a separate integration pass catches cross-file issues. Option B shifts burden to developers without improving the system. Option C misunderstands that larger context windows don't solve attention quality issues—the \"lost in the middle\" problem persists. Option D would actually suppress detection of real bugs by requiring consensus on issues that may only be caught intermittently."
     },
     {
@@ -1044,6 +1117,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "1.3",
       "explanation": "The correct answer is A because LLMs can only reason about information in their context. Without knowing what tests already exist, Claude cannot avoid suggesting duplicates. Providing the existing test file directly addresses this root cause. Option B doesn't solve duplication since edge cases might also be covered. Option C uses brittle keyword matching that misses semantically equivalent tests with different names. Option D incorrectly assumes reducing quantity improves relevance—Claude has no basis to prioritize non-duplicates without context about what exists."
     },
     {
@@ -1058,6 +1132,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "2.1",
       "explanation": "Tool descriptions are the primary mechanism LLMs use for tool selection. When descriptions are minimal, models lack the context to differentiate between similar tools. Option B directly addresses this root cause with a low-effort, high-leverage fix. Few-shot examples (A) add token overhead without fixing the underlying issue. A routing layer (C) is over-engineered and bypasses the LLM's natural language understanding. Consolidating tools (D) is a valid architectural choice but requires more effort than a \"first step\" warrants when the immediate problem is inadequate descriptions."
     },
     {
@@ -1072,6 +1147,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "2.1",
       "explanation": "Few-shot examples are the most effective first approach because the agent already handles single-concern requests well (94% accuracy), indicating it understands the tools—it just needs guidance on the multi-concern pattern. This is a low-cost, proven technique that directly addresses the root cause. Option A over-engineers the solution with added latency and complexity. Option C misdiagnoses the problem—tool selection isn't the issue since single-concern accuracy is high. Option D is reactive rather than preventive and doesn't address the parameter mixing issue."
     },
     {
@@ -1086,6 +1162,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "2.1",
       "explanation": "Tool descriptions are the primary input the model uses to decide which tool to call. When an agent consistently selects the wrong tool, the first diagnostic step is always to examine whether tool descriptions clearly distinguish their purposes and specify when each should be used. Option B's \"every possible pattern\" approach is impractical and addresses symptoms rather than root cause. Option C over-engineers the solution by building a separate classifier instead of fixing the underlying tool definitions. Option D sacrifices necessary functionality rather than addressing why the confusion exists."
     },
     {
@@ -1100,6 +1177,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "2.1",
       "explanation": "The systematic pattern (78% vs 93%) triggered by a specific keyword indicates explicit routing logic in the system prompt rather than tool description issues or model limitations. Option B contradicts the stated premise that descriptions are unambiguous. Option C proposes impractical fine-tuning when simpler prompt fixes would address the issue. Option D is unlikely because the model correctly selects tools 93% of the time when the keyword is absent, demonstrating it can make correct selections without the triggering term."
     },
     {
@@ -1114,6 +1192,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "2.1",
       "explanation": "Option B is most effective because few-shot examples that target the specific failure mode (ambiguous requests) and include explicit reasoning help the model understand the decision-making process for edge cases. Worked examples demonstrating comparative tool selection are more effective than declarative rules alone for nuanced decisions. Option A focuses on unambiguous cases where there's no problem. Option C organizes examples in a way that doesn't help with comparative tool selection decisions. Option D provides helpful guidelines, but static tool descriptions are less effective than worked examples for teaching nuanced edge-case reasoning—the model needs to see the actual decision process, not just rules about when to use each tool."
     },
     {
@@ -1128,6 +1207,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "2.4",
       "explanation": "Option A is correct because project-scoped `.mcp.json` with environment variable expansion is the idiomatic pattern for sharing MCP configurations—it provides a single source of truth for the team while allowing each developer to supply their own credentials via environment variables. Option B fails the consistency requirement since user-scoped configurations across six developers will inevitably diverge. Option C is an anti-pattern that commits placeholder values and relies on a fragile override mechanism. Option D is over-engineered, building a custom wrapper when native environment variable expansion already solves the problem."
     },
     {
@@ -1142,6 +1222,7 @@
       },
       "correct": "A",
       "axis": 4,
+      "task": "2.3",
       "explanation": "Option A applies the principle of least privilege by giving the synthesis agent only what it needs for the 85% common case (simple fact verification) while preserving the existing coordination pattern for complex cases. Option B's batching approach creates blocking dependencies since synthesis steps may depend on earlier verified facts, making all-at-once batching impractical. Option C over-provisions the synthesis agent, violating separation of concerns and potentially degrading its accuracy on its primary synthesis task. Option D relies on speculative caching that cannot reliably predict what the synthesis agent will need to verify."
     },
     {
@@ -1156,6 +1237,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "2.1",
       "explanation": "Option A directly addresses the root cause: the semantic overlap between tool names and descriptions. Renaming `analyze_content` to `extract_web_results` and using \"processes and returns information retrieved from web searches\" completely eliminates the ambiguous \"analyze\" terminology that was confusing the coordinator. Option B over-engineers with an unnecessary classifier when the fix is simply clearer descriptions. Option C only fixes one side of the overlap, leaving the web search tool ambiguous. Option D treats the symptom through prompt workarounds rather than fixing the underlying tool definition problem."
     },
     {
@@ -1170,6 +1252,7 @@
       },
       "correct": "A",
       "axis": 1,
+      "task": "2.3",
       "explanation": "Option A is correct because it addresses the root cause by constraining the tool's capability at the interface level. A `load_document` tool with format validation makes the undesired search behavior impossible rather than merely discouraged—following the principle of least privilege. Option B removes useful capability and adds latency for legitimate document loading. Option C relies on prompt instructions, which provide unreliable enforcement since LLMs can ignore instructions when the tool technically permits the behavior. Option D uses a blocklist approach that requires ongoing maintenance and can never be complete, addressing symptoms rather than the underlying design flaw."
     },
     {
@@ -1184,6 +1267,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "3.2",
       "explanation": "Project-scoped custom slash commands should be stored in the `.claude/commands/` directory within the repository. These commands are version-controlled and automatically available to all developers when they clone or pull the repo. Option B (`~/.claude/commands/`) is for personal commands that aren't shared via version control. Option C (CLAUDE.md) is for project instructions and context, not command definitions. Option D describes a configuration mechanism that doesn't exist in Claude Code."
     },
     {
@@ -1198,6 +1282,7 @@
       },
       "correct": "A",
       "axis": 4,
+      "task": "3.4",
       "explanation": "Plan mode is designed for complex tasks involving large-scale changes, multiple valid approaches, and architectural decisions—exactly what monolith-to-microservices restructuring requires. It enables safe codebase exploration and design before committing to changes. Option B risks costly rework when dependencies are discovered late. Option C assumes you already know the right structure without exploring the code. Option D ignores that the complexity is already stated in the requirements, not something that might emerge later."
     },
     {
@@ -1212,6 +1297,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "3.3",
       "explanation": "Option A is correct because `.claude/rules/` with glob patterns (e.g., `**/*.test.tsx`) allows conventions to be automatically applied based on file paths regardless of directory location—essential for test files spread throughout the codebase. Option B relies on inference rather than explicit matching, making it unreliable. Option C requires manual skill invocation or relies on Claude choosing to load them, contradicting the need for deterministic \"automatic\" application based on file paths. Option D can't easily handle files spread across many directories since CLAUDE.md files are directory-bound."
     },
     {
@@ -1226,6 +1312,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "3.2",
       "explanation": "The `context: fork` frontmatter option runs skills in an isolated sub-agent context, preventing verbose output from polluting the main conversation and causing responsiveness issues. Option B violates the requirement to preserve full analysis capability by compressing outputs. Option C doesn't solve the problem—running three skills sequentially still pollutes context with the same total output. Option D misunderstands the issue; model tier affects speed and cost but doesn't address context window pollution from analysis output. Note: Custom slash commands have been merged into skills in Claude Code. Files at `.claude/commands/` still work, but `.claude/skills/` is now the recommended location with additional features like supporting files and automatic loading."
     },
     {
@@ -1240,6 +1327,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "3.2",
       "explanation": "Skills provide on-demand context loading via slash commands (e.g., a skill at .claude/skills/api-patterns/SKILL.md creates /api-patterns), adding overhead only when explicitly invoked for endpoint generation. Option A loads the exemplar code for every session regardless of task type, wasting context on unrelated work. Option C uses location-based activation (path rules), which would still load the context for bug fixes and reviews in the API directory—exactly what the scenario says is unnecessary. Option D works but is manual and tedious, not leveraging Claude Code's configuration capabilities."
     },
     {
@@ -1254,6 +1342,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "3.1",
       "explanation": "B is correct because if team guidelines were added to individual developers' user-level ~/.claude/CLAUDE.md files instead of the project's .claude/CLAUDE.md, only those developers would receive the instructions. Moving guidelines to the project-level file ensures all team members (including new joiners) receive them. A is unlikely since new developers rarely have pre-existing conflicting configurations. C is incorrect because Claude Code doesn't build persistent per-user preference models through repeated interactions. D is incorrect because Claude Code reads CLAUDE.md files fresh at session start rather than caching them across sessions."
     },
     {
@@ -1268,6 +1357,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "3.2",
       "explanation": "The `context: fork` frontmatter option runs the skill in an isolated sub-agent context, preventing exploration discussion from affecting subsequent conversation. Option B fails because there's no mechanism to discard context mid-conversation—history is additive. Option C is wrong because skill directory location affects discoverability and precedence, not execution context. Option D misunderstands the `!` prefix—bash output still flows into conversation context, and exploration requires LLM reasoning."
     },
     {
@@ -1282,6 +1372,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "3.4",
       "explanation": "When facing multiple valid implementation approaches with different architectural implications AND ambiguous requirements, plan mode is appropriate. The Slack integration method choice (webhooks vs bot tokens vs Apps) affects authentication flows, error handling, and future capabilities—this architectural decision warrants exploration and team alignment before implementation. Options B and C both make assumptions about which approach is correct without evaluating trade-offs. Option D incorrectly assumes scaffolding can proceed meaningfully before the integration method is chosen, when the authentication pattern and response handling differ significantly between approaches."
     },
     {
@@ -1296,6 +1387,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "3.5",
       "explanation": "Concrete input-output examples are the most effective approach because they directly address the core problem: prose descriptions being interpreted ambiguously. Examples bypass linguistic ambiguity by showing exactly what transformation is expected. Option B continues using prose, which has already failed twice. Option C validates output structure but doesn't help Claude understand the transformation logic. Option D is diagnostic but doesn't provide a concrete target for iteration—after identifying divergence, you'd still need to use examples or other methods to fix it."
     },
     {
@@ -1310,6 +1402,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "3.1",
       "explanation": "Claude Code supports a `.claude/rules/` directory where you can create separate markdown files for topic-specific guidelines (e.g., `testing.md`, `api-conventions.md`). This allows teams to organize large instruction sets into maintainable modules. Option B describes the directory hierarchy feature, which provides context for different parts of the codebase but doesn't solve the problem of organizing a single project's many guidelines. Option C doesn't exist as a Claude Code feature. Option D confuses README files (human documentation) with CLAUDE.md files (instructions for Claude)."
     },
     {
@@ -1324,6 +1417,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "3.2",
       "explanation": "Option A correctly uses three distinct skill configuration features to address each specific issue: `argument-hint` frontmatter shows expected parameters during autocomplete (addressing missing arguments), `context: fork` isolates execution in a subagent context separate from conversation history (preventing context bleeding), and `allowed-tools` restricts tool access (preventing unauthorized operations). Option B attempts three fixes but splitting skills doesn't inherently solve context isolation, and relying on SKILL.md instructions to request arguments is less effective than `argument-hint` which provides autocomplete hints. Option C relies entirely on prompt-based instructions which are unreliable—skills are markdown templates that become part of the prompt, not programs with enforcement mechanisms; telling Claude to \"ignore prior context\" or \"avoid forbidden operations\" doesn't actually restrict access. Option D's positional parameters don't enforce argument presence (they're just empty if not provided), `@` file references control what's explicitly included but don't prevent context from prior conversation, and `description` frontmatter only appears in help text—it doesn't restrict tool access."
     },
     {
@@ -1338,6 +1432,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "3.2",
       "explanation": "CLAUDE.md content is loaded for every conversation, making it ideal for universal standards you always want applied. Skills are model-invoked and loaded on-demand when Claude detects a relevant task, making them perfect for specialized workflows. Option A fails because moving everything to Skills means coding standards won't be automatically applied. Option C misapplies path-specific rules (designed for file-type conventions) to workflow-based distinctions. Option D improves maintainability through @import but still loads all content every conversation, not solving the conditional loading requirement."
     },
     {
@@ -1352,6 +1447,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "3.2",
       "explanation": "Project skills in `.claude/skills/` take precedence over personal skills in `~/.claude/skills/` when they share the same name. Creating a personal `/commit` skill won't override the project version—the developer must use a different skill name. Skills are the current approach for creating custom slash commands, having replaced the older `.claude/commands/` system (which still works for backwards compatibility). Skills add optional features: a directory for supporting files, frontmatter to control whether you or Claude invokes them, and the ability for Claude to load them automatically when relevant. Options C and D reference frontmatter features that don't exist; there is no `override` option and no username-based conditional logic in skill frontmatter."
     },
     {
@@ -1366,6 +1462,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "3.6",
       "explanation": "The `-p` (or `--print`) flag is the documented way to run Claude Code in non-interactive mode. It processes the prompt, outputs the result to stdout, and exits without waiting for user input—exactly what CI/CD pipelines require. The other options reference non-existent features (CLAUDE_HEADLESS environment variable, --batch flag) or use Unix workarounds that don't properly address Claude Code's command syntax."
     },
     {
@@ -1380,6 +1477,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "3.6",
       "explanation": "Option A is correct because it provides Claude with the context needed to make intelligent decisions about what's genuinely new versus already addressed. By including previous findings, Claude can reason about whether issues have been fixed rather than blindly re-flagging them. Option B sacrifices thoroughness by limiting scope—changes in one file might affect issues in another. Option C uses brittle pattern matching that can't semantically determine if issues are truly resolved, and LLM outputs vary in wording across runs. Option D avoids the problem by reducing feedback frequency, losing the continuous feedback value that makes CI/CD reviews useful."
     },
     {
@@ -1394,6 +1492,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "4.6",
       "explanation": "Self-critique (evaluator-optimizer pattern) directly addresses the root cause: inconsistent inclusion of explanation elements. By having the agent evaluate its own response against specific criteria before presenting it, you catch case-specific gaps that vary with each situation. Few-shot examples (B) help with consistent patterns but cannot cover highly variable gaps. Model tier upgrades (C) don't address the structural issue—the resolutions are already accurate, just incompletely explained. Confirmation steps (D) shift the burden to customers rather than improving the agent's output quality."
     },
     {
@@ -1408,6 +1507,7 @@
       },
       "correct": "A",
       "axis": 4,
+      "task": "4.5",
       "explanation": "The Message Batches API offers 50% cost savings but has processing times up to 24 hours with no guaranteed latency SLA. This makes it unsuitable for blocking pre-merge checks where developers wait for results, but ideal for overnight batch jobs like technical debt reports. Option B is wrong because relying on \"often faster\" completion isn't acceptable for blocking workflows. Option C reflects a misconception—batch results can be correlated using custom_id fields. Option D adds unnecessary complexity when the simpler solution is matching each API to its appropriate use case."
     },
     {
@@ -1422,6 +1522,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "4.5",
       "explanation": "The correct answer matches API approaches to latency requirements: PR style checks block developers and need immediate responses (synchronous), while weekly audits and nightly test generation are scheduled tasks that can tolerate up to 24 hours of processing time (batch). Option B would create unacceptable delays for blocking PR checks. Option C misses cost savings on nightly jobs that don't need immediate results. Option D foregoes significant batch savings when prompt caching isn't an equivalent cost reduction."
     },
     {
@@ -1436,6 +1537,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "4.5",
       "explanation": "Batch processing supports tool definitions and can generate tool calls, but its asynchronous fire-and-forget model means you cannot execute tools and return results mid-request. This breaks iterative workflows where Claude needs tool results to continue analysis. Option A is incorrect (batch fully supports tools), C is incorrect (custom_id provides request correlation), and D identifies a real but secondary concern—the phrase \"though the workflow could otherwise function\" is false because the architectural limitation in B would prevent this workflow even if batch completed instantly."
     },
     {
@@ -1450,6 +1552,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "4.6",
       "explanation": "Running a second, independent Claude instance without the generator's reasoning addresses the root cause of self-review blind spots. LLMs exhibit confirmation bias when reviewing their own work within the same context. By giving the reviewer only the code and proposed changes (not the reasoning behind them), it evaluates changes from a fresh perspective. Option B fails because self-review within the same context carries the same biases. Options C and D improve generation quality but don't address the fundamental self-review limitation—the question explicitly states Claude considered these cases during generation and concluded its approach was correct, so more thinking time (C) or more context (D) won't help catch issues Claude has already rationalized."
     },
     {
@@ -1464,6 +1567,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "4.1",
       "explanation": "Explicit severity criteria with concrete code examples directly address the root cause of inconsistency: ambiguous interpretation of what each severity level means. This is a proven prompt engineering technique for improving classification reliability. Option B's issue-type-to-severity mapping loses important context (the same issue type may warrant different severities based on code path). Option C shifts the burden to manual review, defeating automation. Option D's relative ratings would make a single minor issue \"critical\" if it's the only finding, introducing more inconsistency rather than less."
     },
     {
@@ -1478,6 +1582,7 @@
       },
       "correct": "B",
       "axis": 1,
+      "task": "4.3",
       "explanation": "The Claude Code CLI supports `--output-format json` with `--json-schema` to guarantee well-formed structured output that can be reliably parsed for automation. Options A and C rely on prompt-based formatting which LLMs follow inconsistently—fine for human consumption but unreliable for automated pipelines requiring specific fields. Option D adds unnecessary complexity and cost with a second LLM call when the problem is solved natively with structured output enforcement via CLI flags."
     },
     {
@@ -1492,6 +1597,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "4.1",
       "explanation": "The root cause is that \"accurate and up-to-date\" lacks a definition of what constitutes a problem. Explicit criteria (A) directly address this by defining the target: semantic contradiction between a comment's claim and actual code behavior. Few-shot examples (B) help the model recognize similar patterns to those shown, but pattern-matching won't generalize to novel misleading comments—the model needs the underlying criterion to identify any contradiction. Filtering (C) addresses one symptom (false positives on TODOs) but ignores the false negative problem entirely. Git blame data (D) provides temporal context but doesn't define what should actually be flagged—old comments can be accurate, and new comments can be wrong."
     },
     {
@@ -1506,6 +1612,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "4.5",
       "explanation": "Deep analysis is the correct choice because it runs overnight and doesn't require immediate results, making it ideal for batch processing's up-to-24-hour latency in exchange for 50% cost savings. The Message Batches API works asynchronously: you submit requests, poll for completion status, then retrieve results from a JSONL file—there's no callback mechanism. This polling model fits perfectly with overnight jobs that can check periodically and post PR comments once complete. Pre-merge-commit hooks block PR merging and require timely completion, making them incompatible with batch processing's latency—even though most batches complete in under an hour, the system makes no timing guarantees. Using batch for both modes would break the pre-merge-commit workflow, and avoiding batch entirely wastes cost savings on the latency-tolerant deep analysis workload."
     },
     {
@@ -1520,6 +1627,7 @@
       },
       "correct": "A",
       "axis": 4,
+      "task": "4.1",
       "explanation": "Option A is correct because it immediately stops trust erosion by removing high-FP categories while preserving the value of accurate ones (security, correctness, performance). A tool giving 50% wrong advice is worse than no tool—developers who've lost trust won't regain it while noisy findings continue. Option B damages working categories to compensate for broken ones. Option C shifts burden to developers without reducing noise, and those who already distrust the system won't trust confidence scores. Option D addresses the right problem but ignores urgency—trust will continue eroding during iteration."
     },
     {
@@ -1534,6 +1642,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "4.2",
       "explanation": "Few-shot examples are the most effective technique for achieving consistent output format when instructions alone produce variable results. The scenario explicitly shows that instruction refinement failed, making Option A a repetition of a failing approach. Option B works because examples demonstrate the exact pattern expected, which models follow more reliably than abstract instructions. Option C overcomplicates the system without addressing format consistency, and Option D misdiagnoses the problem—the model sometimes succeeds with current context, so more context won't fix format variability."
     },
     {
@@ -1548,6 +1657,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "4.6",
       "explanation": "Including reasoning and confidence inline directly addresses the stated bottleneck (investigation time from clicking into findings) while respecting the constraint that findings cannot be filtered before developer review. Option A violates the explicit constraint against filtering. Option C also filters/suppresses findings before review. Option D reorganizes workflow but doesn't reduce investigation time—developers still need to click into findings in whichever category they review to understand why Claude flagged them."
     },
     {
@@ -1562,6 +1672,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "5.2",
       "explanation": "Adding explicit escalation criteria with few-shot examples directly addresses the root cause: unclear decision boundaries. This is the proportionate first response before adding infrastructure. Option B fails because LLM self-reported confidence is poorly calibrated—the agent is already incorrectly confident on hard cases. Option C is over-engineered, requiring labeled data and ML infrastructure when prompt optimization hasn't been tried. Option D solves a different problem entirely; sentiment doesn't correlate with case complexity, which is the actual issue."
     },
     {
@@ -1576,6 +1687,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "5.2",
       "explanation": "Option B is correct because it identifies a genuine policy gap—the policy explicitly covers own-site price drops but is silent on competitor price matching. The agent cannot invent policy, so human judgment is required. Option A is wrong because multi-issue requests can be handled sequentially without escalation. Option C is wrong because escalating based on speculation about future customer intent is not a valid criterion. Option D is wrong because the stated reason (avoiding relationship damage) reflects emotional avoidance rather than operational necessity—the agent should present factual tracking evidence according to policy."
     },
     {
@@ -1590,6 +1702,7 @@
       },
       "correct": "A",
       "axis": 1,
+      "task": "5.1",
       "explanation": "Option A is correct because structured extraction addresses the root cause: summarization is inherently lossy for precise details. By extracting transactional facts (amounts, dates, order numbers) into a persistent block before summarization, critical information is preserved reliably and available in every prompt. Option B fails because LLMs don't reliably follow preservation instructions under context pressure—you can't \"prompt your way out\" of summarization being lossy. Option C only delays the problem without solving it; longer conversations will still lose early details. Option D is over-engineered and fragile—reference phrase detection is unreliable, and it doesn't help when the agent proactively uses wrong values without the customer explicitly referencing them."
     },
     {
@@ -1604,6 +1717,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "5.2",
       "explanation": "When tool results are ambiguous (multiple matches), asking the user for a disambiguating identifier is the most reliable approach. The user has definitive knowledge of their own identity, making one extra conversation turn worth avoiding the 15% error rate. Option B hides ambiguity from Claude, removing its ability to handle edge cases. Option C relies on unreliable contextual inference. Option D uses arbitrary confidence thresholds that aren't well-calibrated for accuracy."
     },
     {
@@ -1618,6 +1732,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "5.3",
       "explanation": "Structured error context gives the coordinator the information it needs to make intelligent recovery decisions—whether to retry with a modified query, try an alternative approach, or proceed with partial results. Option B's generic status hides valuable context from the coordinator, preventing informed decisions. Option C suppresses the error by marking failure as success, which prevents any recovery and risks incomplete research outputs. Option D terminates the entire workflow unnecessarily when recovery strategies could succeed."
     },
     {
@@ -1632,6 +1747,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "5.3",
       "explanation": "Returning errors with context to the coordinator is the correct approach because it allows the coordinator agent to make informed decisions about how to proceed—whether to skip the document, try an alternative, or inform the user. Silent failures (B) hide critical information and undermine report completeness. Terminating the entire workflow (C) is disproportionate for a single file issue. Retrying (D) is pointless for corrupted files since corruption is a permanent failure, not a transient one that might resolve."
     },
     {
@@ -1646,6 +1762,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "5.3",
       "explanation": "Option A is correct because it embodies graceful degradation with transparency—continuing with available data while propagating uncertainty information downstream. This allows the report generator and end users to make informed decisions about confidence levels. Option B violates separation of concerns (subagents shouldn't direct coordinator retry logic) and assumes retries will succeed. Option C hides critical information, producing potentially misleading research reports. Option D treats partial success as total failure, wasting completed work and providing no value when partial results would be useful."
     },
     {
@@ -1660,6 +1777,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "5.3",
       "explanation": "Option C correctly identifies that a timeout (query didn't complete) is semantically different from \"0 results\" (query succeeded but found nothing). In research contexts, knowing a source has no relevant data is informative, while a timeout means the data is unknown. This distinction enables appropriate decisions: retry access failures but accept empty results as valid findings. Option A incorrectly treats valid empty results as failures, causing wasteful retries. Option B hides retry context from the coordinator, limiting resource budget management. Option D destroys actionable information through aggregation."
     },
     {
@@ -1674,6 +1792,7 @@
       },
       "correct": "A",
       "axis": 4,
+      "task": "5.3",
       "explanation": "Option A is correct because it follows the principle of handling errors at the lowest level capable of resolving them. The subagent handles transient failures locally (reducing coordinator burden) while escalating only unresolvable issues with context for informed decisions. Option B masks errors as success, hiding problems rather than solving them. Option C increases coordinator burden by adding validation responsibilities. Option D adds unnecessary architectural complexity and coordination overhead."
     },
     {
@@ -1688,6 +1807,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "5.1",
       "explanation": "LLMs exhibit the \"lost in the middle\" phenomenon where information at the beginning and end of long contexts is better recalled than middle content. Option A directly addresses this by placing key findings summaries in the primacy position and using explicit section headers for navigation. Option B only addresses fairness across tasks, not quality for any individual task. Option C risks losing critical findings during summarization. Option D prevents holistic synthesis by processing sources sequentially rather than allowing the model to see all inputs together."
     },
     {
@@ -1702,6 +1822,7 @@
       },
       "correct": "B",
       "axis": 1,
+      "task": "1.5",
       "explanation": "PreToolUse hooks intercept tool calls before execution. A hook can pattern-match against destructive commands like 'rm -rf' and validate that file paths fall within the project directory, blocking any violation with 100% reliability. This is deterministic enforcement for a safety-critical requirement."
     },
     {
@@ -1716,6 +1837,7 @@
       },
       "correct": "B",
       "axis": 1,
+      "task": "1.5",
       "explanation": "A PostToolUse hook on file write operations can inspect the output and normalise package names deterministically. This provides a 100% enforcement guarantee regardless of what the model generates, which is the correct approach for structural consistency rules."
     },
     {
@@ -1730,6 +1852,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "1.7",
       "explanation": "fork_session creates independent branches from a shared baseline. Both branches inherit the current codebase analysis and context but can diverge independently to explore different strategies. Neither branch's exploration affects the other, and both analyses are preserved."
     },
     {
@@ -1744,6 +1867,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "1.2",
       "explanation": "Since each post's moderation is independent, the coordinator should delegate them to parallel instances. This reduces total processing time from sequential (45 minutes) to roughly the time of the slowest individual moderation, and a failure on one post does not block others."
     },
     {
@@ -1758,6 +1882,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "1.1",
       "explanation": "Parsing natural language for termination is an anti-pattern. The stop_reason field is the authoritative, deterministic signal for agentic loop control. 'tool_use' means Claude has more work to do; 'end_turn' means it considers the task complete."
     },
     {
@@ -1772,6 +1897,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "1.2",
       "explanation": "The coordinator should delegate when tasks are large or require specialist focus, and handle tasks directly when they are simple and well-scoped. A 60-file rename benefits from a dedicated subagent with focused context. A single-file endpoint addition is trivial enough for the coordinator to handle without delegation overhead."
     },
     {
@@ -1786,6 +1912,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "1.3",
       "explanation": "Goal-oriented prompts specify what to achieve and the quality bar, not a fixed procedure. Pairing the objective with success criteria lets the subagent adapt its approach when it meets something unexpected, which is what the guide recommends."
     },
     {
@@ -1800,6 +1927,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "1.1",
       "explanation": "The Messages API is stateless, so every call must carry the whole conversation. The tool result is appended as a new message paired with the tool_use block that requested it, which is how the model sees what its call returned and decides the next step."
     },
     {
@@ -1814,6 +1942,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "1.2",
       "explanation": "Large, multi-file tasks suffer from attention dilution when processed in a single context. Delegating to specialist subagents ensures each agent works with focused context. The coordinator should handle task decomposition and context injection, delegating implementation to specialists."
     },
     {
@@ -1828,6 +1957,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "1.3",
       "explanation": "Each specialist gets its own AgentDefinition with its tools restricted to the 4–5 tools relevant to its role. The coordinator has the Task tool (renamed to Agent in current Claude Code v2.1.63; 'Task' still works as a backward-compatible alias) in its allowedTools so it can spawn specialists. This enforces separation of concerns and scoped tool access."
     },
     {
@@ -1842,6 +1972,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "1.7",
       "explanation": "Fresh start with summary injection preserves the knowledge of what has been tried (preventing repetition) while eliminating the polluted context from three sets of conflicting file modifications. The agent starts with clean context and the lessons learned from previous attempts."
     },
     {
@@ -1856,6 +1987,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "1.3",
       "explanation": "In hub-and-spoke orchestration, the coordinator manages all inter-agent communication. Subagents do not inherit each other's context. The coordinator must explicitly pass relevant outputs from earlier subagents as context to downstream subagents. Here, the renamed schema mappings must be injected into the test-update agent's context."
     },
     {
@@ -1870,6 +2002,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "1.2",
       "explanation": "The code reviewer's output changes the code that tests and documentation must target. Therefore, the code reviewer must run first. Once the reviewed code is stable, the test generator and documentation writer can run in parallel since they are independent of each other. This is a hybrid pattern: sequential then parallel."
     },
     {
@@ -1884,6 +2017,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "1.4",
       "explanation": "A programmatic prerequisite gate physically prevents destructive SQL execution until the rollback verification precondition is met. This provides a deterministic guarantee that no destructive migration runs without a verified rollback, eliminating the failure mode entirely."
     },
     {
@@ -1898,6 +2032,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "2.4",
       "explanation": "Description tuning alone cannot route a context-free prompt like 'check user count' because the user gave the agent no environment cue. The fix is to make the two tools structurally distinguishable (distinct names, environment in the description) and to give the agent an explicit routing rule for the session. Renaming sits inside the developer's own ~/.claude.json so it does not affect the shared team configuration."
     },
     {
@@ -1912,6 +2047,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "2.5",
       "explanation": "Grep searches file contents — correct for finding function callers. Glob matches file paths — correct for finding test files by naming pattern. This is the optimal two-step sequence."
     },
     {
@@ -1926,6 +2062,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "2.3",
       "explanation": "The recommended range is 4-5 tools per agent. Splitting into role-specific agents with scoped tools eliminates decision complexity and prevents cross-specialisation misuse. Each agent excels within its narrow remit."
     },
     {
@@ -1940,6 +2077,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "2.3",
       "explanation": "A scoped cross-role tool handles the 85% simple case directly, eliminating round-trip latency. Complex cases still route through the coordinator for proper handling."
     },
     {
@@ -1954,6 +2092,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "2.3",
       "explanation": "Forced selection ({'type': 'tool', 'name': 'extract_metadata'}) ensures the model must call this specific tool. The model cannot skip it or choose a different tool. After the first turn completes, switching to 'auto' allows normal operation for documentation generation."
     },
     {
@@ -1968,6 +2107,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "2.5",
       "explanation": "The Edit tool's replace_all parameter replaces all occurrences of the specified string in a single operation. This is the most efficient approach for renaming a variable throughout a file."
     },
     {
@@ -1982,6 +2122,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "2.1",
       "explanation": "Tool splitting replaces a generic tool with purpose-specific alternatives that each have a clear, narrow description. Each resulting tool handles one use case well, with defined input/output contracts that eliminate ambiguity about when to use it."
     },
     {
@@ -1996,6 +2137,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "2.5",
       "explanation": "Grep searches file contents across the entire codebase, locating all references regardless of file type or location. Edit then makes targeted replacements in each matched file. This is the minimal, precise approach."
     },
     {
@@ -2010,6 +2152,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "2.5",
       "explanation": "When Edit fails due to non-unique matches, the first recovery step is to include more surrounding context so the match becomes unique. Grep helps identify the right occurrence and its context. This keeps you within the Edit workflow."
     },
     {
@@ -2024,6 +2167,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "2.5",
       "explanation": "Grep searches file contents, making it the correct tool to locate all occurrences of the error string regardless of file name. Read then loads only the relevant files to understand context. This is the minimal, targeted approach."
     },
     {
@@ -2038,6 +2182,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "2.1",
       "explanation": "Keyword-sensitive instructions in system prompts can create unintended tool associations that override well-written descriptions. The phrase 'analyse content' directly matches the tool name, causing the model to favour it regardless of the task. The fix is to review and rephrase the system prompt after any update."
     },
     {
@@ -2052,6 +2197,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "3.3",
       "explanation": "Both are PostToolUse hooks because both act on completed outputs. The linter runs after a file write to src/api/ is complete, validating the written content. The normalisation hook processes API response data after it is retrieved, converting fields to snake_case before logging. Both provide deterministic enforcement independent of model instructions."
     },
     {
@@ -2066,6 +2212,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "3.6",
       "explanation": "Each step uses -p for non-interactive mode. The review step adds --output-format json for structured output that the dashboard can parse reliably. The test generation step uses default text output since it produces code files, not structured data. Running them as separate invocations ensures session context isolation."
     },
     {
@@ -2080,6 +2227,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "3.5",
       "explanation": "The interview pattern is specifically designed for unfamiliar domains where the developer might miss important considerations. By having Claude ask probing questions about regulatory requirements, the developer surfaces constraints they might not have considered, leading to a more compliant design."
     },
     {
@@ -2094,6 +2242,7 @@
       },
       "correct": "C",
       "axis": 1,
+      "task": "3.3",
       "explanation": "PostToolUse hooks run deterministic validation code after tool execution. A hook that checks filename patterns and content requirements provides reliable, automated enforcement that does not depend on the model remembering or correctly interpreting naming conventions."
     },
     {
@@ -2108,6 +2257,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "3.6",
       "explanation": "The same Claude session (or a session with carried-over context) that generated code is less effective at reviewing its own changes because it retains the reasoning context from generation. An independent review instance without that context is more likely to catch issues, matching what human reviewers find. Session context isolation for independent reviews is a key CI integration concept."
     },
     {
@@ -2122,6 +2272,7 @@
       },
       "correct": "D",
       "axis": 1,
+      "task": "3.1",
       "explanation": "Anthropic's memory docs are explicit that CLAUDE.md is delivered as a user message with 'no guarantee of strict compliance,' and that 'if two rules contradict each other, Claude may pick one arbitrarily.' The docs themselves point to hooks for this case: hooks 'execute as shell commands at fixed lifecycle events and apply regardless of what Claude decides to do.' A PostToolUse hook running the formatter is the only option here that gives a hard guarantee."
     },
     {
@@ -2136,6 +2287,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "3.4",
       "explanation": "Plan mode is ideal for the investigation phase: exploring logs, tracing flows, and evaluating multiple hypotheses without committing to changes. Once the fix is identified and well-understood (a clear-scope, single-file change), switching to direct execution applies it efficiently without unnecessary planning overhead."
     },
     {
@@ -2150,6 +2302,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "3.5",
       "explanation": "CLAUDE.md is the correct location for persistent test standards. Specifying concrete criteria (real database connections, API contract assertions) with examples of expected structure and fixtures gives Claude Code an unambiguous target. This addresses the root cause: the existing instructions were not specific enough about what 'integration tests' means in this codebase."
     },
     {
@@ -2164,6 +2317,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "3.3",
       "explanation": "PostToolUse fires after the file is written to disk. A hook that runs the Checkstyle formatter on the output file ensures every written Java file conforms to the project's style rules, regardless of what the model generated. This provides deterministic enforcement without relying on prompt instructions."
     },
     {
@@ -2178,6 +2332,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "3.3",
       "explanation": "Glob patterns in .claude/rules/ match files by pattern across the entire codebase. The conventions load automatically when editing any test file, regardless of directory. No maintenance burden as new test files are added."
     },
     {
@@ -2192,6 +2347,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "3.4",
       "explanation": "A 25-service migration with consistency requirements is a multi-step, cross-file operation where planning is essential. Plan mode would produce an explicit strategy covering terminology, update order, and validation criteria before any changes are made, preventing the inconsistency that emerged from ad hoc execution."
     },
     {
@@ -2206,6 +2362,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "4.1",
       "explanation": "Severity calibration with concrete code examples produces consistent classification across invocations. Prose descriptions are inherently ambiguous and leave the model to interpret severity differently each time."
     },
     {
@@ -2220,6 +2377,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "4.3",
       "explanation": "When system prompt instructions use phrasing that closely mirrors tool names, the model can interpret 'check the security' as a general instruction rather than a trigger for the check_security tool. Distinct naming reduces this ambiguity."
     },
     {
@@ -2234,6 +2392,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "4.3",
       "explanation": "When instruction text like 'check for security in each function' overlaps with tool name patterns, the model conflates instruction keywords with tool selection cues. Using distinct terminology for instructions versus tool names eliminates this cross-contamination."
     },
     {
@@ -2248,6 +2407,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "4.4",
       "explanation": "The retry boundary distinguishes between fixable format issues and unfixable capability gaps. Empty reasoning on analysable posts is a format error that retries with error feedback can fix. Unfamiliar languages represent absent capability — no amount of retrying will create language understanding. Route these to human review."
     },
     {
@@ -2262,6 +2422,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "4.1",
       "explanation": "This restores trust in other categories immediately while you iterate on the problematic category with specific criteria."
     },
     {
@@ -2276,6 +2437,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "4.4",
       "explanation": "Retry-with-error-feedback is dramatically more effective than naive retries. Sending the original document, the failed extraction, and the specific validation error allows the model to self-correct. Format mismatches are fixable errors that respond well to this approach."
     },
     {
@@ -2290,6 +2452,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "4.6",
       "explanation": "Per-file analysis ensures each file receives consistent, thorough attention. The cross-file integration pass then catches issues that span multiple files, such as inconsistent interfaces or data flow problems. This directly solves attention dilution."
     },
     {
@@ -2304,6 +2467,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "4.5",
       "explanation": "The custom_id field exists specifically for correlating batch request/response pairs. Setting it to the pull request identifier provides reliable, direct correlation without relying on result ordering or content parsing."
     },
     {
@@ -2318,6 +2482,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "4.3",
       "explanation": "Making fields optional/nullable when source data may be absent removes the schema-level pressure to fabricate. The model can legitimately return null for missing information, which is a correct representation of reality. This addresses the root cause at the schema level."
     },
     {
@@ -2332,6 +2497,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "4.5",
       "explanation": "Identify failed documents by custom_id, then resubmit only failures with modifications (chunking oversized documents). This is the correct batch failure handling pattern — it avoids reprocessing the 185 successful documents and addresses the root cause of the failures."
     },
     {
@@ -2346,6 +2512,7 @@
       },
       "correct": "A",
       "axis": 5,
+      "task": "5.4",
       "explanation": "A scratchpad file persists on disk and can be re-read at any time, unlike in-context tool results that are trimmed as new results arrive. By extracting and recording the essential findings (not the full file contents) after each file read, the agent decouples its knowledge from context window limits. The final audit reads the compact scratchpad rather than needing all source files in context."
     },
     {
@@ -2360,6 +2527,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "5.4",
       "explanation": "Subagent delegation isolates verbose exploration output from the main agent's context. The scratchpad file persists specific findings (class names, method signatures) across context boundaries. The main agent retains enough context for coordination without being overwhelmed by discovery output."
     },
     {
@@ -2374,6 +2542,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "5.4",
       "explanation": "Context degradation occurs when the model loses grip on specific details as verbose tool output accumulates in the conversation. Scratchpad files persist findings on disk where they can be re-read as needed. Subagent delegation isolates verbose exploration output from the main agent's context budget."
     },
     {
@@ -2388,6 +2557,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "5.5",
       "explanation": "Stratified sampling allocates review effort proportional to risk. Payment processing documentation has regulatory implications warranting full review. Public data queries affect external users and deserve moderate scrutiny. Internal tooling has the lowest blast radius and can tolerate the lightest review. This achieves thorough coverage of critical content within a manageable review budget."
     },
     {
@@ -2402,6 +2572,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "5.3",
       "explanation": "This produces maximum value from available sources while maintaining transparency about what is missing. Structured error context enables intelligent recovery (retry later, alert the team). Explicit gap markers prevent users from trusting incomplete documentation as complete."
     },
     {
@@ -2416,6 +2587,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "5.3",
       "explanation": "Silent suppression — returning empty results marked as success — is the worst error propagation anti-pattern. The coordinator believes the academic search succeeded and found nothing, so it produces a report without academic sources and without noting the coverage gap. The subagent should have returned structured error context with the failure type, what was attempted, and potential alternatives."
     },
     {
@@ -2430,6 +2602,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "5.1",
       "explanation": "Progressive summarisation is lossy. The summary of module 12 likely compressed the rename into a generic phrase, while module 3's summary still referenced the original class names. When the agent documented module 21, it found conflicting names across summaries and defaulted to the earlier, more prominent reference. Critical cross-module changes like renames must be tracked in a persistent facts block outside summarised context."
     },
     {
@@ -2444,6 +2617,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "5.4",
       "explanation": "Scratchpad files persist knowledge across context boundaries, directly counteracting context degradation by keeping critical discoveries accessible."
     },
     {
@@ -2458,6 +2632,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "5.6",
       "explanation": "Without claim-to-source mappings, the team must re-audit the entire codebase to verify a single statement. Structured provenance (source file, line range, retrieval date) makes verification targeted: check whether auth-service/src/providers/ still contains OAuth2, SAML, and API key implementations. The retrieval timestamp signals when the claim was last verified."
     },
     {
@@ -2472,6 +2647,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "5.1",
       "explanation": "The lost-in-the-middle effect is a well-documented phenomenon where models attend more strongly to the start and end of long contexts, with reduced attention to middle content. With 200+ commits loaded sequentially, commits in the middle of the sequence receive less attention, producing vague summaries. Processing in smaller batches or reordering critical information to the start and end mitigates this."
     },
     {
@@ -2486,6 +2662,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "5.6",
       "explanation": "Structured provenance metadata survives editing because it is stored as data fields (e.g., JSON or YAML frontmatter) separate from the prose. When a developer questions a claim, they can trace it to the exact source file and line number. The retrieval date indicates whether the source was current when the documentation was generated."
     },
     {
@@ -2500,6 +2677,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "4.5",
       "explanation": "The Message Batches API is fire-and-forget: it cannot execute a tool and feed the result back mid-request, so a pipeline that calls extract_metadata and then extract_fields with that result cannot run as a single batched request."
     },
     {
@@ -2514,6 +2692,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "2.4",
       "explanation": "An MCP resource exposing a browsable catalog of topics and article summaries lets agents discover what is available by reading one resource, eliminating the many exploratory tool calls."
     },
     {
@@ -2528,6 +2707,7 @@
       },
       "correct": "B",
       "axis": 4,
+      "task": "5.5",
       "explanation": "Calibrating thresholds against a labeled validation set aligns reported confidence with real accuracy, so routing sends genuinely error-prone extractions to review rather than ones the model merely feels unsure about."
     },
     {
@@ -2542,6 +2722,7 @@
       },
       "correct": "A",
       "axis": 1,
+      "task": "1.5",
       "explanation": "A PostToolUse hook deterministically normalizes both date formats into one representation before the agent reasons over them; prompt instructions and few-shot examples cannot guarantee consistent conversion."
     },
     {
@@ -2556,6 +2737,7 @@
       },
       "correct": "D",
       "axis": 1,
+      "task": "1.5",
       "explanation": "Prompt instructions have a non-zero failure rate; a tool-call interception hook that inspects the amount and blocks/redirects calls over $500 enforces the rule deterministically every time."
     },
     {
@@ -2570,6 +2752,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "1.6",
       "explanation": "When each concern's scope is unknown until you investigate, dynamic adaptive decomposition generating follow-up subtasks as findings emerge fits; fixed pipelines and keyword decision trees cannot handle the open-ended case."
     },
     {
@@ -2584,6 +2767,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "1.6",
       "explanation": "This is a map-reduce chain: evaluate each ticket individually first, then a separate synthesis pass over all evaluations surfaces systemic patterns; cramming 50 tickets into one pass loses per-ticket rigor."
     },
     {
@@ -2598,6 +2782,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "2.1",
       "explanation": "A single tool spanning four distinct operations invites parameter confusion; splitting into purpose-specific tools with clear input/output contracts gives the model an unambiguous choice."
     },
     {
@@ -2612,6 +2797,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "2.1",
       "explanation": "The keyword-triggered instruction creates an association that overrides the tool descriptions; rewrite it to specify the precise conditions that actually require human involvement."
     },
     {
@@ -2626,6 +2812,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "2.1",
       "explanation": "Tool descriptions are the primary signal the model uses to select tools; one-line descriptions do not give it enough to know when fetch_customer applies versus get_order, so selection is unreliable."
     },
     {
@@ -2640,6 +2827,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "2.2",
       "explanation": "Distinct error categories tell the agent whether a failure is transient (retry) or a business-rule violation (explain the policy); a generic failure message leaves it guessing, wasting retries or communicating poorly."
     },
     {
@@ -2654,6 +2842,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "4.2",
       "explanation": "Few-shot examples that return null for informal descriptions and extract explicit measurements teach the model the boundary between stated and unstated data, cutting fabrication without hurting recall on real numbers."
     },
     {
@@ -2668,6 +2857,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "2.5",
       "explanation": "Glob matches file paths by pattern, so a glob like **/*_*.sql finds migration files across all nesting levels; Grep searches contents, which is not what is needed here."
     },
     {
@@ -2682,6 +2872,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "5.3",
       "explanation": "A generic \"search unavailable\" hides whether the failure is a transient timeout (retry) or a permanent restriction (try another source), so the coordinator cannot pick the right recovery strategy."
     },
     {
@@ -2696,6 +2887,7 @@
       },
       "correct": "D",
       "axis": 1,
+      "task": "1.1",
       "explanation": "Parsing free-text for a phrase like \"research complete\" is brittle because model output is non-deterministic; the stop_reason field is the reliable termination signal."
     },
     {
@@ -2710,6 +2902,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "1.1",
       "explanation": "The loop reads stop_reason: \"tool_use\" means Claude wants to run a tool (continue), \"end_turn\" means it is done (present the final response)."
     },
     {
@@ -2724,6 +2917,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "1.1",
       "explanation": "Appending tool results lets the model see what its call returned and reason about the next action; the stateless API needs the full history each turn."
     },
     {
@@ -2738,6 +2932,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "1.2",
       "explanation": "Subagents do not inherit the coordinator's conversation history, so unless the coordinator explicitly passes the search findings into the synthesis agent's prompt, they were never in its context."
     },
     {
@@ -2752,6 +2947,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "1.2",
       "explanation": "The coordinator should analyze the query and invoke only the subagents it needs, a single web lookup for a simple fact, rather than always running the full pipeline."
     },
     {
@@ -2766,6 +2962,7 @@
       },
       "correct": "B",
       "axis": 3,
+      "task": "1.3",
       "explanation": "A stateless synthesis agent only knows what is in its prompt, so include the complete findings from both agents directly; a lean summary or external store would starve it of the information it needs to synthesize."
     },
     {
@@ -2780,6 +2977,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "1.3",
       "explanation": "Returning findings as structured data that separates each claim from its source metadata (URLs, document names, page numbers) preserves attribution through synthesis; narrative prose blends citations and loses the mapping."
     },
     {
@@ -2794,6 +2992,7 @@
       },
       "correct": "C",
       "axis": 1,
+      "task": "1.4",
       "explanation": "A programmatic prerequisite gate enforces the ordering deterministically; prompt instructions have a non-zero failure rate and cannot guarantee the report waits for synthesis confirmation."
     },
     {
@@ -2808,6 +3007,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "2.2",
       "explanation": "The failure is a permanent business-rule violation, so the structured error should be errorCategory \"validation\", isRetryable false, with a description the agent can relay; retrying or claiming a permission issue would be wrong."
     },
     {
@@ -2822,6 +3022,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "3.1",
       "explanation": "Running /memory shows which memory files are actually loaded in the engineer's session, pinpointing whether the convention file is being picked up; that is the right first diagnostic before reinstalling or restructuring."
     },
     {
@@ -2836,6 +3037,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "3.2",
       "explanation": "A universal convention that must apply automatically to every TypeScript edit belongs in project CLAUDE.md or a .claude/rules/ file, which is always loaded; commands and skills require manual or on-demand invocation."
     },
     {
@@ -2850,6 +3052,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "3.2",
       "explanation": "Placing the command in the project's .claude/commands/ directory and committing it makes it available to every developer on clone or pull with no per-machine setup."
     },
     {
@@ -2864,6 +3067,7 @@
       },
       "correct": "C",
       "axis": 4,
+      "task": "3.4",
       "explanation": "Start in plan mode to audit usage and design the migration strategy, then switch to direct execution to apply the changes; plan the investigation up front, execute the mechanical edits after."
     },
     {
@@ -2878,6 +3082,7 @@
       },
       "correct": "D",
       "axis": 4,
+      "task": "3.4",
       "explanation": "A well-scoped, single-file fix with a known location and a one-line change is ideal for direct execution; plan mode's investigation phase would be unnecessary overhead."
     },
     {
@@ -2892,6 +3097,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "3.5",
       "explanation": "Concrete input/output examples pin down the exact transformation when prose has failed; 2-3 INI-to-YAML pairs resolve the key-naming and indentation ambiguity."
     },
     {
@@ -2906,6 +3112,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "3.5",
       "explanation": "Writing the test suite first and iterating by feeding failures back to Claude gives a concrete, executable target for each edge case; this is test-driven refinement."
     },
     {
@@ -2920,6 +3127,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "2.5",
       "explanation": "When Edit cannot uniquely match because the target text is duplicated boilerplate, fall back to Read the full file, modify in memory, and Write it back."
     },
     {
@@ -2934,6 +3142,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "4.2",
       "explanation": "Few-shot examples teach the underlying judgment criteria, which generalise to structurally similar, previously unseen cases (even in a different language) — not literal matching of the example patterns."
     },
     {
@@ -2948,6 +3157,7 @@
       },
       "correct": "A",
       "axis": 3,
+      "task": "3.5",
       "explanation": "The defect lives only in the rendered output — the source 'looks fine' and there is no exception to read — so a screenshot of the broken state (with repro steps) is the highest-fidelity and only faithful way to convey it. A screenshot is right here not because the task is 'UI' but because the information exists nowhere else: pasting the code (B) conveys little when the fault isn't legible in the source, a stack trace (D) is empty for a pure render bug that throws nothing, and prose (C) can't reliably encode a spatial/visual glitch."
     },
     {
@@ -2962,6 +3172,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "3.6",
       "explanation": "Only `--max-budget-usd X` enforces the dollar limit during the run — it stops before exceeding it — while `--max-turns N` bounds the loop. A is the tempting near-miss: it uses real flags and does track cost, but the `total_cost_usd` check is post-hoc, so the money is already spent by the time the build reads the JSON; it detects overspend rather than preventing it, failing the stem's 'never overspend' requirement. C bounds wall-clock seconds, not turns or dollars, and kills the run ungracefully. D lowers the per-token rate but not the total — a runaway loop still overruns."
     },
     {
@@ -2976,6 +3187,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "4.5",
       "explanation": "Prompt caching is a prefix match: one cache_control breakpoint caches everything before it (render order tools → system → messages) and leaves everything after it uncached. A single breakpoint at the end of the shared prefix caches the ~3,500-token system + tool/schema + few-shot block once and reuses it across all 8,000 documents, while each unique claim document sits after the breakpoint and is billed fresh. B caches unique per-request content that is never reused, paying the ~1.25x write premium for nothing. A misunderstands caching — it is prefix-based, not a periodic 'refresh' every N documents. D is factually wrong: the maximum cache TTL is 1 hour, not 24 hours, and hits are never 'guaranteed' (a steady request stream refreshes the TTL on each hit to keep the prefix warm, but that is not what the option claims)."
     },
     {
@@ -2990,6 +3202,7 @@
       },
       "correct": "C",
       "axis": 3,
+      "task": "1.4",
       "explanation": "A human with no context cannot continue efficiently from a vague note, and a raw transcript forces them to re-derive the situation. A structured handoff puts everything actionable in one place—who the customer is (verified), what is actually wrong (root cause), what has already been tried, the financial stakes, and the recommended action—so the human resumes rather than restarts. Sentiment/politeness scores don't help resolve the case; the issue's substance does."
     },
     {
@@ -3004,6 +3217,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "1.1",
       "explanation": "stop_reason is the only reliable completion signal, so it must stay primary; a cap used as the PRIMARY stop mechanism would truncate legitimate long-running tasks. But as a SECONDARY backstop, an iteration cap is a reasonable safety net for the case where a bug prevents end_turn from ever arriving. Parsing text for 'done' is unreliable (Claude may say it mid-task), and assuming termination is guaranteed ignores real failure modes."
     },
     {
@@ -3018,6 +3232,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "1.3",
       "explanation": "Multiple Task tool calls emitted in one response are launched concurrently by the SDK. Issuing them in separate turns forces sequential execution—each waits for the previous turn to complete. There is no 'parallel: true' flag listing multiple subagents in one Task call, and collapsing both jobs into one subagent defeats the point (and dilutes its focus)."
     },
     {
@@ -3032,6 +3247,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "1.7",
       "explanation": "Stale tool results actively mislead the agent, and telling it to 'ignore' them is probabilistic—it may still reason from them. A fresh session with an explicitly injected summary of the valid findings gives a clean context free of the outdated state. This differs from the case where only a few FILES changed—there, --resume plus a targeted note about the changed files is correct because the rest of the context is still accurate."
     },
     {
@@ -3046,6 +3262,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "2.2",
       "explanation": "A successful search that finds nothing is a valid empty result, not a failure. Returning an error makes the coordinator retry a query that worked fine. Returning a silent empty array is ambiguous—the coordinator can't distinguish 'searched, found nothing' from 'something broke.' An explicit isError:false plus a message tells the coordinator the search succeeded and there is simply no data, so it can move on."
     },
     {
@@ -3060,6 +3277,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "2.6",
       "explanation": "With tool search on by default, session start loads only lightweight tool names plus server instructions; full schemas are deferred and pulled in on demand. This keeps the context lean and preserves selection quality, which degrades once dozens of full definitions compete for attention. Loading every definition upfront is the old behavior (tool search off). Discovery still happens for all tools—only the loading of their full definitions into context is deferred."
     },
     {
@@ -3074,6 +3292,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "2.6",
       "explanation": "ENABLE_TOOL_SEARCH=false turns tool search off, so all tool definitions load upfront at startup. Unset or =true defers (tool search on). =auto loads schemas upfront only if they fit within a threshold (~10% of the context window by default; auto:N sets a custom percentage) and otherwise defers—so it does not 'always' load everything. Deferral is therefore configurable, not fixed."
     },
     {
@@ -3088,6 +3307,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "2.6",
       "explanation": "Per the MCP specification the connection begins with an initialize capability handshake; discovery via tools/list (and resources/list, prompts/list) happens AFTER initialize, at connect time; tools are then invoked on demand with tools/call; and when the available set changes the server sends a list_changed notification. Discovery never precedes initialize (rules out listing first), the client does not re-request the list every turn, and calls never come before the handshake."
     },
     {
@@ -3102,6 +3322,7 @@
       },
       "correct": "A",
       "axis": 2,
+      "task": "2.6",
       "explanation": "A templated resource uses a URI template with a parameter to represent an entire family of items with one definition; a direct resource is for a single fixed object. One template is far better than one static resource per table. Resources can be parameterized, so the tool workaround is unnecessary, and merging every schema into one blob destroys per-table addressability."
     },
     {
@@ -3116,6 +3337,7 @@
       },
       "correct": "C",
       "axis": 1,
+      "task": "2.3",
       "explanation": "allowedTools is a hard, configuration-level restriction—an agent simply cannot call a tool that isn't in its list. A prompt instruction is probabilistic and can be ignored. Exposing every tool degrades selection reliability regardless of temperature, and collapsing the specialized synthesis role into the coordinator throws away the separation of concerns the architecture depends on."
     },
     {
@@ -3130,6 +3352,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "2.3",
       "explanation": "tool_choice: \"any\" requires the model to emit a tool call but leaves the choice of WHICH tool to the model—correct when the right tool depends on the (unknown) document type. \"auto\" permits a text reply, so instructions on top of it are still probabilistic. Forcing one specific tool is wrong when the document type varies. Few-shot nudging is probabilistic, not a guarantee."
     },
     {
@@ -3144,6 +3367,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "2.4",
       "explanation": "Project-scoped .mcp.json is shared with the whole team through git. A personal, experimental server belongs in the user-scoped ~/.claude.json, which applies only to that developer and is not part of any repository. Gitignoring the project file or using a personal branch are fragile workarounds that still put team-shared configuration in the wrong scope."
     },
     {
@@ -3158,6 +3382,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "2.6",
       "explanation": "MCP has three primitives with different initiators: tools are model-controlled actions, resources are app-controlled read-only context, and prompts are user-controlled templates (in Claude Code invoked as /mcp__server__prompt slash commands). Exposing read-only data as a tool forces needless exploratory tool calls, and modeling a user-triggered workflow as a tool lets the model fire it at the wrong moment. Matching each to the right primitive puts control in the right hands."
     },
     {
@@ -3172,6 +3397,7 @@
       },
       "correct": "D",
       "axis": 5,
+      "task": "3.7",
       "explanation": "When the default identity is fundamentally unsuited to the task, replace it wholesale with --system-prompt. Appending negative instructions only patches symptoms probabilistically, and a CLAUDE.md or a temperature change doesn't remove the built-in coding-assistant persona. Note that replacing also discards the default tool guidance and safety framing, so you take responsibility for those in your replacement prompt."
     },
     {
@@ -3186,6 +3412,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "3.7",
       "explanation": "--append-system-prompt layers your rule on top of the default while preserving the coding-assistant identity and tool guidance you still want. --system-prompt (or rewriting the default) would discard all of that base behavior. Putting the rule in CLAUDE.md would change behavior for every session and every developer, not just this CI review—append is the targeted, deterministic lever for adding one rule to this run."
     },
     {
@@ -3200,6 +3427,7 @@
       },
       "correct": "C",
       "axis": 2,
+      "task": "3.7",
       "explanation": "The -file variants read the prompt text from a file. --system-prompt-file sets the base identity from base-agent.txt (replacing the default), and --append-system-prompt-file layers style-rules.txt on top of that chosen base—applying both. Two replacement flags don't compose (there is only one base identity). Appending both files to the default (rather than replacing the base) would keep the default coding-assistant persona instead of using base-agent.txt as the base — a different result. The -file flags work in -p mode too, not only interactively."
     },
     {
@@ -3214,6 +3442,7 @@
       },
       "correct": "D",
       "axis": 2,
+      "task": "3.7",
       "explanation": "--bare disables the entire auto-discovery pipeline in a single flag—hooks, skills, plugins, MCP, auto-memory, and CLAUDE.md—leaving Bash and file read/edit, which is exactly what this scripted task needs. --strict-mcp-config and --disable-slash-commands each remove only part of the startup work. Deleting project files is destructive and affects every user and tool, not just this script's runs."
     },
     {
@@ -3228,6 +3457,7 @@
       },
       "correct": "B",
       "axis": 2,
+      "task": "3.7",
       "explanation": "--strict-mcp-config scopes MCP configuration to just the supplied --mcp-config and ignores other .mcp.json sources, without touching the CLAUDE.md/skills/hooks this job still relies on. --bare would strip all of those away too, which the job needs. --disable-slash-commands governs skills/commands, not MCP config selection, and ENABLE_TOOL_SEARCH controls tool-schema loading, not which servers load. This is the case where --bare is the wrong hammer."
     },
     {
@@ -3242,6 +3472,7 @@
       },
       "correct": "C",
       "axis": 5,
+      "task": "4.5",
       "explanation": "A flawed prompt applied to 10,000 documents produces 10,000 failures plus the cost of resubmitting them. Testing on a small representative sample surfaces prompt problems cheaply before committing to the full run. Submitting everything (with or without splitting/retry loops) still pays full price for a bad prompt; sequential 1,000-doc batches don't validate the prompt any earlier than a single sample would."
     },
     {
@@ -3256,6 +3487,7 @@
       },
       "correct": "D",
       "axis": 3,
+      "task": "4.4",
       "explanation": "A structured detected_pattern field attributes every finding to a specific rule, which makes each finding auditable and lets you compute precision per pattern and route findings by type. Free-text reasoning and separate reasoning logs are unstructured and not queryable at scale, and adding severity levels increases granularity without telling you which rule fired or how accurate each rule is."
     },
     {
@@ -3270,6 +3502,7 @@
       },
       "correct": "A",
       "axis": 1,
+      "task": "4.3",
       "explanation": "With tool_choice: \"auto\" the model may still answer in text, so extra instructions, few-shot nudging, or catching-and-retrying the bad response only shift probabilities or add wasted round-trips—none make the tool call guaranteed. Switching to tool_choice: \"any\" (or forcing the single tool by name) makes a tool call mandatory, which is the deterministic guarantee the pipeline needs."
     },
     {
@@ -3284,6 +3517,7 @@
       },
       "correct": "B",
       "axis": 5,
+      "task": "5.2",
       "explanation": "Negative sentiment is not a reliable proxy for case difficulty—an angry customer with a routine, in-policy issue is exactly the kind of case the agent should handle end to end. Escalating on sentiment wastes human capacity and delays a resolution the agent could deliver now. The customer hasn't requested a human, so no clarifying-question-before-escalation nuance applies, and granting a discount beyond policy is an unauthorized decision, not a resolution."
     },
     {
@@ -3298,6 +3532,7 @@
       },
       "correct": "B",
       "axis": 1,
+      "task": "3.3",
       "explanation": "Anything the model reads—CLAUDE.md, a .claude/rules glob, or a few-shot example—only influences behavior probabilistically; the model can still skip the step. The only deterministic guarantee is code that runs outside the model: a PostToolUse hook fires on every matching Edit/Write regardless of what the model decides, so formatting always happens."
     },
     {
@@ -3312,6 +3547,7 @@
       },
       "correct": "C",
       "axis": 1,
+      "task": "3.3",
       "explanation": "A hard 'no exceptions' guarantee cannot rest on instructions the model reads—CLAUDE.md text (project or user) and .claude/rules are all probabilistic and can be overridden or ignored. A PreToolUse hook evaluates the target path and blocks the call deterministically before it executes, which is the only option that actually enforces the rule."
     },
     {
@@ -3326,6 +3562,7 @@
       },
       "correct": "A",
       "axis": 1,
+      "task": "2.1",
       "explanation": "The tool description, system-prompt rule, and few-shot example are all things the model reads, so they only make confirmation likely, not certain—the model can still call delete_record unprompted. A PreToolUse hook intercepts the call and gates it on approval outside the model, which is the deterministic guarantee the requirement demands."
     },
     {
@@ -3340,6 +3577,7 @@
       },
       "correct": "D",
       "axis": 1,
+      "task": "1.5",
       "explanation": "Prompt instructions, CLAUDE.md reminders, and few-shot transcripts all influence the coordinator probabilistically—it may still continue without validating. A PostToolUse hook on Task fires deterministically after each subagent returns, so validation is guaranteed on every completion regardless of the model's choices."
     },
     {
@@ -3354,6 +3592,7 @@
       },
       "correct": "B",
       "axis": 1,
+      "task": "1.4",
       "explanation": "CLAUDE.md text, a system-prompt line, and .claude/rules are all read by the model and therefore probabilistic—Claude can still declare completion with failing or unrun tests. A hook that checks the test command's exit code and blocks completion enforces the gate in code outside the model, which is the only deterministic guarantee."
     },
     {
@@ -3368,6 +3607,7 @@
       },
       "correct": "A",
       "axis": 1,
+      "task": "4.3",
       "explanation": "Prompt directives, few-shot examples, and self-check instructions only raise the odds of well-formed output—free-text generation can still drift or emit malformed JSON. A tool_use schema makes the model emit tool input that conforms to the declared structure, turning 'usually valid' into a structural guarantee (semantic correctness still needs separate validation)."
     }
   ]

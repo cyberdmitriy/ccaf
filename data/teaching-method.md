@@ -129,10 +129,15 @@ statement:
    the simple→term bridge (Rule 0) if needed — then ask again. Move on to the Check step ONLY
    after an explicit "понятно / вопросов нет". The gate and the check question are separate turns:
    gate first, then (next step) the question.
-5. **Check** — 1–2 scenario-framed check questions, each preceded by a **legend** (see the
-   legend section). The learner states the **winning condition** in the stem and **the axis each
-   distractor fails on** BEFORE the reveal; then confirm against the question's `correct` +
-   `explanation`.
+5. **Check** — **2 scenario-framed check questions by default** (never fewer for a taught item),
+   each preceded by a **legend** (see the legend section). Add a **3rd question ONLY when an earlier
+   task statement is still not closed** — a miss or weak spot from this session you haven't yet
+   cemented; make that 3rd question one filtered to that open statement's `task` so it does double
+   duty. **Never more than 3.** Select each question by the `task` lookup in "Match the practice
+   question to the topic". Naming the **winning condition** and **the axis each distractor fails on**
+   before the reveal is **optional for the learner** — offer it and encourage it, but never force it;
+   if they would rather just pick an answer, let them. Either way, confirm against the question's
+   `correct` + `explanation` and walk the winning-condition / axis reasoning yourself at the reveal.
 6. **Checkpoint** — once this task statement is fully taught + check-questioned, immediately persist
    it via the read-modify-write in **Recording learning progress** below (mark the statement covered,
    fold in the check answers' axis mastery). Don't batch it to hand-off — save now, so an interrupted
@@ -159,6 +164,11 @@ first step`, or `without relying on the model`. Find it and half the distractors
 
 The legend should make the question doable with zero scrollback. If it wouldn't, it's missing a
 term — add it.
+
+The "What to do, in steps" list is an **invitation, not a requirement**. Offer the predict-drill
+(find the winning condition → predict → name each distractor's axis), but if the learner prefers to
+just pick an answer, that is fine — skip straight to the reveal and walk the winning-condition / axis
+reasoning yourself. Never gate the reveal on the learner performing steps 1–3.
 
 ## Reading a scenario and hunting the trap — THE core drill
 Telling the learner what is correct is not enough. The exam skill is **discriminating the one
@@ -189,14 +199,20 @@ hook is required), the *right-area-wrong-target* option (`tool_choice:any` vs a 
 tool), the *over-engineered* option, and the *symptom-not-cause* option.
 
 ## Match the practice question to the topic being taught
-During a task statement's Check step, only use a question whose tested concept belongs to THAT task
-statement, or to a task statement you have ALREADY taught this session. Never quiz a topic with a question
-that turns on a concept from a later, not-yet-covered task statement — that violates Rule 0 (you'd be asking
-the learner to apply something you haven't introduced), and it teaches nothing about the current topic. Real
-sessions have used a `Task`-tool question (topic 1.3) during 1.2 practice; that is the failure to avoid.
-Before you show a bank question for a topic's Check, ask: "what concept does this question actually test,
-and have I taught it yet?" If the deciding concept is from a later topic, pick a different question or write
-a fresh one on the current topic. A question that also touches an earlier, covered topic is fine.
+During a task statement's Check step, **select the practice question by its canonical `task` field — a
+lookup, not a judgment.** Filter `${CLAUDE_PLUGIN_ROOT}/data/questions.json` to `domain == <this domain>` and
+`task == <the task statement you are teaching>` (its `<d>.<n>`); that pool is the on-topic set for reinforcing
+this item. A question whose `task` is a statement you have ALREADY taught this session is also fine (it
+reinforces covered ground). NEVER quiz with a question whose `task` is a later, not-yet-covered statement —
+that violates Rule 0 (asking the learner to apply something you haven't introduced) and teaches nothing about
+the current topic. Real sessions have used a `Task`-tool question (`task` 1.3) during 1.2 practice; the `task`
+filter makes that mistake impossible. If the current statement's pool is empty or exhausted, write a fresh
+question on the current topic (see below) — never borrow a later topic's question.
+
+**This same `task` filter drives every multi-question selection**, not only the single Check: when you compose
+a re-drill set or the end-of-domain exam across task statements (e.g. "3 on 1.1–1.2, 2 on 1.3, …"), pick each
+slot's questions by `domain` + `task` from the bank rather than re-reading each stem to guess its topic. To
+reinforce ONE statement, filter to its `task`; to drill a trap type, add an `axis` filter on top.
 
 ## Writing a FRESH practice question (exam-realistic, never a giveaway)
 When the bank is exhausted and you invent a question for a weak spot, it must look like a real
@@ -359,9 +375,12 @@ id in `answered` whose LATEST attempt is wrong (`last_correct:false`). `learning
 what you have TAUGHT — it says nothing about exam misses, so it can never tell you a topic was missed. If you
 read only `learning-progress.json` you will wrongly announce "no misses here". Always check `stats.json`.
 
-BEFORE teaching each item, check whether any of this domain's `stats.json` misses concern that item's topic —
-match the missed question's text and `axis` to the item semantically (the bank has no sub-topic tag, so this
-is your judgment, not a lookup).
+BEFORE teaching each item, check whether any of this domain's `stats.json` misses belong to that item's task
+statement — **look up** each missed question's `task` field (`"<d>.<n>"`) in
+`${CLAUDE_PLUGIN_ROOT}/data/questions.json` and compare it to the item you're about to teach (the item is a
+`<d>.<n>` task statement in this lesson; `${CLAUDE_PLUGIN_ROOT}/data/task-statements.json` maps the number to
+its label). This is a direct lookup now, not judgment — every question carries a canonical `task`, so the same
+miss maps to the same item in every session.
 
 - **If a miss touches the item — do an error-review, NOT a re-quiz.** Do not show the missed question again
   and make the learner answer it. Instead explain, like a teacher walking through a marked paper: which
@@ -397,14 +416,19 @@ Use this to turn the learner's own wrong answers into teaching. Honor Rule 0c (p
      concrete condition under which that pick WOULD be right.
    Quote the stem's signal phrases verbatim (English) so the learner learns to recognize them.
 3. **Re-drill.** Have the learner predict the failing axis and eliminate distractors BEFORE the reveal,
-   on the missed items and, if useful, on fresh same-axis questions from the bank.
+   on the missed items and, if useful, on other bank questions that reinforce the same ground — filter
+   `questions.json` by the missed question's **`task`** (same task statement, to cement that exact topic)
+   and/or its **`axis`** (same trap type). Both are direct lookups on the question object, not a re-read of
+   each stem.
 4. **Persist.** For each miss, read-modify-write `$HOME/.claude/ccaf-progress/cheatsheet.json` and set on
    `entries["<id>"]` the SAME fields `/ccaf:result` authors — author them exactly as its Step 3A cheatsheet
    block specifies, as prose in the learner's `learning_language` (exam text, the `signal` quotes, and API
    tokens stay English). Two groups of fields feed two app tabs:
    - **Failed Questions** (per question): `decision` (суть), `rule`, `signal`, `answer` (как фиксить),
      `flip` (ловушка).
-   - **Failed Topics** (generalized per-topic note): `task` (the `"<d>.<n> <label>"` task statement) and
+   - **Failed Topics** (generalized per-topic note): `task` (the `"<d>.<n> <label>"` task statement — the
+     number is the question's canonical `task` **looked up** from the bank, the label comes from
+     `${CLAUDE_PLUGIN_ROOT}/data/task-statements.json`; see /ccaf:result Step 3A) and
      `note` (the markdown study note — `## title` → суть+инсайт → **Как правильно** → Ловушки bullets with
      the learner's pick prefixed `[you] ` → где ловят → ось N). This tab is EMPTY without `note`/`task`, so
      author both — never skip them. See `/ccaf:result` Step 3A for the exact `note` shape and rules.

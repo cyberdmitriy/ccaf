@@ -31,7 +31,11 @@ The guide is **publicly downloadable** (not login-gated):
 3. If the version moved, diff **Section 3 (format)**, **Section 4 (blueprint weights)**, and **Section 6
    (task statements)** against the "Official exam facts" block in `sources.md`. Reconcile any changed
    weights / added-removed task statements into that block **and** into `data/tutor-prompts.md` /
-   `skills/dN-teacher/SKILL.md` (task-statement counts feed `learning-progress.json` `task_total`).
+   `skills/dN-teacher/SKILL.md` (task-statement counts feed `learning-progress.json` `task_total`) **and**
+   into `data/task-statements.json` (the `<d>.<n>` → label map that every bank `task` resolves against —
+   keep its keys/labels in sync with the `tutor-prompts.md` headers, and its per-domain counts with
+   `validate.py`'s `expected_ts_pd`). An added/removed statement also means re-tagging affected bank
+   questions' `task` (classify+verify pass) — see `authoring-questions.md`.
 
 ## Step 2 — Layer 2: product docs (behavior — flags, hooks, MCP, tool_choice, Batch API)
 Two parts:
@@ -72,10 +76,12 @@ re-domain them without judgment. See `data/axes.md`.
 
 ## Step 4 — Apply changes (only if drift found)
 - **Blueprint/task-statement drift** → reconcile `sources.md` "Official exam facts" + the affected
-  `tutor-prompts.md` / tutor SKILLs by hand.
+  `tutor-prompts.md` / tutor SKILLs **and `data/task-statements.json`** (keep it in sync with the
+  `tutor-prompts.md` headers; a count change also means updating `validate.py`'s `expected_ts_pd`) by hand.
 - **Behavior drift, or thin coverage** → run the **bank-extension workflow** documented in the root
-  `CLAUDE.md` (extract → classify domain → dedupe → assign ids + `axis` → `python3 data/validate.py`
-  → bump `meta`). New questions append at the end; never renumber. **Then** run
+  `CLAUDE.md` (extract → classify domain → dedupe → assign ids + `axis` + `task` → `python3 data/validate.py`
+  → bump `meta`). New questions append at the end; never renumber. Assign each new question its canonical
+  `task` (a `<d>.<n>` key from `task-statements.json`) — `validate.py` fails without it. **Then** run
   `python3 maintenance/reference-coverage.py` and add `quick-reference.json` rows for any flagged
   unreferenced criteria (curated `see`/`answer`; hand-pick `q_ids`).
 - **Lesson/trap drift** → edit `data/tutor-prompts.md` / `data/exam-traps.md` / `data/axes.md`.
