@@ -24,7 +24,7 @@ The app opens on the **Dashboard**; everything else is a tab (**Weaknesses**, **
 **Mock Exam** is a button in the top bar.
 
 ## To sit an exam
-Tell the user: click **Mock Exam** in the app, pick a mode (weak / unseen / random / review),
+Tell the user: click **Mock Exam** in the app, pick a mode (weak / unseen / random / review / ever-failed),
 optionally narrow to domains, choose a length, then **Start**. Pause/resume and resume-later work;
 on **Submit** they get a scored review + a **Copy results as JSON** button — paste that into
 **`/ccaf:result`** to record it, else it stays only in the page's local storage (flagged "unrecorded").
@@ -39,9 +39,12 @@ welcome/empty state) and suggest starting a mock exam or a `/ccaf:dN-teacher`. N
 - exams taken (mock vs external separately, never averaged),
 - dominant failure axis (highest `axis_tally`),
 - any sittings the page will flag as **unrecorded**,
-- **Focus check:** read `profile.md`'s `## Focus domains`. If `_(unset)_` but `exam_history` has
-  entries, warn weak-mode won't bias to weak domains until focus is set — tell them to re-run
-  `/ccaf:result` or add `D<n>` lines by hand.
+- **Focus check:** weak-mode focus comes from the learner's **recent mock exams** first (computed in
+  `build-app.py`), and falls back to `profile.md`'s `## Focus domains` only when there is no mock data.
+  So with **any recorded `type:"mock"` sitting**, weak-mode biases automatically — do NOT warn. Warn
+  only when `exam_history` has entries but **none is a mock** (e.g. external-only) AND `## Focus domains`
+  is `_(unset)_`: then weak-mode has nothing to bias toward — tell them to re-run `/ccaf:result` or add
+  `D<n>` lines by hand.
 
 Then recommend the single next command (`/ccaf:dN-teacher` for the weakest domain, or record a
 result) and stop.

@@ -102,6 +102,13 @@ The exam separates **what you must know** (recognise the concept) from **what yo
 able to do** (apply it under a realistic scenario). Teach both, in this order, for each task
 statement:
 
+**Track it with a todo list (do this once, at the start of the domain).** Create a TodoWrite
+checklist with TWO items per task statement — one to teach it and one paired `checkpoint <d>.<n>`
+save item (e.g. `teach 2.1`, `checkpoint 2.1`, `teach 2.2`, `checkpoint 2.2`, …). Mark each
+`checkpoint` item done ONLY after its read-modify-write actually lands (step 6). A `checkpoint`
+item still pending once you have moved to the next statement is a skipped save — go back and do it.
+This keeps a missed checkpoint visible instead of silent.
+
 **Pre-teach audit (do this before step 1, every task statement).** Filter `questions.json` to
 `domain == <this domain>` and `task == <this statement>`. For each question read `stem` + `correct`
 + `explanation` and extract the distinct *winning condition* / mechanism / trap it tests. Build the
@@ -155,12 +162,16 @@ each? Any "no" → teach it before quizzing.
    write it abstractly (e.g. `reply like "1: <your letter>, 2: <your letter>"`), never a concrete tuple like
    `1: A, 2: D` that could match the key. (A real session leaked the answers this way: the "format" example
    `«1: A, 2: D»` happened to BE the correct letters.)
-6. **Checkpoint** — once this task statement is fully taught + check-questioned, immediately persist
-   it via the read-modify-write in **Recording learning progress** below (mark the statement covered,
-   fold in the check answers' axis mastery). Don't batch it to hand-off — save now, so an interrupted
-   session keeps what you covered.
+6. **Checkpoint (same turn as the reveal — a hard gate, not a later step).** The Check reveal is
+   NOT finished until, in the SAME message, you perform the read-modify-write in **Recording learning
+   progress** below (mark the statement covered, fold in the check answers' axis mastery). **You may
+   not present the next task statement — not even its Concept or Apply — until that checkpoint write
+   has happened in this turn.** Never batch the save to hand-off; save now, so an interrupted session
+   keeps what you covered. If you catch yourself about to say "next, <d>.<n>" without having written
+   the checkpoint for the current item, STOP and do the write first. Then mark the item's
+   `checkpoint <d>.<n>` todo done.
 
-Then connect to the next task statement.
+Only AFTER the checkpoint write, connect to the next task statement.
 
 ## Every check question gets a short legend FIRST
 A check question is only fair if the learner can answer it from what you've already said — never

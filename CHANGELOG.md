@@ -6,6 +6,12 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.17.1] — 2026-08-23
+### Fixed
+- **`/ccaf:dashboard` Focus-check recap no longer contradicts the 0.17.0 focus logic.** Since 0.17.0 the app derives weak-mode focus from recent mock exams first (`profile.md` `## Focus domains` is only the cold-start/external-only fallback). The recap still warned "weak-mode won't bias until focus is set" whenever `## Focus domains` was `_(unset)_` and `exam_history` had entries — false for anyone with recorded mocks. It now warns only for **mock-less** history (external-only) with focus unset.
+- **`Ever failed` mock mode was missing from the instructions.** Added it to the mode list `skills/dashboard/SKILL.md` tells the learner to pick, and to God Rule #9's enumerated mode set in `CLAUDE.md` (the app already defined all five modes in one place).
+- **Stale wording in `commands/result.md`:** "so both tabs are never empty" → "so the Weaknesses tab is never empty" (the two miss tabs merged into one in 0.17.0).
+
 ## [0.17.0] — 2026-08-23
 ### Changed
 - **The two miss-driven tabs merged into one `Weaknesses` tab.** The former **Failed Questions** + **Failed Topics** are now a single view: one card per topic (newest first, carrying the topic study note), each with a collapsible **Failed Questions** list of the exact questions missed — every failed question labelled with the exam it was missed in (date + ordinal) and a `✓N ✗M` per-question tally. Renamed consistently across `data/app-template.html`, `data/app-build.md`, `README.md`, `commands/result.md`, `skills/{dashboard,fail-analysis}/SKILL.md`, and `CLAUDE.md` Invariant #5. `cheatsheet.json` schema is unchanged (same two field groups; only how they render moved).
