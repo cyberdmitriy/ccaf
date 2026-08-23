@@ -96,6 +96,7 @@ def main():
 
     # quick-reference.json (curated see→answer map): domains 1–5, non-empty see/answer,
     # q_ids a list of ids that exist in the bank. No axis field (axis lives in questions.json).
+    # Each section IS a task statement — its title must start with a valid "<d>.<n>" of that domain.
     ref_path = os.path.join(HERE, "quick-reference.json")
     ref_rows = None
     if os.path.exists(ref_path):
@@ -113,8 +114,17 @@ def main():
                 if not dv.get("title"):
                     errors.append(f"reference: domain {dk} missing title")
                 for si, sec in enumerate(dv.get("sections", [])):
-                    if not sec.get("title"):
+                    title = sec.get("title")
+                    if not title:
                         errors.append(f"reference: domain {dk} section {si} missing title")
+                    else:
+                        # each section IS a task statement: title starts with its "<d>.<n>" (matching
+                        # task-statements.json) so the Cheatsheet tab lines up with the tutors + the bank `task`.
+                        head = str(title).split(" ", 1)[0]
+                        if task_keys and head not in task_keys:
+                            errors.append(f"reference: D{dk} section {si} title must start with a task-statement number, got {head!r}")
+                        elif head.split(".")[0] != dk:
+                            errors.append(f"reference: D{dk} section {si} title number {head!r} is not a domain-{dk} task statement")
                     for ri, row in enumerate(sec.get("rows", [])):
                         ref_rows += 1
                         loc = f"reference: D{dk} sec{si} row{ri}"

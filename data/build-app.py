@@ -118,26 +118,60 @@ def load_cheatsheet(path):
     return obj, False
 CHEATSHEET, CHEATSHEET_UNREADABLE = load_cheatsheet(f"{STORE}/cheatsheet.json")
 
-# answered: transform the store's {attempts:[...], last_correct} -> {last_correct, attempts:<count>, last_ts}
+# answered: transform the store's {attempts:[...], last_correct} -> {last_correct, attempts:<count>, last_ts, misses:[...]}
 # last_ts (ISO ts of the MOST RECENT attempt) drives the app's spaced-repetition "due" term in weak mode.
+# misses = the wrong attempts as {exam_id, ts} — lets the Weaknesses tab tie each failed question to the
+# exam (date + ordinal) it was missed in. Empty for compact/older records with no per-attempt list.
 answered = {}
 for qid, rec in (stats.get("answered") or {}).items():
     att = rec.get("attempts")
+    misses = []
+    right = wrong = 0
     if isinstance(att, list):
         count = len(att)
         last = att[-1] if att else None
         last_ts = last.get("ts") if isinstance(last, dict) else None
+        for a in att:
+            if isinstance(a, dict):
+                if a.get("correct"):
+                    right += 1
+                else:
+                    wrong += 1
+                    if a.get("exam_id"):
+                        misses.append({"exam_id": a.get("exam_id"), "ts": a.get("ts")})
     else:
         count = att if isinstance(att, int) else 1
-        last_ts = rec.get("last_ts")  # fallback for a compact/older record shape
-    answered[str(qid)] = {"last_correct": bool(rec.get("last_correct")), "attempts": count, "last_ts": last_ts}
+        last_ts = rec.get("last_ts")  # fallback for a compact/older record shape (no per-attempt breakdown)
+    answered[str(qid)] = {"last_correct": bool(rec.get("last_correct")), "attempts": count, "last_ts": last_ts, "misses": misses, "right": right, "wrong": wrong}
 
 per_domain = stats.get("per_domain") or {str(d): {"seen":0,"correct":0} for d in range(1,6)}
 exam_history = stats.get("exam_history") or []
 recorded = [e["exam_id"] for e in exam_history if e.get("exam_id")]
 
-# focus: profile's explicit list wins; else the up-to-2 lowest-accuracy domains with data; else []
-focus = list(PROFILE_FOCUS or [])
+# focus: RECENT mock performance drives it — the up-to-2 domains with the highest per-domain error
+# RATE over the last few mock sittings — so focus tracks where you're CURRENTLY slipping, not a frozen
+# cumulative rank. Cold-start fallbacks (no mock data yet): profile.md "## Focus domains" (written by
+# /ccaf:result), then the lowest-accuracy domains over all history, then []. Kept here (never hardcoded)
+# per invariant #3. Error RATE (not raw count) is fair across domains of different blueprint size.
+_BLUEPRINT = {1: 27, 2: 18, 3: 20, 4: 20, 5: 15}   # CCAF exam weights (constant) — tie-break only
+def recent_focus(history, n=5):
+    mocks = [e for e in history if e.get("type") == "mock" and e.get("per_domain")]
+    mocks.sort(key=lambda e: str(e.get("ts") or ""), reverse=True)   # newest first
+    agg = {}                                                          # domain -> [seen, wrong]
+    for e in mocks[:n]:                                              # last N mock sittings (3–5 window)
+        for d in range(1, 6):
+            pd = (e.get("per_domain") or {}).get(str(d)) or {}
+            total = pd.get("total", 0) or 0
+            if total:
+                a = agg.setdefault(d, [0, 0])
+                a[0] += total
+                a[1] += (total - (pd.get("correct", 0) or 0))
+    cands = [(d, s, w) for d, (s, w) in agg.items() if s > 0 and w > 0]   # only domains with actual misses
+    # rank: error rate desc, then abs wrong desc, then blueprint weight desc, then domain number asc
+    cands.sort(key=lambda t: (-(t[2] / t[1]), -t[2], -_BLUEPRINT.get(t[0], 0), t[0]))
+    return [d for d, _, _ in cands[:2]]   # all-correct recent mocks → [] → falls through to profile/accuracy
+
+focus = recent_focus(exam_history) or list(PROFILE_FOCUS or [])
 if not focus:
     accs = []
     for d in range(1,6):

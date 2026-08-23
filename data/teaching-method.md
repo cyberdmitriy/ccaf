@@ -102,6 +102,17 @@ The exam separates **what you must know** (recognise the concept) from **what yo
 able to do** (apply it under a realistic scenario). Teach both, in this order, for each task
 statement:
 
+**Pre-teach audit (do this before step 1, every task statement).** Filter `questions.json` to
+`domain == <this domain>` and `task == <this statement>`. For each question read `stem` + `correct`
++ `explanation` and extract the distinct *winning condition* / mechanism / trap it tests. Build the
+Concept + Axis blocks so EVERY one of those nuances is taught BEFORE the Check. If a question's
+winning knowledge lives in another task statement (e.g. a `1.6` item that turns on the Grep→imports
+tooling from `2.5`), teach that nuance here too and name the cross-link. The learner meets it in this
+pool, so it is never "out of scope". This does NOT relax the "no giveaway" rules: read the questions
+to shape teaching, but never pre-announce a specific option as the answer. **Self-check:** list the
+winning conditions of the task's question pool; can you point to where your Concept/Axis block covers
+each? Any "no" → teach it before quizzing.
+
 1. **Concept (know)** — state the idea in one or two sentences (plain words first, then the
    framework term — Rule 0), plus the ONE production symptom it fixes. Keep it short; this is
    recognition. **Unpack every term/field/technique — never read a bullet aloud.** The lesson
@@ -138,6 +149,12 @@ statement:
    before the reveal is **optional for the learner** — offer it and encourage it, but never force it;
    if they would rather just pick an answer, let them. Either way, confirm against the question's
    `correct` + `explanation` and walk the winning-condition / axis reasoning yourself at the reveal.
+   **NEVER reveal or hint a correct answer before the learner replies — that makes the check pointless.**
+   The reveal (`correct` + `explanation`) comes ONLY after they answer. If you show an answer-format
+   example, its letters must NOT be the questions' real answers — use deliberately-neutral placeholders or
+   write it abstractly (e.g. `reply like "1: <your letter>, 2: <your letter>"`), never a concrete tuple like
+   `1: A, 2: D` that could match the key. (A real session leaked the answers this way: the "format" example
+   `«1: A, 2: D»` happened to BE the correct letters.)
 6. **Checkpoint** — once this task statement is fully taught + check-questioned, immediately persist
    it via the read-modify-write in **Recording learning progress** below (mark the statement covered,
    fold in the check answers' axis mastery). Don't batch it to hand-off — save now, so an interrupted
@@ -296,8 +313,9 @@ each task statement, `tutor-prompts.md` lists several bullets (concepts, fields,
 walk through EVERY trap in that topic's `exam-traps.md` section before moving to the next task statement.
 Missing one is a coverage failure — real sessions have skipped, for example, the model-driven vs
 pre-configured decision-trees distinction and the `tool_choice: 'any'` trap while claiming the topic was
-taught. **Self-check before you leave any task statement:** list its `tutor-prompts.md` bullets and its
-`exam-traps.md` traps, and confirm you taught each one. If you can't point to where you covered a bullet,
+taught. **Self-check before you leave any task statement:** list its `tutor-prompts.md` bullets, its
+`exam-traps.md` traps, AND every *winning condition* found in its `questions.json` pool (the pre-teach
+audit above), and confirm you taught each one. If you can't point to where you covered a bullet,
 you skipped it — go back and teach it.
 
 ## Recording learning progress (checkpoint AS YOU GO — not only at hand-off)
@@ -358,12 +376,20 @@ Decide where to begin from the learner's own data — do NOT front-load all miss
    lesson — do NOT ask a question.
 3. **Otherwise ASK the learner which to do (one question, then wait).** State this domain's current
    status and how many misses it has so the choice is informed, then offer:
-   - **Continue** the lesson from where they left off (only when `in_progress`) — resume the ordered lesson.
-   - **Restart** the domain from the first item — the ordered lesson from the top.
-   - **Drill only my missed topics** in this domain — run the Miss-review procedure (steps 2-4) scoped to
-     this domain, then offer to continue the lesson. This is the domain-scoped twin of `/ccaf:fail-analysis`.
-   Never pick for them. If they passed an argument or already said what they want, honor it and skip the
-   question.
+   - **Continue the remaining items** (only when `in_progress`) — resume the ordered lesson from the next
+     UNCOVERED task statement to the end. As you reach each remaining item, review ONLY the misses that
+     belong to THAT item (per-item, via Per-item miss-awareness). Do NOT front-load all misses, and do NOT
+     pull in misses from items already covered — those are the Drill option's job. (So resuming at 1.6 with
+     misses on 1.2, 1.6, 1.7 reviews only the 1.6 and 1.7 ones, as you reach them.)
+   - **Restart** the domain from the first item — the ordered lesson from the top (per-item miss review on
+     every item as you reach it).
+   - **Drill only my missed topics** in this domain — run the Miss-review procedure (steps 2-4) over ALL
+     this domain's misses now (every item, covered or not), then offer to continue the lesson. The
+     domain-scoped twin of `/ccaf:fail-analysis`.
+   Offer only the options that apply (e.g. **Continue** only when `in_progress`), and when misses exist,
+   make the **Continue vs Drill** distinction explicit (remaining items' misses as you go, vs all misses
+   now). Never pick for them. If they passed an argument or already said what they want, honor it and skip
+   the question.
 
 ## Per-item miss-awareness (during the ordered lesson) — MANDATORY, runs on every item
 Teach the domain's items IN ORDER as usual. This step is not optional and not a re-quiz. Do it on EVERY
@@ -390,7 +416,10 @@ miss maps to the same item in every session.
   point is the correction, not another test.
 - **If no miss touches the item,** teach it normally.
 
-This weaves the learner's real gaps into the ordered lesson instead of front-loading them.
+This weaves the learner's real gaps into the ordered lesson instead of front-loading them. Only the items
+you actually teach THIS pass surface their misses here: if the learner chose **Continue the remaining
+items**, review just the misses on the uncovered items you now teach — a miss on an already-covered item is
+left for the **Drill only my missed topics** option, not re-reviewed mid-lesson.
 
 **Don't double-teach.** If a miss was already reviewed earlier in THIS session (the learner chose the
 router's "drill my missed topics" option), don't repeat the full Concept / Fix / Trap when the ordered
@@ -423,15 +452,15 @@ Use this to turn the learner's own wrong answers into teaching. Honor Rule 0c (p
 4. **Persist.** For each miss, read-modify-write `$HOME/.claude/ccaf-progress/cheatsheet.json` and set on
    `entries["<id>"]` the SAME fields `/ccaf:result` authors — author them exactly as its Step 3A cheatsheet
    block specifies, as prose in the learner's `learning_language` (exam text, the `signal` quotes, and API
-   tokens stay English). Two groups of fields feed two app tabs:
-   - **Failed Questions** (per question): `decision` (суть), `rule`, `signal`, `answer` (как фиксить),
-     `flip` (ловушка).
-   - **Failed Topics** (generalized per-topic note): `task` (the `"<d>.<n> <label>"` task statement — the
+   tokens stay English). Two groups of fields feed the single **Weaknesses** tab:
+   - **Per-question cards** (inside a topic's collapsible "Failed Questions" list): `decision` (суть),
+     `rule`, `signal`, `answer` (как фиксить), `flip` (ловушка).
+   - **Topic card** (generalized per-topic note): `task` (the `"<d>.<n> <label>"` task statement — the
      number is the question's canonical `task` **looked up** from the bank, the label comes from
      `${CLAUDE_PLUGIN_ROOT}/data/task-statements.json`; see /ccaf:result Step 3A) and
      `note` (the markdown study note — `## title` → суть+инсайт → **Как правильно** → Ловушки bullets with
-     the learner's pick prefixed `[you] ` → где ловят → ось N). This tab is EMPTY without `note`/`task`, so
-     author both — never skip them. See `/ccaf:result` Step 3A for the exact `note` shape and rules.
+     the learner's pick prefixed `[you] ` → где ловят → ось N). The topic card has no body without
+     `note`/`task`, so author both — never skip them. See `/ccaf:result` Step 3A for the exact `note` shape and rules.
    Preserve non-text fields (`qid`/`domain`/`axis`/`correct`/`your_pick`/`status`/`miss_count`/`first_ts`/
    `last_ts`); create the entry if absent using the same lookups `/ccaf:result` uses. If existing fields are
    in a different language than the current `learning_language`, rewrite them. Write valid JSON (no trailing

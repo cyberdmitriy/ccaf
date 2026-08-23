@@ -70,7 +70,7 @@ Present the menu and, based on their choice + the weak domains recorded in `prof
   recommend `/ccaf:fail-analysis` (add a domain/axis argument to focus). Best after at least one recorded
   mock.
 - **(d) Mock exam** — the study app is **already open** (Step 1.5); tell them to click **Mock Exam**, pick a mode/domains/length, and Start. `/ccaf:dashboard` reopens the app anytime.
-- **(e) Progress dashboard** — same already-open app on its **Dashboard** tab (progress, Weak spots, Cheatsheet, Reference). `/ccaf:dashboard` rebuilds+reopens it.
+- **(e) Progress dashboard** — same already-open app on its **Dashboard** tab (progress, Weaknesses, Cheatsheet). `/ccaf:dashboard` rebuilds+reopens it.
 
 End by restating the single command you recommend they type next, and remind them their progress is tracked automatically in `~/.claude/ccaf-progress/`.
 

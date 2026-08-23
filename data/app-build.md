@@ -12,8 +12,9 @@ truth for that build so the two skills stay in sync. Follow it verbatim.
 > read-only w.r.t. the store, so there is never a reason to skip it. If the build errors, surface the
 > error — do not fall back to opening the old file.
 
-The app is one page with client-side views: **Dashboard** (progress + history), **Weak spots**
-(miss-driven cheatsheet), **Cheatsheet** (curated see→answer reference), and — reached via the
+The app is one page with client-side views: **Dashboard** (progress + history), **Weaknesses**
+(miss-driven: one card per topic, each with a collapsible list of the exact failed questions),
+**Cheatsheet** (curated see→answer reference), and — reached via the
 **Mock Exam** button — mode/domain/length selection, the **Exam** (timer, pause/resume, resume-later),
 and **Results** (score + annotated review + copy-JSON export). All logic is client-side JS. The whole
 question bank (including answer keys) is injected; scoring and selection happen in the browser.
@@ -34,7 +35,11 @@ Do NOT hand-copy the bank or hand-edit the template. Run this **one** command �
 in `data/build-app.py` (the single source of truth, also run by the `UserPromptSubmit` hook). It
 bootstraps the store, reads the bank + `stats.json` + `profile.md`, composes the authoritative
 `HISTORY`, injects all three placeholders (bank, history, reference), writes `ccaf-exam.html`, and
-opens it (`--open` opens only in an interactive terminal, so headless/`-p` runs never block on a GUI):
+opens it. (In `HISTORY.answered`, each entry also carries `misses: [{exam_id, ts}, …]` — the wrong
+attempts — so the Weaknesses tab can label each failed question with the exam date + ordinal it was
+missed in, plus `right`/`wrong` attempt counts that drive the "Ever failed" mock mode and the
+Weaknesses `✓N ✗M` tally.)
+It opens (`--open` opens only in an interactive terminal, so headless/`-p` runs never block on a GUI):
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/data/build-app.py" --open

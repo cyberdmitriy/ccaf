@@ -34,10 +34,10 @@ first — rank by `stats.json` `axis_tally`). Make the learner predict the axis 
 Run the Miss-review procedure step 4: write ALL of `/ccaf:result`'s cheatsheet fields back into each miss's
 `cheatsheet.json` entry **in the learner's `learning_language`** (read-modify-write, preserve non-text
 fields, valid JSON). That is the five per-question fields (`decision`/`rule`/`signal`/`answer`/`flip`, which
-feed the app's **Failed Questions** tab) PLUS `task` and `note` (which feed the **Failed Topics** tab — that
-tab is empty without them, so author both). No English fallback.
+render as the per-question cards in the app's **Weaknesses** tab) PLUS `task` and `note` (which render as the
+per-topic card there — a topic card has no body without them, so author both). No English fallback.
 
 ## Hand-off
-Tell the user to run `/ccaf:dashboard` and open the **Failed Topics** tab (the per-topic study notes) or
-the **Failed Questions** tab (the per-question review), or a `/ccaf:dN-teacher` for a weak domain. Never
+Tell the user to run `/ccaf:dashboard` and open the **Weaknesses** tab (per-topic study notes, each with a
+collapsible list of the exact failed questions), or a `/ccaf:dN-teacher` for a weak domain. Never
 auto-invoke; instruct the user.

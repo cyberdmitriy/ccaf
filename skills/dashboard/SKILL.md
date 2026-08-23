@@ -1,6 +1,6 @@
 ---
 name: dashboard
-description: CCAF study app — generates & opens your offline study app with your progress dashboard (accuracy, per-domain stats, exam history) AND a configurable mock exam (start it from the in-app "Mock Exam" button), plus Weak spots and a Cheatsheet reference. Prints a short text recap. Read-only; run /ccaf:dashboard.
+description: CCAF study app — generates & opens your offline study app with your progress dashboard (accuracy, per-domain stats, exam history) AND a configurable mock exam (start it from the in-app "Mock Exam" button), plus Weaknesses and a Cheatsheet reference. Prints a short text recap. Read-only; run /ccaf:dashboard.
 disable-model-invocation: true
 allowed-tools: Bash, Read, Write
 ---
@@ -20,7 +20,7 @@ A plugin hook rebuilds+opens the app deterministically when `/ccaf:dashboard` is
   `python3 "${CLAUDE_PLUGIN_ROOT}/data/build-app.py" --open` (it bootstraps + rebuilds + opens; never
   open a stale `ccaf-exam.html`).
 
-The app opens on the **Dashboard**; everything else is a tab (**Weak spots**, **Cheatsheet**) and
+The app opens on the **Dashboard**; everything else is a tab (**Weaknesses**, **Cheatsheet**) and
 **Mock Exam** is a button in the top bar.
 
 ## To sit an exam

@@ -10,5 +10,5 @@ _(ranked; updated by init and after mock exams)_
 _(recorded by `/ccaf:result` — official or practice attempts, most recent first)_
 
 ## Focus domains
-_(unset — set from YOUR data by `/ccaf:result` or `/ccaf:init`, ranked weakest first; not hardcoded)_
+_(unset — set from YOUR data by `/ccaf:result` or `/ccaf:init`, ranked weakest first; not hardcoded. The study app prefers your RECENT mock exams and uses this list only as a cold-start fallback and for the tutors.)_
 - _(unset)_

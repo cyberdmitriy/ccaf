@@ -105,7 +105,8 @@ trend, your tutor coverage, and the 5-axis tally of where you get caught.
 | Weak areas | Your weak domains and the questions you got wrong. Long-unseen questions come back first. |
 | Unseen | Questions you have never answered. |
 | Random | The whole bank. |
-| Review misses | Only questions you got wrong last time. |
+| Review misses | Only questions you got wrong last time (currently failing). |
+| Ever failed | Every question you have gotten wrong at least once, even ones you have passed since. |
 
 One question per screen, like the real exam. Optional 2-minute-per-question limit that warns you at
 zero but never submits for you, because this is practice. Pause and resume, or quit and carry on
@@ -113,9 +114,12 @@ later. Mark a question to come back to it, and a review screen lists anything bl
 you submit. From the keyboard: `1`-`4` or `A`-`D` to answer, `J`/`K` or the arrows to move, `F` to
 mark.
 
-**Weak spots.** Built from the questions you actually got wrong. Each card gives the decision behind
-the question, the rule that generalises, the words in the stem that gave it away, the right answer,
-and why your instinct was tempting plus when it would have been correct. Filter by domain or axis.
+**Weaknesses.** Built from the questions you actually got wrong. One card per topic, newest first,
+with a study note on the topic. Open the collapsible **Failed Questions** list inside a card to see
+the exact questions you missed — each labelled with the exam it was missed in (date + number) and
+giving the decision behind the question, the rule that generalises, the words in the stem that gave it
+away, the right answer, and why your instinct was tempting plus when it would have been correct.
+Filter by domain, or search.
 
 **Cheatsheet.** A curated "what you see in the stem → the answer it points to" reference, 83 rows
 across all five domains, with a search box.
@@ -134,7 +138,7 @@ uninstalls, and the plugin never overwrites what is already there.
 | `stats.json` | Per-question and per-domain stats plus exam history. The authoritative record. |
 | `fails-tracker.md` | The questions you missed, verbatim. |
 | `trap-log.md` | Trap types by axis, with a running tally. |
-| `cheatsheet.json` | The Weak spots cards, one per miss. |
+| `cheatsheet.json` | The Weaknesses entries, one per miss (topic note + per-question card). |
 | `learning-progress.json` | Which task statements each tutor has covered. |
 | `ccaf-exam.html` | The generated study app. Rebuilt on every `/ccaf:init` and `/ccaf:dashboard`. |
 
@@ -144,9 +148,13 @@ you. It never recreates a broken file from scratch, because that would throw awa
 ## How focus works
 
 Nothing about anyone's weak spots is baked into this plugin. Focus is computed from your own data.
+The study app sets your focus domains from your **recent mock exams** (the domains with the highest
+error rate over your last few sittings), so it follows where you are slipping now. Before you have any
+mock data, it falls back to the ranked weak list `/ccaf:result` writes in `profile.md`. The dashboard
+also draws a **domain error trend** so you can see which domains you failed over time.
 
 `/ccaf:result` is the only writer. Give it the app's results JSON, one sitting or several at once,
-and it updates per-question stats, your fails and your Weak spots cards. Give it a screenshot or a
+and it updates per-question stats, your fails and your Weaknesses cards. Give it a screenshot or a
 pasted breakdown from the official exam or another practice test, and it records a per-domain
 snapshot instead. Either way it rewrites the ranked weak-domain list in `profile.md`. Mock and
 external results are stored separately and never averaged into one number.

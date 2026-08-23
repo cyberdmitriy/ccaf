@@ -6,6 +6,17 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.17.0] — 2026-08-23
+### Changed
+- **The two miss-driven tabs merged into one `Weaknesses` tab.** The former **Failed Questions** + **Failed Topics** are now a single view: one card per topic (newest first, carrying the topic study note), each with a collapsible **Failed Questions** list of the exact questions missed — every failed question labelled with the exam it was missed in (date + ordinal) and a `✓N ✗M` per-question tally. Renamed consistently across `data/app-template.html`, `data/app-build.md`, `README.md`, `commands/result.md`, `skills/{dashboard,fail-analysis}/SKILL.md`, and `CLAUDE.md` Invariant #5. `cheatsheet.json` schema is unchanged (same two field groups; only how they render moved).
+- **Focus tracks recent mock performance, not a frozen rank.** `data/build-app.py` now derives `focus_domains` from the highest per-domain **error rate** over the last few mock sittings (error rate, not raw count, so it is fair across differently-weighted domains). Cold-start fallbacks are unchanged in order: `profile.md` `## Focus domains` → lowest-accuracy-over-history → `[]`. `/ccaf:result` still writes the profile list (the tutors and the app's cold start read it); the ranking logic stays out of any skill per Invariant #3.
+- **Cheatsheet/Reference sections are now task statements.** Each `quick-reference.json` section title must start with a valid `<d>.<n>` of its domain, so the Cheatsheet tab lines up with the tutors + the bank `task`. `data/validate.py` enforces it (title head ∈ `task-statements.json`, matching domain prefix); all 83 rows re-sectioned to the `<d>.<n> <label>` form (plain text, `esc()`-rendered).
+
+### Added
+- **New `Ever failed` mock mode** — every question you have ever gotten wrong, even ones passed since (distinct from **Review misses** = currently failing). Driven by per-question `right`/`wrong` counts.
+- **Domain error trend on the dashboard** — which domains you failed over time, so recent slippage is visible at a glance.
+- **Per-miss provenance in `HISTORY`.** Each `answered` entry now carries `misses: [{exam_id, ts}, …]` plus `right`/`wrong` attempt counts (composed in `build-app.py` from `stats.json` attempts), so the Weaknesses tab can tie each failed question to the exam it was missed in and the `Ever failed` mode / `✓N ✗M` tally have their source. Empty for compact/older records with no per-attempt list.
+
 ## [0.16.0] — 2026-08-20
 ### Added
 - **Learning-language setting (content-only localization).** New per-user `~/.claude/ccaf-progress/settings.json` (`{"schema":1,"learning_language":"English"}`, free-form, default English), bootstrapped via the existing non-overwriting template copy. The read contract lives in ONE place — new **Rule 0c** in `data/teaching-method.md`: all explanatory prose follows `learning_language`, while question stems/options/answers, verbatim signal phrases, and API tokens stay English always, and the mock exam is English-only. `/ccaf:init` asks for the language once (Step 1.6). New **Invariant 8** in `CLAUDE.md` states the exam-English/prose-localized split; the app chrome is not localized.
