@@ -118,6 +118,18 @@ def load_cheatsheet(path):
     return obj, False
 CHEATSHEET, CHEATSHEET_UNREADABLE = load_cheatsheet(f"{STORE}/cheatsheet.json")
 
+# ---- settings: per-user learning_language (READ-ONLY) — drives the Weaknesses tab's localized labels.
+# Content is still authored per learning_language by the skills; this only localizes the few chrome LABELS
+# that sit directly on that localized content (Invariant #8 carve-out). Free-form string; the app maps the
+# ones it has a translation for and falls back to English for any it doesn't.
+def load_language(path):
+    try:
+        lang = (json.load(open(path)) or {}).get("learning_language")
+        return lang if isinstance(lang, str) and lang.strip() else "English"
+    except Exception:
+        return "English"
+LANG = load_language(f"{STORE}/settings.json")
+
 # answered: transform the store's {attempts:[...], last_correct} -> {last_correct, attempts:<count>, last_ts, misses:[...]}
 # last_ts (ISO ts of the MOST RECENT attempt) drives the app's spaced-repetition "due" term in weak mode.
 # misses = the wrong attempts as {exam_id, ts} — lets the Weaknesses tab tie each failed question to the
@@ -202,6 +214,7 @@ HISTORY = {
     "cheatsheet": CHEATSHEET,
     "cheatsheet_unreadable": CHEATSHEET_UNREADABLE,
     "stats_unreadable": STATS_UNREADABLE,
+    "learning_language": LANG,   # localizes only the Weaknesses content-labels; rest of the chrome stays English
 }
 
 tpl = open(f"{ROOT}/data/app-template.html").read()

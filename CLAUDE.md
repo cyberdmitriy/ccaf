@@ -85,7 +85,13 @@ never create a `docs/` tree. If a skill defaults to `docs/superpowers/…`, redi
 explanatory prose (tutors, `/ccaf:fail-analysis`, and the `/ccaf:result` `cheatsheet.json` explanation fields `decision`/`rule`/`signal`/`answer`/`flip`).
 Question stems/options/answers, verbatim signal phrases, and API tokens stay English always; the mock
 exam is English-only. The read rule lives once in `data/teaching-method.md` (Rule 0c). The app chrome is
-NOT localized.
+NOT localized, with ONE carve-out: the handful of **content-labels in the Weaknesses tab** that sit
+directly on the localized cheatsheet prose (`Failed questions`, `What gave it away`, `So the answer is`,
+`Your instinct, and when it is right`, `Show the full question`) ARE localized, so an English label never
+sits over Russian text. Mechanism: `build-app.py` injects `learning_language` into `HISTORY`, and the
+template's `UI_I18N` table + `t()` helper map only these keys, falling back to English for any language not
+in the table (free-form language safe). Adding a language = one `UI_I18N` block; localizing more chrome =
+add the key to every block. All other chrome (nav, dashboard, mock exam) stays English.
 
 ## App UI internals
 The offline study app (`data/app-template.html`) has many client-side features (results review, 5-axis

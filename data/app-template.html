@@ -222,16 +222,21 @@
   .cs-c-ul li.cs-c-hit{list-style:none;margin-left:-1.15rem;padding:.4rem .7rem;background:color-mix(in srgb,var(--accent2) 15%,transparent);border-left:3px solid var(--accent2);border-radius:6px}
   .cs-c-hit-b{display:inline-block;margin-left:.45rem;font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent2);vertical-align:middle;white-space:nowrap}
   .cs-c-trap{color:var(--ink2)}
-  /* ---------- Weaknesses: failed-questions block inside a topic card ---------- */
-  .wk-questions{margin-top:1rem;border-top:1px dashed var(--line2);padding-top:.75rem}
-  .wk-questions>summary{cursor:pointer;font-size:.76rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);list-style:none;user-select:none}
-  .wk-questions>summary::-webkit-details-marker{display:none}
-  .wk-questions>summary::before{content:"▸ "}
-  .wk-questions[open]>summary::before{content:"▾ "}
-  .wk-qlist{display:flex;flex-direction:column;gap:1.1rem;margin-top:.9rem}
-  .wk-q{display:flex;flex-direction:column;gap:.4rem}
-  .wk-exam{font-family:var(--font-mono);font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);display:flex;gap:.6rem;align-items:baseline}
-  .wk-tally{margin-left:auto;letter-spacing:.02em}
+  /* ---------- Weaknesses: per-topic note + one collapsible per failed question ---------- */
+  .wk-qwrap{margin-top:1.1rem;border-top:1px dashed var(--line2);padding-top:.9rem}
+  .wk-qlabel{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:.75rem}
+  details.wk-q{border:1px solid var(--line2);border-left:3px solid var(--accent2);border-radius:10px;background:var(--surface);margin-bottom:.6rem}
+  details.wk-q:last-child{margin-bottom:0}
+  details.wk-q[open]{background:var(--surface2)}
+  details.wk-q>summary{cursor:pointer;list-style:none;user-select:none;display:flex;justify-content:space-between;align-items:flex-start;gap:.85rem;padding:.85rem 1rem}
+  details.wk-q>summary::-webkit-details-marker{display:none}
+  details.wk-q>summary::before{content:"▸";color:var(--faint);font-size:.8rem;line-height:1.5;flex:none}
+  details.wk-q[open]>summary::before{content:"▾"}
+  .wk-q-head{font-family:var(--font-display);font-weight:600;color:var(--ink);font-size:1.02rem;line-height:1.4;flex:1;min-width:0}
+  .wk-q-meta{display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex:none}
+  .wk-q-exam{font-family:var(--font-mono);font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap;display:flex;gap:.5rem;align-items:baseline}
+  .wk-q-body{padding:0 1rem 1rem;display:flex;flex-direction:column;gap:1rem}
+  .wk-tally{letter-spacing:.02em}
   .wk-tally .ok{color:var(--ok)}
   .wk-tally .bad{color:var(--warn)}
 
@@ -824,6 +829,22 @@ const BANK = /*__BANK__*/[];
 const HISTORY = /*__HISTORY__*/{};
 const REFERENCE = /*__REFERENCE__*/{};   // bundled quick-reference (see→answer by domain)
 /* ============================================================================= */
+
+/* i18n: ONLY the Weaknesses content-labels are localized (Invariant #8 carve-out) — they sit directly on
+   prose the skills already author in learning_language, so an English label over Russian text reads wrong.
+   The rest of the app chrome stays English. Free-form language: t() falls back to English for any language
+   not in this table. To add a language, add its block with the same keys. */
+const LANG = (HISTORY && HISTORY.learning_language) || "English";
+const UI_I18N = {
+  "Russian": {
+    "Failed questions": "Проваленные вопросы",
+    "What gave it away": "Что выдало ответ",
+    "So the answer is": "Значит, ответ",
+    "Your instinct, and when it is right": "Твой инстинкт и когда он верен",
+    "Show the full question": "Показать вопрос целиком",
+  },
+};
+function t(s){ return (UI_I18N[LANG] || {})[s] || s; }
 
 const DOMAIN_NAMES = {1:"Agentic Architecture & Orchestration",2:"Tool Design & MCP Integration",3:"Claude Code Config & Workflows",4:"Prompt Engineering & Structured Output",5:"Context Management & Reliability"};
 const DOMAIN_SHORT = {1:"Agentic Architecture",2:"Tool Design & MCP",3:"Config & Workflows",4:"Prompt Engineering",5:"Context & Reliability"};
@@ -1509,27 +1530,31 @@ function cheatBeat(label,html,cls){
   if(!html) return "";
   return `<div class="cs-beat${cls?" "+cls:""}"><span class="cs-lbl">${label}</span><div class="cs-text">${html}</div></div>`;
 }
-function cheatCard(e){
+// One failed question = its own collapsed <details>. Summary: the decision headline + axis badge + the
+// exam (date + ordinal) it was most-recently missed in + a ✓right ✗wrong tally. Body: rule + the three
+// beats + the full question. Domain is NOT shown here — the topic card header already carries it.
+function wkQuestion(e, ords, ma){
   const axisB=(e.axis>=1&&e.axis<=5)?`<span class="axisbadge" title="${esc(AXIS_DESC[e.axis]||"")}">Axis ${e.axis} · ${esc(AXIS_NAMES[e.axis]||"")}</span>`:"";
-  const dvar=DOMAIN_VAR[e.domain];
-  const domTag=e.domain?(dvar?`<span class="cs-domtag" style="color:var(${dvar})"><span class="dot"></span>Domain ${esc(e.domain)}</span>`
-                             :`<span class="cs-domtag">Domain ${esc(e.domain)}</span>`):"";
   /* headline = the decision (fall back to legacy trigger if an old entry hasn't been re-authored) */
   const head=e.decision?rich(e.decision):(e.trigger?rich(e.trigger):'<span class="cs-dim">—</span>');
-  const answerLbl=`So the answer is <span class="cs-tick">✓</span>`;
-  return `<article class="cs-card${e.status==="mastered"?" mastered":""}">
-    <header class="cs-card-head">
-      <div class="cs-decision">${head}</div>
-      <div class="cs-tags">${axisB}${domTag}</div>
-    </header>
-    ${e.rule?`<div class="cs-rule">${rich(e.rule)}</div>`:""}
-    <div class="cs-body">
-      ${cheatBeat("What gave it away", e.signal?rich(e.signal):"")}
-      ${cheatBeat(answerLbl, e.answer?rich(e.answer):"", "cs-answer")}
-      ${cheatBeat("Your instinct, and when it is right", e.flip?rich(e.flip):"", "cs-flip")}
+  const meta=questionExamMeta(e,ords);
+  const examTxt=(meta.n?`Exam #${meta.n}`:"Exam")+(meta.date?` · ${esc(meta.date)}`:"");
+  const answerLbl=`${esc(t("So the answer is"))} <span class="cs-tick">✓</span>`;
+  return `<details class="wk-q">
+    <summary>
+      <span class="wk-q-head">${head}</span>
+      <span class="wk-q-meta">${axisB}<span class="wk-q-exam">${examTxt}${wkTally(ma,e.qid)}</span></span>
+    </summary>
+    <div class="wk-q-body">
+      ${e.rule?`<div class="cs-rule">${rich(e.rule)}</div>`:""}
+      <div class="cs-body">
+        ${cheatBeat(esc(t("What gave it away")), e.signal?rich(e.signal):"")}
+        ${cheatBeat(answerLbl, e.answer?rich(e.answer):"", "cs-answer")}
+        ${cheatBeat(esc(t("Your instinct, and when it is right")), e.flip?rich(e.flip):"", "cs-flip")}
+      </div>
+      ${cheatScenario(e)}
     </div>
-    ${cheatScenario(e)}
-  </article>`;
+  </details>`;
 }
 function cheatScenario(e){
   const q=BANK.find(x=>String(x.id)===String(e.qid));
@@ -1541,7 +1566,7 @@ function cheatScenario(e){
     const tag=isC?`<span class="cs-o-mk">✓</span>`:(isP?`<span class="cs-o-tag">your pick</span>`:"");
     return `<li class="cs-o${cls}"><span class="cs-o-l">${esc(L)}</span><span class="cs-o-t">${esc(q.options[L])}</span>${tag}</li>`;
   }).join(""); }
-  return `<details class="cs-scenario"><summary>Show the full question</summary>
+  return `<details class="cs-scenario"><summary>${esc(t("Show the full question"))}</summary>
     <div class="cs-stem">${rich(q.stem)}</div>
     ${opts?`<ul class="cs-opts">${opts}</ul>`:""}</details>`;
 }
@@ -1588,10 +1613,6 @@ function questionExamMeta(e,ords){
   if(latest&&ords[latest.exam_id]) return {n:ords[latest.exam_id].n, date:ords[latest.exam_id].date};
   return {n:null, date:fmtDate(e.last_ts||e.first_ts,'short')};   // fallback: entry ts, no ordinal
 }
-function examMetaLine(meta,tally){
-  const num=meta.n?`Exam #${meta.n}`:"Exam";
-  return `<div class="wk-exam">${num}${meta.date?` · ${esc(meta.date)}`:""}${tally||""}</div>`;
-}
 // per-question right/wrong tally (✓ correct · ✗ wrong across all attempts) for the Weaknesses cards
 function wkTally(merged,qid){
   const m=merged[String(qid)]; if(!m) return "";
@@ -1628,17 +1649,18 @@ function renderWeakness(){
     const src=items.find(e=>e.note||e.task)||lead;   // header note/task from the newest entry that has them
     const tag=`Domain ${esc(lead.domain||"?")}${src.task?" · "+rich(src.task):""}`;
     const note=src.note?mdBlock(src.note):"";
-    const qcards=items.map(e=>`<div class="wk-q">${examMetaLine(questionExamMeta(e,ords),wkTally(ma,e.qid))}${cheatCard(e)}</div>`).join("");
+    const qlist=items.map(e=>wkQuestion(e,ords,ma)).join("");   // each failed question is its own collapsible
     return `<article class="cs-card cs-compact">
       <div class="cs-c-tag">${tag}</div>
       ${note}
-      <details class="wk-questions"><summary>Failed Questions · ${items.length}</summary>
-        <div class="wk-qlist">${qcards}</div>
-      </details>
+      <div class="wk-qwrap">
+        <div class="wk-qlabel">${esc(t("Failed questions"))} · ${items.length}</div>
+        ${qlist}
+      </div>
     </article>`;
   }).join("") : '<p class="hint">Nothing matches this filter.</p>';
   const topicCount=order.length;
-  v.innerHTML=`<h2 class="sr-only">Weaknesses</h2><p class="cs-sub">Your weak spots — one card per topic, newest first. Open <b>Failed Questions</b> in a card to see the exact questions you missed and how to choose next time. ${topicCount} topic${topicCount===1?"":"s"}.</p>
+  v.innerHTML=`<h2 class="sr-only">Weaknesses</h2><p class="cs-sub">Your weak spots — one card per topic, newest first. Each topic lists the exact questions you missed; open one to see how to choose next time. ${topicCount} topic${topicCount===1?"":"s"}.</p>
     <div class="cs-filters">
       <div class="cs-chips">${domChips}</div>
       <input id="wkSearch" class="cs-search" type="search" placeholder="Search…" value="${esc(cheatState.q)}" aria-label="Search weaknesses">

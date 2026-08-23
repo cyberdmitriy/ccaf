@@ -6,6 +6,13 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.18.0] — 2026-08-23
+### Changed
+- **Weaknesses tab: each failed question is now its own collapsible.** The single wrapping `Failed Questions · N` disclosure (which opened all questions at once) is gone; a topic card now shows a `.wk-qwrap` block — a `Failed questions · N` label followed by one **collapsed `<details class="wk-q">` per question** (flat siblings, each independently expandable). Each question's summary carries its decision headline + axis badge + the `Exam #N · date` it was missed in + the `✓N ✗M` tally; the body holds rule → the three beats → the full question. `cheatCard()` and `examMetaLine()` folded into a new `wkQuestion()`.
+- **Domain shown once, on the topic header only.** The redundant per-question `Domain N` badge is removed from each failed-question card — every question in a topic shares that topic's domain, which the card header (`Domain <d> · <task>`) already states.
+### Added
+- **Localized Weaknesses content-labels (Invariant #8 carve-out).** The five labels that sit directly on the cheatsheet prose the skills already author in `learning_language` — `Failed questions`, `What gave it away`, `So the answer is`, `Your instinct, and when it is right`, `Show the full question` — now render in that language instead of English over Russian text. Mechanism: `build-app.py` injects `learning_language` (read from `settings.json`) into `HISTORY`; the template's `UI_I18N` table + `t()` helper map only these keys, falling back to English for any language not in the table (free-form-language safe). All other app chrome stays English.
+
 ## [0.17.1] — 2026-08-23
 ### Fixed
 - **`/ccaf:dashboard` Focus-check recap no longer contradicts the 0.17.0 focus logic.** Since 0.17.0 the app derives weak-mode focus from recent mock exams first (`profile.md` `## Focus domains` is only the cold-start/external-only fallback). The recap still warned "weak-mode won't bias until focus is set" whenever `## Focus domains` was `_(unset)_` and `exam_history` had entries — false for anyone with recorded mocks. It now warns only for **mock-less** history (external-only) with focus unset.
