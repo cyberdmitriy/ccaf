@@ -25,6 +25,8 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;overflow-x:hidden}
+  /* whole-app zoom: rem-based layout scales from the root, so 90% root ≈ a 90% browser zoom (denser, more per screen) */
+  html{font-size:90%}
   body{
     background:
       radial-gradient(1200px 600px at 100% -10%, #FFFDF8 0%, rgba(255,253,248,0) 55%),
@@ -169,7 +171,7 @@
     background:var(--surface);color:var(--ink);font:inherit}
   .cs-dim{color:var(--muted)}
   .cs-cards{display:flex;flex-direction:column;gap:1rem;margin-top:.4rem}
-  .cs-card{border:1px solid var(--line2);border-left:3px solid var(--accent2);border-radius:12px;
+  .cs-card{border:1px solid var(--line2);border-left:4px solid var(--dc,var(--accent2));border-radius:12px;
     background:var(--surface);padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:.8rem}
   .cs-card.mastered{border-left-color:var(--ok)}
   .cs-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap}
@@ -202,16 +204,22 @@
   .cs-o-t{flex:1;min-width:0}
   .cs-o-mk{margin-left:auto;font-weight:700;flex:none;color:var(--ok)}
   .cs-o-tag{margin-left:auto;flex:none;font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-    color:var(--warn);background:var(--warn-soft);border-radius:999px;padding:.08rem .45rem;white-space:nowrap}
+    color:#fff;background:var(--bad);border-radius:999px;padding:.08rem .45rem;white-space:nowrap}
   .cs-o.cs-o-correct{border-color:var(--ok);background:var(--ok-soft)}
   .cs-o.cs-o-correct .cs-o-l{color:var(--ok)}
-  .cs-o.cs-o-pick{border-color:#d8bd83}
+  .cs-o.cs-o-pick{border-color:var(--bad);background:var(--bad-soft)}          /* my wrong pick = red */
+  .cs-o.cs-o-pick .cs-o-l{color:var(--bad)}
   .cs-mastered{margin-top:1.4rem}
   .cs-mastered summary{cursor:pointer;font-weight:600;color:var(--ink2);padding:.4rem 0}
   .cs-compact{padding:1.1rem 1.25rem}
   .cs-compact + .cs-compact{margin-top:.7rem}
-  .cs-c-tag{font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.7rem;padding-bottom:.55rem;border-bottom:1px solid var(--line)}
-  .cs-c-tag code{color:var(--muted);text-transform:none}
+  /* Weaknesses card header (treatment B): domain-coloured kicker + big task title + coloured rule */
+  .wk-head{padding-bottom:.7rem;border-bottom:2px solid var(--dc,var(--accent2))}
+  .wk-kicker{font-family:var(--font-display);font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--dc,var(--accent2));margin-bottom:.22rem}
+  .wk-title{font-family:var(--font-display);font-weight:700;font-size:1.1rem;color:var(--ink);line-height:1.25}
+  .wk-title .num{color:var(--dc,var(--accent2));margin-right:.1rem}
+  /* a code token in the big title reads as a domain-coloured mono word, not a heavy grey box */
+  .wk-title code{font-family:var(--font-mono);font-size:.92em;font-weight:700;color:var(--dc,var(--accent2));background:none;border:none;padding:0}
   .cs-c-h{font-family:var(--font-display);font-size:.95rem;font-weight:700;color:var(--accent);margin:1rem 0 .35rem;letter-spacing:.01em}
   .cs-c-h:first-child{margin-top:0}
   .cs-c-p{margin:.5rem 0;line-height:1.62;color:var(--ink);font-size:.96rem}
@@ -222,23 +230,58 @@
   .cs-c-ul li.cs-c-hit{list-style:none;margin-left:-1.15rem;padding:.4rem .7rem;background:color-mix(in srgb,var(--accent2) 15%,transparent);border-left:3px solid var(--accent2);border-radius:6px}
   .cs-c-hit-b{display:inline-block;margin-left:.45rem;font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent2);vertical-align:middle;white-space:nowrap}
   .cs-c-trap{color:var(--ink2)}
-  /* ---------- Weaknesses: per-topic note + one collapsible per failed question ---------- */
-  .wk-qwrap{margin-top:1.1rem;border-top:1px dashed var(--line2);padding-top:.9rem}
-  .wk-qlabel{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:.75rem}
-  details.wk-q{border:1px solid var(--line2);border-left:3px solid var(--accent2);border-radius:10px;background:var(--surface);margin-bottom:.6rem}
-  details.wk-q:last-child{margin-bottom:0}
-  details.wk-q[open]{background:var(--surface2)}
-  details.wk-q>summary{cursor:pointer;list-style:none;user-select:none;display:flex;justify-content:space-between;align-items:flex-start;gap:.85rem;padding:.85rem 1rem}
+  /* ---------- Weaknesses: collapsible Тема block + one collapsible per failed question (V2) ---------- */
+  .wk-qlabel{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:.15rem}
+  .wk-chev{color:var(--faint);flex:none;font-size:.7rem;transition:transform .18s ease}
+  details[open]>summary .wk-chev{transform:rotate(90deg)}
+  /* paired UNIT: a theme (bare chevron summary + its note) joined to its question by a light left thread.
+     The thread anchors on the theme chevron and elbows into the question's top, so each theme visibly
+     belongs to one question. A note-less entry is just the question (no theme, no thread). */
+  .wk-unit{position:relative}
+  .wk-unit + .wk-unit{margin-top:1.15rem}
+  details.wk-theme{position:relative;padding-left:24px}
+  details.wk-theme>summary{cursor:pointer;list-style:none;user-select:none;display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap;
+    padding:.2rem 0;font-size:.92rem;line-height:1.4}
+  details.wk-theme>summary::-webkit-details-marker{display:none}
+  details.wk-theme>summary .wk-chev{position:absolute;left:2px;top:.5rem;line-height:1;color:var(--dc,var(--accent2))}
+  details.wk-theme>summary .tlabel{color:var(--muted);font-weight:700}
+  details.wk-theme>summary .th-title{color:var(--accent);font-weight:700}
+  .wk-theme-note{margin:.55rem 0 0;padding:.75rem .9rem;background:var(--surface2);border:1px solid var(--line2);border-radius:9px}
+  /* the thread: a vertical line down the theme's left + an elbow into the question. BOTH live on .wk-theme
+     (which has no overflow) — the question box is overflow:hidden, so an elbow on .wk-q would be clipped. */
+  details.wk-theme::before{content:"";position:absolute;left:4.5px;top:1.4rem;bottom:-3.25rem;width:14px;
+    border-left:2px solid var(--line);border-bottom:2px solid var(--line);border-bottom-left-radius:13px}
+  .wk-unit>details.wk-q{margin-left:24px;margin-top:.75rem}
+  .wk-unit>details.wk-q:first-child{margin-left:0;margin-top:0}
+  /* question: the summary IS the question — clamped to 2 lines closed, full when open; tint kept on open */
+  details.wk-q{border:1px solid var(--line2);border-radius:10px;background:var(--surface);overflow:hidden}
+  details.wk-q[open]{box-shadow:var(--shadow-sm)}
+  details.wk-q>summary{cursor:pointer;list-style:none;user-select:none;display:flex;align-items:flex-start;gap:.7rem;
+    padding:.85rem .95rem;font-weight:600;color:var(--ink);font-size:.96rem;background:var(--surface2)}
   details.wk-q>summary::-webkit-details-marker{display:none}
-  details.wk-q>summary::before{content:"▸";color:var(--faint);font-size:.8rem;line-height:1.5;flex:none}
-  details.wk-q[open]>summary::before{content:"▾"}
-  .wk-q-head{font-family:var(--font-display);font-weight:600;color:var(--ink);font-size:1.02rem;line-height:1.4;flex:1;min-width:0}
-  .wk-q-meta{display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex:none}
-  .wk-q-exam{font-family:var(--font-mono);font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap;display:flex;gap:.5rem;align-items:baseline}
-  .wk-q-body{padding:0 1rem 1rem;display:flex;flex-direction:column;gap:1rem}
-  .wk-tally{letter-spacing:.02em}
-  .wk-tally .ok{color:var(--ok)}
-  .wk-tally .bad{color:var(--warn)}
+  details.wk-q>summary .wk-chev{margin-top:.28rem}
+  details.wk-q[open]>summary{border-bottom:1px solid var(--line2)}
+  .wk-stem{flex:1;min-width:0;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  details.wk-q[open]>summary .wk-stem{-webkit-line-clamp:unset;overflow:visible}
+  .wk-q-body{padding:.95rem;display:flex;flex-direction:column;gap:.9rem}
+  /* labelled panels: Разбор (accent) + Статистика ответов (neutral) */
+  .wk-panel{border-radius:9px;padding:.85rem .95rem}
+  .wk-ph{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.65rem}
+  .wk-ph .wk-ico{width:1.05rem;height:1.05rem;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;font-size:.7rem;color:#fff;flex:none}
+  .wk-p-b{background:color-mix(in srgb,var(--accent2) 7%,var(--surface));border:1px solid color-mix(in srgb,var(--accent2) 22%,var(--line2))}
+  .wk-p-b .wk-ph{color:var(--accent2)} .wk-p-b .wk-ico{background:var(--accent2)}
+  .wk-p-b .cs-rule{border-bottom:none;padding-bottom:0}
+  .wk-p-s{background:var(--paper2);border:1px solid var(--line2)}
+  .wk-p-s .wk-ph{color:var(--ink2)} .wk-p-s .wk-ico{background:var(--ink2)}
+  .wk-axis{margin-left:auto;font-size:.66rem;font-weight:700;letter-spacing:.03em;color:var(--accent2);background:var(--accent-soft);
+    border:1px solid color-mix(in srgb,var(--accent2) 35%,var(--line));border-radius:999px;padding:.12rem .5rem;white-space:nowrap}
+  .wk-stat-sum{margin-left:auto;font-family:var(--font-mono);font-size:.72rem;font-weight:700}
+  .wk-stat-sum .ok{color:var(--ok)} .wk-stat-sum .bad{color:var(--bad)}
+  .wk-stat-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.34rem}
+  .wk-stat-list li{display:flex;align-items:center;gap:.6rem;font-family:var(--font-mono);font-size:.76rem;color:var(--ink2)}
+  .wk-stat-list li .mk{width:1rem;text-align:center;font-weight:700;flex:none}
+  .wk-stat-list li.ok .mk{color:var(--ok)}
+  .wk-stat-list li.bad .mk{color:var(--bad)}
 
   /* ---------- axis framework ---------- */
   .axis-lead{font-family:var(--font-display);font-size:1.05rem;color:var(--ink);margin:0 0 1rem;line-height:1.4}
@@ -449,13 +492,17 @@
     font:inherit;font-size:.88rem;color:var(--ink);background:var(--surface)}
   .ref-search:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px var(--accent-soft)}
   .ref-dom{margin:0 0 2.1rem}
-  .ref-dom-h{font-family:var(--font-display);font-weight:700;font-size:1.12rem;color:var(--ink);
-    display:flex;align-items:center;gap:.55rem;margin:0 0 .1rem;padding-bottom:.55rem;border-bottom:2px solid var(--line2)}
-  .ref-dnum{display:inline-flex;align-items:center;justify-content:center;padding:.12rem .5rem;border-radius:7px;
-    color:#fff;font-size:.76rem;font-weight:700;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+  /* domain header (treatment B): big hero title, domain-coloured Dn + coloured rule + subtitle */
+  .ref-dom-h{font-family:var(--font-hero);font-weight:700;font-size:1.3rem;color:var(--ink);
+    display:flex;align-items:baseline;gap:.5rem;margin:0 0 .12rem;line-height:1.2}
+  .ref-dnum{color:var(--dc,var(--accent2));font-family:var(--font-hero);font-weight:800;font-variant-numeric:tabular-nums}
+  .ref-dom-sub{font-size:.82rem;color:var(--muted);line-height:1.5;padding-bottom:.55rem;
+    border-bottom:2px solid var(--dc,var(--accent2));margin:0 0 .2rem}
   .ref-sec{margin:1.35rem 0 0}
-  .ref-sec-h{font-family:var(--font-display);font-weight:700;font-size:.72rem;text-transform:uppercase;
-    letter-spacing:.06em;color:var(--muted);margin:0 0 .5rem}
+  /* section header (treatment B): coloured number kicker + big title, domain-coloured left rule */
+  .ref-sec-h{margin:1.4rem 0 .55rem;padding-left:.7rem;border-left:3px solid var(--dc,var(--accent2))}
+  .ref-sec-num{display:block;font-family:var(--font-mono);font-size:.72rem;font-weight:800;letter-spacing:.05em;color:var(--dc,var(--accent2))}
+  .ref-sec-title{font-family:var(--font-display);font-weight:700;font-size:1.05rem;color:var(--ink);line-height:1.25}
   .ref-tbl{width:100%;border-collapse:collapse;table-layout:fixed;background:var(--surface);
     border-radius:var(--radius-sm);overflow:hidden}
   .ref-tbl td{padding:.6rem .85rem;vertical-align:top;font-size:.87rem;line-height:1.5;overflow-wrap:break-word}
@@ -522,7 +569,7 @@
   --shadow:0 12px 34px rgba(20,30,70,.10); --shadow-sm:0 3px 14px rgba(20,30,70,.08);
   --glow:0 0 0px;
 }
-body{background:var(--paper);color:var(--ink);font-size:16px;
+body{background:var(--paper);color:var(--ink);font-size:1rem;
   background-image:
     radial-gradient(900px 520px at 88% -8%, color-mix(in srgb,var(--acc1) 20%,transparent), transparent 60%),
     radial-gradient(760px 460px at 6% 8%, color-mix(in srgb,var(--acc2) 16%,transparent), transparent 58%),
@@ -576,12 +623,16 @@ button.ghost:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var
 .coach .msg .txt b{font-weight:600;background:linear-gradient(90deg,var(--acc1),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .coach .msg .sub{color:var(--ink2);font-size:.88rem;margin-top:.2rem}
 
+/* dashboard stack rhythm: a top banner spaces its sibling like .coach/.hero2 do (base .banner has no
+   margin-bottom, so banner→coach otherwise collapses to 0). Scoped to the dashboard — exam/weakness banners keep theirs. */
+#view-dashboard > .banner{margin-bottom:1.1rem}
+
 /* =====================  READINESS — glowing orb ring, monumental type  ===================== */
 .hero2{display:flex;align-items:center;gap:2.4rem;flex-wrap:wrap;padding:2rem 2.1rem;margin-bottom:1.1rem;overflow:hidden;position:relative}
 .hero2::after{content:"";position:absolute;right:-120px;top:-120px;width:340px;height:340px;border-radius:50%;
   background:radial-gradient(closest-side, color-mix(in srgb,var(--acc2) 26%,transparent), transparent);pointer-events:none}
 .hero2 .eyebrow{position:absolute;top:1.4rem;left:2.1rem}
-.orb{--p:73;width:190px;height:190px;flex:none;border-radius:50%;position:relative;margin-top:1rem;
+.orb{--p:73;width:190px;height:190px;flex:none;border-radius:50%;position:relative;z-index:3;margin-top:1rem;
   background:conic-gradient(from -90deg, var(--acc1), var(--acc2) calc(var(--p)*1%), var(--orb-track) 0);
   box-shadow:var(--glow) color-mix(in srgb,var(--acc1) 40%,transparent), inset 0 0 40px color-mix(in srgb,var(--acc2) 22%,transparent)}
 :root[data-theme="dark"] .orb{--orb-track:#1B2036} :root[data-theme="light"] .orb{--orb-track:#DDE3F0}
@@ -591,6 +642,17 @@ button.ghost:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var
 .orb .rv b{font-family:var(--font-display);font-weight:300;font-size:3.1rem;line-height:1;color:var(--ink);
   text-shadow:var(--glow) color-mix(in srgb,var(--acc1) 45%,transparent)}
 .orb .rv span{font-family:var(--font-body);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+/* reliable hover/focus tooltip on the readiness ring (native title is flaky; hero2 has overflow:hidden so it sits to the RIGHT, inside the box) */
+.orb-tip{position:absolute;left:calc(100% + 15px);top:50%;transform:translateY(-50%) translateX(-4px);z-index:6;
+  width:max-content;max-width:min(260px,52vw);text-align:left;font:400 .72rem/1.5 var(--font-body);letter-spacing:normal;text-transform:none;
+  background:var(--surface);color:var(--ink2);border:1px solid var(--line);padding:.6rem .75rem;border-radius:9px;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .15s ease, transform .15s ease}
+.orb-tip b{color:var(--ink);font-weight:700}
+/* two arrows: the outer one is the border, the inner (1px in) is the surface face — reads as attached */
+.orb-tip::before,.orb-tip::after{content:"";position:absolute;top:50%;transform:translateY(-50%);border:7px solid transparent}
+.orb-tip::before{right:100%;border-right-color:var(--line)}
+.orb-tip::after{right:calc(100% - 1px);border-width:6px;border-right-color:var(--surface)}
+.orb:hover .orb-tip,.orb:focus-visible .orb-tip{opacity:1;transform:translateY(-50%) translateX(0)}
 .hero2-mid{flex:1;min-width:min(100%,16rem)}
 .hero2-verdict{font-family:var(--font-display);font-weight:300;font-size:1.9rem;line-height:1.2;color:var(--ink);margin:.2rem 0 .5rem}
 .hero2-sub{color:var(--ink2);font-size:.95rem;max-width:46ch}
@@ -724,9 +786,6 @@ button.ghost:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var
 
 /* cheatsheet — glass table, glowing arrows, CLEARLY-STEPPED zebra + visible divider */
 .ref-lead{font-family:var(--font-display);font-weight:400}
-.ref-dom-h{font-family:var(--font-display);font-weight:600;border-bottom:1px solid var(--line)}
-.ref-dnum{background:linear-gradient(135deg,var(--acc1),var(--acc2));color:#04121A}
-.ref-sec-h{color:var(--accent)}
 .ref-tbl{border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface)}
 .ref-tbl td{border-top:1px solid var(--divider)}
 .ref-tbl tr:first-child td{border-top:none}
@@ -837,15 +896,19 @@ const REFERENCE = /*__REFERENCE__*/{};   // bundled quick-reference (see→answe
 const LANG = (HISTORY && HISTORY.learning_language) || "English";
 const UI_I18N = {
   "Russian": {
+    "Topic": "Тема",
     "Failed questions": "Проваленные вопросы",
+    "Breakdown": "Разбор",
     "What gave it away": "Что выдало ответ",
     "So the answer is": "Значит, ответ",
     "Your instinct, and when it is right": "Твой инстинкт и когда он верен",
-    "Show the full question": "Показать вопрос целиком",
+    "your pick": "твой выбор",
+    "Answer stats": "Статистика ответов",
   },
 };
 function t(s){ return (UI_I18N[LANG] || {})[s] || s; }
 
+const TASK_LABELS = (HISTORY && HISTORY.task_labels) || {};   // canonical <d>.<n> -> label (Weaknesses header)
 const DOMAIN_NAMES = {1:"Agentic Architecture & Orchestration",2:"Tool Design & MCP Integration",3:"Claude Code Config & Workflows",4:"Prompt Engineering & Structured Output",5:"Context Management & Reliability"};
 const DOMAIN_SHORT = {1:"Agentic Architecture",2:"Tool Design & MCP",3:"Config & Workflows",4:"Prompt Engineering",5:"Context & Reliability"};
 const DOMAIN_DESC = {1:"Agentic loops & stop_reason, coordinator/subagents, the Task tool, hooks, session state.",2:"Tool descriptions & selection, structured errors, tool_choice, MCP config & primitives, built-in tools.",3:"CLAUDE.md hierarchy, skills vs commands, .claude/rules, plan mode, CI/CD & CLI flags.",4:"Explicit criteria vs vague, few-shot, JSON-schema tool output, validation & retry, Batch API.",5:"Summarisation & case facts, escalation criteria, provenance, sampling & reliability."};
@@ -1264,9 +1327,16 @@ function renderDashboard(){
   }
 
   /* projected score = mean of the last up-to-3 recorded exams' %, referenced to the pass line */
-  const projScored=allExams.filter(e=>examPct(e)!=null).slice().sort((a,b)=>new Date(b.ts||0)-new Date(a.ts||0));
-  const projRecent=projScored.slice(0,3);
-  const proj=projRecent.length?Math.round(projRecent.reduce((s,e)=>s+examPct(e),0)/projRecent.length):null;
+  // Projected exam score: per-domain MOCK accuracy weighted by each domain's share of the real exam
+  // (BLUEPRINT 27/18/20/20/15). Mock-only — external results are never folded in. Falls back to a plain
+  // mock-score average only when no mock carries a per-domain breakdown.
+  const _projAgg={};
+  mockExams.forEach(e=>{ const pd=e.per_domain; if(!pd) return;
+    for(let d=1;d<=5;d++){ const x=pd[String(d)]; if(x&&(x.total||0)>0){ const a=_projAgg[d]||(_projAgg[d]=[0,0]); a[0]+=(x.correct||0); a[1]+=x.total; } } });
+  let _pNum=0,_pDen=0;
+  for(let d=1;d<=5;d++){ const a=_projAgg[d]; if(a&&a[1]>0){ const w=Number(BLUEPRINT[d])||0; _pNum+=(100*a[0]/a[1])*w; _pDen+=w; } }
+  const _mockAvgPct=(()=>{ const ps=mockExams.map(e=>examPct(e)).filter(x=>x!=null); return ps.length?Math.round(ps.reduce((s,x)=>s+x,0)/ps.length):null; })();
+  const proj=_pDen?Math.round(_pNum/_pDen):_mockAvgPct;
 
   let html="";
 
@@ -1306,49 +1376,20 @@ function renderDashboard(){
   }
   const _verdict = proj==null?"Take a mock exam to see where you stand." : (proj>=PASS_PCT?"On track. You are above the pass line." : "Not there yet. Keep drilling to reach the pass line.");
   const _covPct=Math.round(100*answeredUnique/bankTotal);
-  const _mpcts=mockExams.map(e=>examPct(e)).filter(x=>x!=null).slice(-5);
-  const _spark=_mpcts.length?_mpcts.map((p,i)=>`<i class="${i===_mpcts.length-1?'last':''}" style="height:${Math.max(15,Math.min(100,p))}%"></i>`).join(""):'';
-  const _sparkViz=_mpcts.length?`<div class="sviz"><div class="spark">${_spark}</div><span class="cap-inline">${_mpcts.join('·')}</span></div>`:`<div class="sviz"><span class="cap-inline cs-dim">no mock scores yet</span></div>`;
+  // average score across MOCK sittings only (external results are never folded in); powers the readiness card.
+  const _mockPcts=mockExams.map(e=>examPct(e)).filter(x=>x!=null);
+  const _avgMock=_mockPcts.length?Math.round(_mockPcts.reduce((a,b)=>a+b,0)/_mockPcts.length):null;
   html+=`<div class="hero2 reveal" style="--i:1"><span class="eyebrow">Exam readiness</span>`
-    +`<div class="orb" style="--p:${proj==null?0:proj}"><div class="rv"><b>${proj==null?'—':proj+'%'}</b><span>projected</span></div></div>`
+    +`<div class="orb" style="--p:${proj==null?0:proj}" tabindex="0" role="img" aria-label="Projected exam score ${proj==null?'not available':proj+' percent'}, pass line ${PASS_PCT} percent"><div class="rv"><b>${proj==null?'—':proj+'%'}</b><span>projected score</span></div><div class="orb-tip"><b>Real-exam domain weights</b><br>D1 ${BLUEPRINT[1]}% · D2 ${BLUEPRINT[2]}% · D3 ${BLUEPRINT[3]}% · D4 ${BLUEPRINT[4]}% · D5 ${BLUEPRINT[5]}%</div></div>`
     +`<div class="hero2-mid"><div class="hero2-verdict">${_verdict}</div>`
-    +`<div class="hero2-sub">${proj==null?`Answered ${answeredUnique} of ${bankTotal} · ${examsTaken} exam${examsTaken===1?'':'s'} recorded.`:`Projected from your last ${Math.min(3,mockExams.length)} mock exam${Math.min(3,mockExams.length)===1?'':'s'} · pass line ${PASS_PCT}%.`}</div>`
+    +`<div class="hero2-sub">${proj==null?`Answered ${answeredUnique} of ${bankTotal} · ${examsTaken} exam${examsTaken===1?'':'s'} recorded.`:`Projected exam score — your mock accuracy weighted by each domain's share of the real exam · pass line ${PASS_PCT}%.`}</div>`
     +`<div class="hero2-chips">`
-    +`<div class="statcard reveal" style="--i:2"><div class="sk">Accuracy</div><div class="sv">${overallPct==null?'—':overallPct+'%'}</div><div class="sviz"><span class="mini-arc" style="--p:${overallPct==null?0:overallPct}"></span><span class="cap-inline">${seen?correct+' / '+seen+' answered':'no answers yet'}</span></div></div>`
+    +`<div class="statcard reveal" style="--i:2"><div class="sk">Accuracy</div><div class="sv">${overallPct==null?'—':overallPct+'%'}</div><div class="sviz"><span class="mini-arc" style="--p:${overallPct==null?0:overallPct}"></span><span class="cap-inline">${seen?('<span style="color:var(--ok);font-weight:600">'+correct+' right</span>'+((seen-correct)>0?' · <span style="color:var(--bad);font-weight:600">'+(seen-correct)+' wrong</span>':'')):'no answers yet'}</span></div></div>`
     +`<div class="statcard reveal" style="--i:3"><div class="sk">Bank covered</div><div class="sv">${answeredUnique}<small>/${bankTotal}</small></div><div class="sviz" style="display:block"><div class="meter"><i style="width:${_covPct}%"></i></div><div class="sc-cap">${_covPct}% of the bank seen</div></div></div>`
-    +`<div class="statcard reveal" style="--i:4"><div class="sk">Exams taken</div><div class="sv">${examsTaken}</div>${_sparkViz}</div>`
+    +`<div class="statcard reveal" style="--i:4"><div class="sk">Avg mock score</div><div class="sv">${_avgMock==null?'—':_avgMock+'%'}</div><div class="sviz"><span class="mini-arc" style="--p:${_avgMock==null?0:_avgMock}"></span><span class="cap-inline">${mockExams.length?('across '+mockExams.length+' mock exam'+(mockExams.length===1?'':'s')):'no mock exams yet'}</span></div></div>`
     +`</div></div></div>`;
 
-  /* learning progress — shown first after Exam readiness. surface a malformed file instead of zero */
-  if(LEARNING_UNREADABLE){
-    html+=`<section class="block"><h2>Learning progress</h2>
-      <div class="banner warn"><span class="ic">⚠️</span>
-      <div><b>Your <span class="kbd">learning-progress.json</span> could not be read. The JSON is broken.</b> Your progress is not shown. The file is still on disk, so nothing is lost. A tutor session may have written invalid JSON. Run <span class="kbd">python3 data/validate.py --learning ~/.claude/ccaf-progress/learning-progress.json</span> to see what is wrong.</div></div></section>`;
-  }
-  if(lpAnyActivity()){
-    html+=`<section class="block"><h2>Learning progress <span class="count">tutor task-statement coverage · in-tutor drills</span></h2><div class="card pad">`;
-    for(let d=1;d<=5;d++){
-      const ld=learningDomain(d);
-      const status=(ld&&ld.status)||"not_started";
-      const total=(ld&&ld.task_total)||null;
-      const cov=lpCovered(ld);
-      const pct=total?Math.round(100*cov/total):0;
-      const drill=lpLatestDrill(ld);
-      const lv=(ld&&ld.last_visited)||null;
-      html+=`<div class="dbar-row">
-        <div class="dbar-top">
-          <span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>
-          <span class="dname"><b>D${d}</b> <span class="dn-full">${DOMAIN_SHORT[d]}</span></span>
-          <span class="lp-status lp-${esc(status)}">${LP_STATUS_LABEL[status]||esc(status)}</span>
-          <span class="dval">${total?cov+"/"+total+" <small>statements</small>":"<small>not started</small>"}${drill?` <small>· drill ${drill.score}/${drill.total}</small>`:""}${lv?` <small>· seen ${esc(lv)}</small>`:""}</span>
-        </div>
-        <div class="track"><div class="fill" style="width:${pct}%;--dc:var(${DOMAIN_VAR[d]});background:var(--dc)"></div></div>
-      </div>`;
-    }
-    html+=`</div></section>`;
-  }
-
-  /* exam history — shown first, before the per-domain breakdown */
+  /* exam history — shown before the per-domain breakdown */
   html+=`<section class="block"><h2>Exam history <span class="count">${examsTaken} total · mock and external shown separately, never averaged</span></h2>`;
   if(allExams.length) html+=renderTrend(allExams)+`<p class="hint" style="margin-top:.6rem">Hover a point for that sitting's score, mode, misses and per-domain breakdown.</p>`;
   else html+=`<p class="hint">No exams recorded yet.</p>`;
@@ -1395,6 +1436,35 @@ function renderDashboard(){
     </details>`;
   }
   html+=`</section>`;
+
+  /* learning progress — shown below the per-domain breakdown. surface a malformed file instead of zero */
+  if(LEARNING_UNREADABLE){
+    html+=`<section class="block"><h2>Learning progress</h2>
+      <div class="banner warn"><span class="ic">⚠️</span>
+      <div><b>Your <span class="kbd">learning-progress.json</span> could not be read. The JSON is broken.</b> Your progress is not shown. The file is still on disk, so nothing is lost. A tutor session may have written invalid JSON. Run <span class="kbd">python3 data/validate.py --learning ~/.claude/ccaf-progress/learning-progress.json</span> to see what is wrong.</div></div></section>`;
+  }
+  if(lpAnyActivity()){
+    html+=`<section class="block"><h2>Learning progress <span class="count">tutor task-statement coverage · in-tutor drills</span></h2><div class="card pad">`;
+    for(let d=1;d<=5;d++){
+      const ld=learningDomain(d);
+      const status=(ld&&ld.status)||"not_started";
+      const total=(ld&&ld.task_total)||null;
+      const cov=lpCovered(ld);
+      const pct=total?Math.round(100*cov/total):0;
+      const drill=lpLatestDrill(ld);
+      const lv=(ld&&ld.last_visited)||null;
+      html+=`<div class="dbar-row">
+        <div class="dbar-top">
+          <span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>
+          <span class="dname"><b>D${d}</b> <span class="dn-full">${DOMAIN_SHORT[d]}</span></span>
+          <span class="lp-status lp-${esc(status)}">${LP_STATUS_LABEL[status]||esc(status)}</span>
+          <span class="dval">${total?cov+"/"+total+" <small>statements</small>":"<small>not started</small>"}${drill?` <small>· drill ${drill.score}/${drill.total}</small>`:""}${lv?` <small>· seen ${esc(lv)}</small>`:""}</span>
+        </div>
+        <div class="track"><div class="fill" style="width:${pct}%;--dc:var(${DOMAIN_VAR[d]});background:var(--dc)"></div></div>
+      </div>`;
+    }
+    html+=`</div></section>`;
+  }
 
   /* axis tally — computed client-side from per-question axis over the user's misses (always correct
      against the current bank); HISTORY.axis_tally is only a fallback when the bank carries no axis. */
@@ -1496,11 +1566,16 @@ function renderReference(){
       const rows=(sec.rows||[]).filter(r=>refMatchesQuery(r,refState.q));
       if(!rows.length) return "";
       const trs=rows.map(r=>`<tr><td class="see">${rich(r.see||"")}</td><td class="ans"><span class="arw">→</span>${rich(r.answer||"")}</td></tr>`).join("");
-      return `<div class="ref-sec"><div class="ref-sec-h">${esc(sec.title||"")}</div><table class="ref-tbl"><tbody>${trs}</tbody></table></div>`;
+      // split "n.n label" into a coloured number kicker + big title (treatment B); validate.py guarantees the leading <d>.<n>
+      const st=String(sec.title||""); const sm=st.match(/^(\S+)\s+([\s\S]+)$/);
+      const secHead=sm
+        ? `<div class="ref-sec-h" style="--dc:var(${dvar})"><span class="ref-sec-num">${esc(sm[1])}</span><span class="ref-sec-title">${esc(sm[2])}</span></div>`
+        : `<div class="ref-sec-h" style="--dc:var(${dvar})"><span class="ref-sec-title">${esc(st)}</span></div>`;
+      return `<div class="ref-sec">${secHead}<table class="ref-tbl"><tbody>${trs}</tbody></table></div>`;
     }).filter(Boolean).join("");
     if(!secs) return;
     any=true;
-    html+=`<div class="ref-dom"><div class="ref-dom-h"><span class="ref-dnum" style="background:var(${dvar})">D${d}</span>${esc(dv.title||"")}</div>${secs}</div>`;
+    html+=`<div class="ref-dom" style="--dc:var(${dvar})"><div class="ref-dom-h"><span class="ref-dnum">D${d}</span>${esc(dv.title||"")}</div><div class="ref-dom-sub">${esc(DOMAIN_DESC[d]||"")}</div>${secs}</div>`;
   });
   if(!any) html+=`<p class="ref-empty">No rows match “${esc(refState.q)}”.</p>`;
   root.innerHTML=html;
@@ -1533,42 +1608,52 @@ function cheatBeat(label,html,cls){
 // One failed question = its own collapsed <details>. Summary: the decision headline + axis badge + the
 // exam (date + ordinal) it was most-recently missed in + a ✓right ✗wrong tally. Body: rule + the three
 // beats + the full question. Domain is NOT shown here — the topic card header already carries it.
-function wkQuestion(e, ords, ma){
-  const axisB=(e.axis>=1&&e.axis<=5)?`<span class="axisbadge" title="${esc(AXIS_DESC[e.axis]||"")}">Axis ${e.axis} · ${esc(AXIS_NAMES[e.axis]||"")}</span>`:"";
-  /* headline = the decision (fall back to legacy trigger if an old entry hasn't been re-authored) */
-  const head=e.decision?rich(e.decision):(e.trigger?rich(e.trigger):'<span class="cs-dim">—</span>');
-  const meta=questionExamMeta(e,ords);
-  const examTxt=(meta.n?`Exam #${meta.n}`:"Exam")+(meta.date?` · ${esc(meta.date)}`:"");
+// One failed question = its own collapsed <details>. The summary IS the question stem, clamped to two lines
+// (it un-clamps to the full stem when opened — no repeated question). Body: options (my wrong pick red, the
+// correct one green) → Разбор panel (rule + the three beats + axis chip) → Статистика ответов panel (attempt
+// history). Fallbacks: an imported entry with no bank stem uses the decision headline; no options / no history
+// simply omit that part. Domain is NOT shown here — the topic card header already carries it.
+function wkQuestion(e, ords){
+  const q=BANK.find(x=>String(x.id)===String(e.qid));
+  const stem=(q&&q.stem)?rich(q.stem):(e.decision?rich(e.decision):(e.trigger?rich(e.trigger):'<span class="cs-dim">—</span>'));
+  const axisB=(e.axis>=1&&e.axis<=5)?`<span class="wk-axis" title="${esc(AXIS_DESC[e.axis]||"")}">Axis ${e.axis} · ${esc(AXIS_NAMES[e.axis]||"")}</span>`:"";
+  const opts=wkOptions(q,e);
+  const tl=wkTimeline(e.qid,ords);
   const answerLbl=`${esc(t("So the answer is"))} <span class="cs-tick">✓</span>`;
   return `<details class="wk-q">
-    <summary>
-      <span class="wk-q-head">${head}</span>
-      <span class="wk-q-meta">${axisB}<span class="wk-q-exam">${examTxt}${wkTally(ma,e.qid)}</span></span>
-    </summary>
+    <summary><span class="wk-chev">▶</span><span class="wk-stem">${stem}</span></summary>
     <div class="wk-q-body">
-      ${e.rule?`<div class="cs-rule">${rich(e.rule)}</div>`:""}
-      <div class="cs-body">
-        ${cheatBeat(esc(t("What gave it away")), e.signal?rich(e.signal):"")}
-        ${cheatBeat(answerLbl, e.answer?rich(e.answer):"", "cs-answer")}
-        ${cheatBeat(esc(t("Your instinct, and when it is right")), e.flip?rich(e.flip):"", "cs-flip")}
+      ${opts?`<ul class="cs-opts">${opts}</ul>`:""}
+      <div class="wk-panel wk-p-b">
+        <div class="wk-ph"><span class="wk-ico">✎</span>${esc(t("Breakdown"))}${axisB}</div>
+        <div class="cs-body">
+          ${e.rule?`<div class="cs-rule">${rich(e.rule)}</div>`:""}
+          ${cheatBeat(esc(t("What gave it away")), e.signal?rich(e.signal):"")}
+          ${cheatBeat(answerLbl, e.answer?rich(e.answer):"", "cs-answer")}
+          ${cheatBeat(esc(t("Your instinct, and when it is right")), e.flip?rich(e.flip):"", "cs-flip")}
+        </div>
       </div>
-      ${cheatScenario(e)}
+      ${wkStatsPanel(tl)}
     </div>
   </details>`;
 }
-function cheatScenario(e){
-  const q=BANK.find(x=>String(x.id)===String(e.qid));
-  if(!q||!q.stem) return "";
-  let opts="";
-  if(q.options){ opts=Object.keys(q.options).map(L=>{
+// options list for a failed question: correct = green, my wrong pick = red "твой выбор". "" if not in the bank.
+function wkOptions(q,e){
+  if(!q||!q.options) return "";
+  return Object.keys(q.options).map(L=>{
     const isC=L===e.correct, isP=L===e.your_pick;
     const cls=isC?" cs-o-correct":(isP?" cs-o-pick":"");
-    const tag=isC?`<span class="cs-o-mk">✓</span>`:(isP?`<span class="cs-o-tag">your pick</span>`:"");
+    const tag=isC?`<span class="cs-o-mk">✓</span>`:(isP?`<span class="cs-o-tag">${esc(t("your pick"))}</span>`:"");
     return `<li class="cs-o${cls}"><span class="cs-o-l">${esc(L)}</span><span class="cs-o-t">${esc(q.options[L])}</span>${tag}</li>`;
-  }).join(""); }
-  return `<details class="cs-scenario"><summary>${esc(t("Show the full question"))}</summary>
-    <div class="cs-stem">${rich(q.stem)}</div>
-    ${opts?`<ul class="cs-opts">${opts}</ul>`:""}</details>`;
+  }).join("");
+}
+// bottom "Статистика ответов" panel: ✗n · ✓n summary + one row per attempt (✓/✗ · Exam #N · date). "" if none.
+function wkStatsPanel(tl){
+  if(!tl.length) return "";
+  const bad=tl.filter(a=>!a.correct).length, ok=tl.length-bad;
+  const rows=tl.map(a=>`<li class="${a.correct?'ok':'bad'}"><span class="mk">${a.correct?'✓':'✗'}</span><span>${examLbl(a)}</span></li>`).join("");
+  const sum=`<span class="wk-stat-sum"><span class="bad">✗ ${bad}</span> · <span class="ok">✓ ${ok}</span></span>`;
+  return `<div class="wk-panel wk-p-s"><div class="wk-ph"><span class="wk-ico">∑</span>${esc(t("Answer stats"))}${sum}</div><ul class="wk-stat-list">${rows}</ul></div>`;
 }
 // Minimal block markdown for a cheatsheet note: `## heading`, `- bullet`, blank-line paragraphs;
 // inline `code`/**bold**/*italic* via rich(). No question, no answer letters — a topic study note.
@@ -1583,7 +1668,7 @@ function mdBlock(md){
     else if(line.slice(0,2)==="- "){
       let item=line.slice(2), hit=false;
       if(item.slice(0,6)==="[you] "){ hit=true; item=item.slice(6); }   // the trap the learner fell for
-      li+= hit ? '<li class="cs-c-hit">'+rich(item)+'<span class="cs-c-hit-b">your pick</span></li>'
+      li+= hit ? '<li class="cs-c-hit">'+rich(item)+'<span class="cs-c-hit-b">'+esc(t("your pick"))+'</span></li>'
                : "<li>"+rich(item)+"</li>";
     }
     else { flush(); html+='<p class="cs-c-p">'+rich(line)+"</p>"; }
@@ -1604,22 +1689,20 @@ function examOrdinals(){
     .forEach(e=>{ if(!(e.exam_id in map)){ n++; map[e.exam_id]={n:n,date:fmtDate(e.ts,'short')}; } });
   return map;
 }
-// The exam a failed question was MOST-RECENTLY missed in (date + ordinal), from answered[qid].misses.
-function questionExamMeta(e,ords){
-  const a=(HISTORY.answered&&HISTORY.answered[String(e.qid)])||null;
-  let latest=null;
-  if(a&&Array.isArray(a.misses)){ a.misses.forEach(m=>{ if(m&&m.exam_id){
-    if(!latest||String(m.ts||"").localeCompare(String(latest.ts||""))>0) latest=m; }}); }
-  if(latest&&ords[latest.exam_id]) return {n:ords[latest.exam_id].n, date:ords[latest.exam_id].date};
-  return {n:null, date:fmtDate(e.last_ts||e.first_ts,'short')};   // fallback: entry ts, no ordinal
+// Full per-question attempt timeline (recorded `log` + local pending), oldest→newest, each mapped to the
+// exam (#N + date) it happened in via examOrdinals. `log` = [{exam_id, correct, ts}] injected by build-app.py.
+// Fallback: an entry with no `log` (legacy build) → derive red-only dots from `misses`.
+function wkTimeline(qid, ords){
+  const a=(HISTORY.answered&&HISTORY.answered[String(qid)])||null;
+  const raw=[];
+  if(a&&Array.isArray(a.log)&&a.log.length){ a.log.forEach(x=>{ if(x) raw.push({exam_id:x.exam_id, correct:!!x.correct, ts:x.ts}); }); }
+  else if(a&&Array.isArray(a.misses)){ a.misses.forEach(m=>{ if(m) raw.push({exam_id:m.exam_id, correct:false, ts:m.ts}); }); }
+  pending.forEach(p=>(p.answers||[]).forEach(x=>{ if(String(x.id)===String(qid))
+    raw.push({exam_id:p.exam_id, correct:!!x.is_correct, ts:p.ts}); }));
+  raw.sort((x,y)=>String(x.ts||"").localeCompare(String(y.ts||"")));   // chronological
+  return raw.map(x=>{ const o=ords[x.exam_id]; return {correct:x.correct, n:o?o.n:null, date:o?o.date:fmtDate(x.ts,'short')}; });
 }
-// per-question right/wrong tally (✓ correct · ✗ wrong across all attempts) for the Weaknesses cards
-function wkTally(merged,qid){
-  const m=merged[String(qid)]; if(!m) return "";
-  const r=m.right||0, w=m.wrong||0;
-  if(!r&&!w) return "";
-  return `<span class="wk-tally"><span class="ok">✓${r}</span> <span class="bad">✗${w}</span></span>`;
-}
+function examLbl(a){ return (a.n?("Exam #"+a.n):"Exam")+(a.date?" · "+esc(a.date):""); }
 // ---------- Weaknesses: per-topic study note + a collapsible list of the exact failed questions ----------
 function renderWeakness(){
   const v=$("#view-weakness");
@@ -1642,21 +1725,42 @@ function renderWeakness(){
   const order=[], groups={};
   shown.forEach(e=>{ const k=topicKey(e); if(!(k in groups)){ groups[k]=[]; order.push(k); } groups[k].push(e); });
   const ords=examOrdinals();
-  const ma=mergedAnswered();
   const body = order.length ? order.map(k=>{
     const items=groups[k];                 // already newest-first
     const lead=items[0];                   // newest entry
     const src=items.find(e=>e.note||e.task)||lead;   // header note/task from the newest entry that has them
-    const tag=`Domain ${esc(lead.domain||"?")}${src.task?" · "+rich(src.task):""}`;
-    const note=src.note?mdBlock(src.note):"";
-    const qlist=items.map(e=>wkQuestion(e,ords,ma)).join("");   // each failed question is its own collapsible
-    return `<article class="cs-card cs-compact">
-      <div class="cs-c-tag">${tag}</div>
-      ${note}
-      <div class="wk-qwrap">
-        <div class="wk-qlabel">${esc(t("Failed questions"))} · ${items.length}</div>
-        ${qlist}
-      </div>
+    // header (treatment B): domain-coloured kicker "Domain N · <short name>" + big title "<n.n> <task label>".
+    // The task label is the CANONICAL one from task-statements.json (TASK_LABELS); falls back to the number,
+    // then to the domain name, so an entry with no task still gets a header. Rail/rule tint = the domain colour.
+    const dnum=lead.domain, dvar=DOMAIN_VAR[dnum]||"--accent2";
+    const dshort=DOMAIN_SHORT[dnum]||"";
+    const kicker=`Domain ${esc(dnum||"?")}${dshort?" · "+esc(dshort):""}`;
+    const tnum=src.task?String(src.task).trim():"";
+    const tlabel=(tnum&&TASK_LABELS[tnum])?TASK_LABELS[tnum]:"";
+    const wkTitle=tnum
+      ? `<span class="num">${esc(tnum)}</span>${tlabel?" "+rich(tlabel):""}`
+      : esc(DOMAIN_NAMES[dnum]||("Domain "+dnum));
+    // Each failed question is a UNIT paired with ITS OWN theme (the entry's `note` = a sub-topic of the task),
+    // so which theme belongs to which question is unambiguous. The theme is a chevron summary (click to drop
+    // its note); a light thread joins it to the question. A note-less entry renders as just the question.
+    const unitsHtml=items.map(e=>{
+      const n=String(e.note||"").trim();
+      let theme="";
+      if(n){
+        const hm=n.match(/^\s*##\s*(.+)$/m);
+        const title=hm?hm[1].trim():(e.topic?String(e.topic).trim():"");
+        const body=hm?n.replace(hm[0],"").replace(/^\n+/,""):n;
+        const sum=title
+          ? `<span class="tlabel">${esc(t("Topic"))}:</span>&nbsp;<span class="th-title">${rich(title)}</span>`
+          : `<span class="th-title">${esc(t("Topic"))}</span>`;
+        theme=`<details class="wk-theme"><summary><span class="wk-chev">▶</span>${sum}</summary>${body?`<div class="wk-theme-note">${mdBlock(body)}</div>`:""}</details>`;
+      }
+      return `<div class="wk-unit">${theme}${wkQuestion(e,ords)}</div>`;
+    }).join("");
+    return `<article class="cs-card cs-compact" style="--dc:var(${dvar})">
+      <div class="wk-head"><div class="wk-kicker">${kicker}</div><div class="wk-title">${wkTitle}</div></div>
+      <div class="wk-qlabel">${esc(t("Failed questions"))} · ${items.length}</div>
+      ${unitsHtml}
     </article>`;
   }).join("") : '<p class="hint">Nothing matches this filter.</p>';
   const topicCount=order.length;
@@ -1672,9 +1776,12 @@ function renderWeakness(){
     const s2=$("#wkSearch"); if(s2){ s2.focus(); try{s2.setSelectionRange(val.length,val.length);}catch(e){} } }; }
 }
 
-// topicKey groups cheatsheet entries into ONE Weaknesses topic card (uses e.topic, else the note's first
-// `## ` heading, else `q<qid>` so a note-less entry still gets its own card and is never lost).
+// topicKey groups cheatsheet entries into ONE Weaknesses topic card. The canonical grouping is the
+// task statement `<d>.<n>` (schema: the single source of truth for which sub-topic a question tests), so
+// every miss of e.g. 2.3 lands in one card regardless of the per-miss `topic`/note wording. Falls back to
+// `e.topic`, then the note's first `## ` heading, then `q<qid>` so a task-less/note-less entry is never lost.
 function topicKey(e){
+  if(e.task) return "t:"+String(e.task).trim();
   if(e.topic) return String(e.topic).trim().toLowerCase();
   const m=String(e.note||"").match(/^\s*##\s*(.+)$/m);   // fall back to the note's first heading
   return m?m[1].trim().toLowerCase():("q"+e.qid);

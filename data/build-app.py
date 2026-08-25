@@ -53,6 +53,14 @@ try:
 except Exception:
     REFERENCE = {}   # graceful: the Reference tab shows a hint if the file is missing/unreadable
 
+# task-statement labels (<d>.<n> -> human label) — the CANONICAL label source (task-statements.json).
+# Injected read-only so the Weaknesses card header can show "2.3 tool distribution & tool_choice" instead of
+# just the number. Graceful: {} if the file is missing/unreadable -> the header falls back to the number.
+try:
+    TASK_LABELS = (json.load(open(f"{ROOT}/data/task-statements.json")) or {}).get("statements", {}) or {}
+except Exception:
+    TASK_LABELS = {}
+
 # ---- stats.json (authoritative history); READ-ONLY here. Same ABSENT vs PRESENT-BUT-CORRUPT
 # discipline as load_learning/load_cheatsheet + God Rule #11: a malformed real file is backed up to
 # .bak and SURFACED (never silently skeleton-recreated / never crashing the whole build). ----
@@ -130,14 +138,18 @@ def load_language(path):
         return "English"
 LANG = load_language(f"{STORE}/settings.json")
 
-# answered: transform the store's {attempts:[...], last_correct} -> {last_correct, attempts:<count>, last_ts, misses:[...]}
+# answered: transform the store's {attempts:[...], last_correct} -> {last_correct, attempts:<count>, last_ts, misses:[...], log:[...]}
 # last_ts (ISO ts of the MOST RECENT attempt) drives the app's spaced-repetition "due" term in weak mode.
 # misses = the wrong attempts as {exam_id, ts} — lets the Weaknesses tab tie each failed question to the
 # exam (date + ordinal) it was missed in. Empty for compact/older records with no per-attempt list.
+# log = the FULL per-attempt timeline {exam_id, correct, ts} (both right AND wrong, chronological) — powers
+# the Weaknesses per-question exam-history dots + table (green=correct/red=wrong per exam). `misses`/`right`/
+# `wrong` are derived summaries of the same list, kept for the trend tooltip + tally + `failed` mock mode.
 answered = {}
 for qid, rec in (stats.get("answered") or {}).items():
     att = rec.get("attempts")
     misses = []
+    log = []
     right = wrong = 0
     if isinstance(att, list):
         count = len(att)
@@ -145,7 +157,9 @@ for qid, rec in (stats.get("answered") or {}).items():
         last_ts = last.get("ts") if isinstance(last, dict) else None
         for a in att:
             if isinstance(a, dict):
-                if a.get("correct"):
+                ok = bool(a.get("correct"))
+                log.append({"exam_id": a.get("exam_id"), "correct": ok, "ts": a.get("ts")})
+                if ok:
                     right += 1
                 else:
                     wrong += 1
@@ -154,7 +168,7 @@ for qid, rec in (stats.get("answered") or {}).items():
     else:
         count = att if isinstance(att, int) else 1
         last_ts = rec.get("last_ts")  # fallback for a compact/older record shape (no per-attempt breakdown)
-    answered[str(qid)] = {"last_correct": bool(rec.get("last_correct")), "attempts": count, "last_ts": last_ts, "misses": misses, "right": right, "wrong": wrong}
+    answered[str(qid)] = {"last_correct": bool(rec.get("last_correct")), "attempts": count, "last_ts": last_ts, "misses": misses, "log": log, "right": right, "wrong": wrong}
 
 per_domain = stats.get("per_domain") or {str(d): {"seen":0,"correct":0} for d in range(1,6)}
 exam_history = stats.get("exam_history") or []
@@ -215,6 +229,7 @@ HISTORY = {
     "cheatsheet_unreadable": CHEATSHEET_UNREADABLE,
     "stats_unreadable": STATS_UNREADABLE,
     "learning_language": LANG,   # localizes only the Weaknesses content-labels; rest of the chrome stays English
+    "task_labels": TASK_LABELS,  # canonical <d>.<n> -> label map for the Weaknesses card header (read-only)
 }
 
 tpl = open(f"{ROOT}/data/app-template.html").read()

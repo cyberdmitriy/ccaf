@@ -19,8 +19,12 @@ confirmation before editing** (see God Rule #8).
 
 ## God Rules (never skip, no exceptions)
 
-1. **Think deeply before proposing.** Before suggesting any change, analyze the affected skill/command/bank/app/progress-store for gaps, trade-offs, learner-facing impact, and regressions — e.g. does a bank edit break `stats.json` id references? does an app change break the three `/*__BANK__*/`/`/*__HISTORY__*/`/`/*__REFERENCE__*/` placeholders or the graceful-degrade paths? does a lesson edit still match the Exam Guide? Surface anything non-obvious.
-2. **Fix the cause, not the symptom.** (This is literally axis 5 — the plugin teaches it; hold yourself to it.) If only a workaround is available, say so explicitly, name the root cause it leaves unresolved, propose the proper fix, and ask which to do — never silently ship a workaround or a symptom patch (e.g. a silent fallback that hides bad data).
+1. **Reason before you propose — PRINT the checkpoint, don't just intend it.** A rule you only intend to follow is the failure this replaces: this rule and #2 existed as prose and got skipped anyway. So before ANY non-trivial proposal or edit, emit these four lines in the turn; a blank or hand-wavy line is the visible tell that you skipped the thinking, and I will call it:
+   - **Pattern** — the general class this case belongs to. One file/bug/lesson is an *example*, not the unit of work; if the same thing can recur elsewhere, the fix lives at the class level, never one spot at a time (fixing only where it was noticed is wrong even when I point at that spot).
+   - **Union or either/or** — before writing "not X, but Y", check: is it both? is it a union? Most "pick one" framings are wrong; combine for completeness unless one genuinely excludes the other.
+   - **Grounded in** — the exact file + line you READ to back each claim about the schema/app/bank/design; assert nothing from memory, mark anything unread as unverified. Here also weigh the concrete regressions: a bank edit vs `stats.json` id refs, an app edit vs the `/*__BANK__*/`/`/*__HISTORY__*/`/`/*__REFERENCE__*/` placeholders + graceful-degrade paths, a lesson edit vs the Exam Guide.
+   - **Root cause** — the actual cause, not the symptom's location (see #2). Prefer an honest "both / it depends / not verified" over a tidy answer that is wrong.
+2. **Fix the cause, not the symptom (the checkpoint's Root-cause line is binding).** This is literally axis 5 — the plugin teaches it; hold yourself to it. Never ship a workaround or symptom patch (e.g. a silent fallback that hides bad data, or a fix applied only to the one spot where a general problem surfaced). If only a workaround fits, say so explicitly, name the root cause it leaves unresolved, propose the proper fix, and ask which to do.
 3. **Follow existing patterns, never invent.** Before adding anything, read a sibling first and match it exactly: a command → `commands/{init,result}.md`; a skill → an existing `SKILL.md` frontmatter (`disable-model-invocation: true`, `allowed-tools`, `argument-hint`); a question → a `questions.json` entry (schema below); a stored audit → `maintenance/*.workflow.js`. Place logic where the **architecture** dictates, not where convenient: runtime data → `data/`; maintainer-only → `maintenance/`; per-user state → `~/.claude/ccaf-progress/`. If no precedent exists, ask.
 4. **Ask, don't guess.** If a requirement is ambiguous, ask a clarifying question before implementing. Never assume intent.
 5. **Explain before acting.** Before non-trivial changes, briefly say what you'll do and why, then confirm. (Small, obviously-correct edits with clear instruction may proceed — state them in the result.)
@@ -86,9 +90,9 @@ explanatory prose (tutors, `/ccaf:fail-analysis`, and the `/ccaf:result` `cheats
 Question stems/options/answers, verbatim signal phrases, and API tokens stay English always; the mock
 exam is English-only. The read rule lives once in `data/teaching-method.md` (Rule 0c). The app chrome is
 NOT localized, with ONE carve-out: the handful of **content-labels in the Weaknesses tab** that sit
-directly on the localized cheatsheet prose (`Failed questions`, `What gave it away`, `So the answer is`,
-`Your instinct, and when it is right`, `Show the full question`) ARE localized, so an English label never
-sits over Russian text. Mechanism: `build-app.py` injects `learning_language` into `HISTORY`, and the
+directly on the localized cheatsheet prose (`Topic`, `Failed questions`, `Breakdown`, `What gave it away`,
+`So the answer is`, `Your instinct, and when it is right`, `your pick`, `Answer stats`) ARE localized, so an
+English label never sits over Russian text. Mechanism: `build-app.py` injects `learning_language` into `HISTORY`, and the
 template's `UI_I18N` table + `t()` helper map only these keys, falling back to English for any language not
 in the table (free-form language safe). Adding a language = one `UI_I18N` block; localizing more chrome =
 add the key to every block. All other chrome (nav, dashboard, mock exam) stays English.

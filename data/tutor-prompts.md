@@ -49,6 +49,9 @@ Checking for assistant text content as a completion indicator (e.g., "if the res
 
 Teach the distinction between model-driven decision-making (Claude reasons about which tool to call based on context) versus pre-configured decision trees or tool sequences. The exam favours model-driven approaches for flexibility, but programmatic enforcement for critical business logic (covered in 1.4).
 Practice scenario: Present a case where a developer's agent sometimes terminates prematurely because they check if response.content[0].type == "text" to determine completion. Ask the student to identify the bug and fix it.
+
+Teach batching to cut round-trips: prompt Claude to batch multiple tool requests in one turn, then return all tool results together before the next API call (e.g. `get_customer` + `lookup_order` requested upfront, not in separate sequential turns). NOT composite/bundled tools (`get_customer_with_orders`), NOT speculative execution of likely-needed tools, NOT raising `max_tokens`.
+Nuance on iteration caps: a cap is acceptable as a SECONDARY runaway backstop (bug / pathological input burning tokens) while `stop_reason` stays the PRIMARY completion signal. The anti-pattern is the cap AS the primary stop — not the cap existing alongside correct stop_reason handling.
 TASK STATEMENT 1.2: MULTI-AGENT ORCHESTRATION
 Teach the hub-and-spoke architecture:
 
@@ -78,6 +81,12 @@ The root cause is the coordinator's decomposition, not any downstream agent
 The exam expects students to trace failures to their origin
 
 Practice scenario: A multi-agent research system produces a report on "renewable energy technologies" that only covers solar and wind, missing geothermal, tidal, biomass, and nuclear fusion. Present four answer options targeting different components of the system. The correct answer identifies the coordinator's task decomposition as the root cause.
+
+Teach proportional delegation: the coordinator does trivial or well-scoped work itself and answers follow-ups from its own context (Q7 — don't re-spawn a synthesis subagent or re-pass 80K tokens it already holds); it delegates only large multi-file work (Q126 — delegate the 60-file rename, handle the single-file health-check directly). Overhead-avoidance dodges (prompt caching, pre-generated cached summaries) are the wrong fix.
+Teach data-dependency ordering: when one agent's output feeds the others, run the producer first, then parallelize the now-independent consumers (Q133 — code reviewer first, then test-writer + doc-writer in parallel). NOT a shared memory store, NOT strict all-sequential.
+Teach attention dilution: when many files degrade accuracy mid-task, delegate scoped work to fresh-context Explore subagents (Q14, Q66, Q129) — not /compact, not /clear + scratchpad, not Grep to shrink the footprint. Isolating verbose discovery in a subagent that returns a summary keeps the main context clean.
+Teach conflicting-source handling: a subagent annotates both values with source attribution and defers the reconciliation to the coordinator (Q70) — never pick a winner by credibility heuristic, never halt/escalate before finishing the analysis, never pass both figures unflagged.
+Teach content-appropriate synthesis rendering: render each content type in its native form — tables for financial data, prose for news (Q3) — don't flatten everything to bullets/JSON, and don't add a common intermediate representation layer.
 TASK STATEMENT 1.3: SUBAGENT INVOCATION AND CONTEXT PASSING
 Teach the Task tool:
 
@@ -174,6 +183,12 @@ Fix: split large reviews into per-file local analysis passes PLUS a separate cro
 The per-file passes catch local issues consistently; the integration pass catches cross-file data flow issues
 
 Practice scenario: A code review of 14 files produces detailed feedback for some files but misses obvious bugs in others, and flags a pattern as problematic in one file while approving identical code elsewhere. Ask the student to identify the problem (attention dilution in single-pass review) and the solution (multi-pass architecture).
+
+Teach entry-point-driven exploration (understanding a large/unfamiliar codebase, e.g. 800+ files):
+Grep for entry points (login, token verify, middleware), read those, then follow imports and function calls outward — map the flow incrementally. Grounded, fits context limits.
+Anti-pattern: read every file whose name/content matches a keyword ("auth", "token", "permission") — exhaustive upfront reading blows context and still misses the real call edges.
+Anti-pattern: fan out parallel subagents per service before any entry point is found (premature parallelism, no grounding); likewise offloading file-selection to the human defeats the point.
+Practice scenario: engineer wants to understand the auth architecture of an 800+ file codebase. Options: parallel subagents per service / read all keyword-matching files / read CLAUDE.md+README then ask the human to name 10-15 files / Grep entry points then follow imports. Correct is the incremental entry-point navigation.
 TASK STATEMENT 1.7: SESSION STATE AND RESUMPTION
 Teach the session management options:
 
@@ -248,6 +263,10 @@ Keyword-sensitive instructions in system prompts can create unintended tool asso
 Always review system prompts for conflicts after updating tool descriptions
 
 Practice scenario: An agent routes "check the status of order #12345" to get_customer instead of lookup_order. Both descriptions say "Retrieves [entity] information." Present four fixes and walk through why better descriptions is the correct first step.
+
+Few-shot is the RIGHT fix when descriptions already work: single-concern at 94% means the model understands the tools; the multi-concern accuracy drop (58%, addresses one concern or mixes up parameters) is a reasoning/sequence gap. Add few-shot demonstrating the multi-concern reasoning and tool sequence. NOT a decompose-preprocessing layer (separate model call, adds latency), NOT tool consolidation, NOT response-validation re-prompting.
+Effective few-shot design: 4-6 examples targeting the AMBIGUOUS cases (e.g. "my recent purchase"), each showing explicit comparative reasoning for why one tool was chosen over the plausible alternative. Beats 10-15 unambiguous examples (no problem there), beats grouping examples by tool, and beats declarative "use when / do not use when" rules alone for nuanced decisions.
+Deterministic guarantee vs probable: a `PreToolUse` hook BLOCKS the call outside the model — the only hard guarantee for a destructive tool (e.g. `delete_record`) that must never run without explicit approval. A tool description, system-prompt rule, or few-shot example is something the model reads, so it only makes confirmation LIKELY — the model can still call the tool unprompted. Hard-guarantee requirement -> pick the hook.
 TASK STATEMENT 2.2: STRUCTURED ERROR RESPONSES
 Teach the MCP isError flag pattern for communicating failures back to the agent.
 Teach the four error categories:
@@ -348,6 +367,13 @@ Only build custom servers for team-specific workflows that community servers can
 Enhance MCP tool descriptions to prevent the agent from preferring built-in tools (like Grep) over more capable MCP tools
 
 Practice scenario: A team needs to integrate with Jira. One developer proposes building a custom MCP server. Ask the student why community servers should be evaluated first and when a custom build is justified.
+
+Teach same-name tool collisions across scopes:
+Two servers can expose an identically-named tool (e.g. a project `.mcp.json` prod DB + a personal `~/.claude.json` staging DB) — both `query_postgres` load, and a context-free prompt like 'check user count' gives the model no cue which to pick.
+Fix has TWO parts: (1) make them structurally distinct — rename the personal tool to a distinct id (query_postgres_staging) and put the target environment in its description; (2) add an explicit session routing instruction ('staging takes precedence this session').
+Description tuning ALONE cannot route a context-free prompt — with no environment cue in the user's words, a richer description still leaves the pick ambiguous. Structural rename + a routing rule is what resolves it.
+Do the rename in the developer's own `~/.claude.json` so it never touches the shared team config.
+Exam trap: distractors that mutate shared team state (editing/removing from `.mcp.json`), pin the agent with forced `tool_choice`, or 'disambiguate by identical scope' — all wrong; keep the change local and structural.
 TASK STATEMENT 2.5: BUILT-IN TOOLS
 Teach the Grep vs Glob distinction:
 
@@ -369,6 +395,8 @@ Do NOT read all files upfront. This is a context-budget killer.
 Trace function usage across wrapper modules by first identifying exported names, then searching for each name across the codebase
 
 Practice scenario: A developer needs to find all files that call a specific deprecated function and also find all test files for those callers. Walk through the correct tool sequence: Grep for the function name (finds callers), Glob for test files matching the caller filenames.
+
+To change EVERY occurrence of a string in one file (e.g. rename a variable appearing 12×): `Edit` with `replace_all: true` in a single operation. NOT one Edit per occurrence with unique context, NOT Read + Write, NOT Bash `sed`.
 
 TASK STATEMENT 2.6: MCP TOOL SEARCH & PROTOCOL MECHANICS
 Teach the three MCP primitives by initiator: tool (model-controlled action), resource (app-controlled read-only data), prompt (user-controlled template = a slash command in Claude Code). Do NOT expose read-only data as a tool (invites exploratory calls) or a user-workflow as a tool (fires at the wrong time).
@@ -467,6 +495,10 @@ Path-scoped rules load ONLY when editing matching files
 Reduces irrelevant context and token usage compared to always-loaded instructions
 
 Practice scenario: A codebase has test files co-located with source files throughout 50+ directories. The team wants all tests to follow the same conventions. Present four options: A) path-specific rules with glob, B) CLAUDE.md in every directory, C) single root CLAUDE.md, D) skills. Walk through why A wins.
+
+Also teach hooks here (the bank tests them under 3.3): rules/globs load conventions the model still reads, so enforcement stays probabilistic. A hook runs OUTSIDE the model, so it is deterministic.
+PostToolUse hook = deterministic post-write enforcement. Runs a formatter/linter/validator on the COMPLETED file after the tool call, on every matching Edit/Write. Use it when the requirement is 'on every edit', not 'usually'. Formatting/linting acts on finished output, so it is PostToolUse, NEVER PreToolUse.
+PreToolUse hook = deny/block BEFORE the tool runs. Evaluates the target path and blocks a write to a forbidden path (e.g. /secrets) before it executes. The ONLY hard, no-exceptions guarantee — CLAUDE.md text and .claude/rules can be ignored.
 TASK STATEMENT 3.4: PLAN MODE VS DIRECT EXECUTION
 Teach the decision framework:
 Plan mode when:
@@ -516,6 +548,10 @@ Show 2-3 examples of the expected transformation
 The model generalises from examples more reliably than from descriptions
 
 Practice scenario: A developer describes a code transformation in prose. Claude Code interprets it differently each time. Ask the student what technique to try first (concrete input/output examples) and why.
+
+Teach communicating a pure visual/render bug:
+Renders wrong but no exception and the source looks fine (overlap, clipped tooltip): the defect lives only in the rendered output.
+Send a screenshot of the broken state plus the reproduction steps. Do NOT paste the source and describe it in prose, and there is no console/stack trace to copy.
 TASK STATEMENT 3.6: CI/CD INTEGRATION
 Teach the -p flag:
 
@@ -545,6 +581,11 @@ Teach CLAUDE.md for CI:
 Document testing standards, valuable test criteria, and available fixtures
 CI-invoked Claude Code uses this to generate high-quality tests
 Without it, test generation produces low-value boilerplate
+
+Teach bounding a runaway CI run:
+`--max-turns N` caps the loop; `--max-budget-usd X` enforces a dollar ceiling DURING the run (stops before it exceeds X). Use both.
+Post-hoc: parsing `total_cost_usd` from `--output-format json` only DETECTS overspend after the money is spent — never prevents it.
+`timeout` bounds wall-clock seconds; a cheaper `--model` lowers per-token rate — neither caps total spend. This is Q211.
 
 TASK STATEMENT 3.7: SYSTEM-PROMPT & STARTUP FLAGS (CLI)
 Teach the system-prompt CLI flags (append vs replace):
@@ -649,6 +690,15 @@ Optional/nullable fields when source may not contain information. PREVENTS FABRI
 "other" + freeform detail string for extensible categorisation
 Format normalisation rules in prompts alongside strict schemas
 
+
+Teach the Claude Code CLI path for automation (not just the API):
+`--output-format json` + `--json-schema` = enforce parseable structured findings a pipeline can consume (e.g. post each review finding as an inline PR comment via the GitHub API).
+Prompt-based or CLAUDE.md 'output format' sections are followed inconsistently — fine for humans, unreliable for automated parsing.
+
+Teach the instruction/tool-name keyword-overlap failure:
+When instruction prose mirrors a tool name (`check the security` vs tool `check_security`), the model follows the phrase as prose (writes text instead of calling the tool) or misroutes between tools (ties `loop`→performance, `function`→security regardless of the actual issue).
+Fix = distinct, non-overlapping terminology for instruction text vs tool names/descriptions. NOT temperature, NOT tool_choice, NOT longer/more-detailed tool descriptions, NOT a priority rule.
+
 TASK STATEMENT 4.4: VALIDATION-RETRY LOOPS
 Teach retry-with-error-feedback:
 
@@ -693,6 +743,14 @@ Identify failed documents by custom_id
 Resubmit only failures with modifications (e.g., chunking oversized documents)
 Refine prompts on a sample set BEFORE batch processing to maximise first-pass success
 
+
+Teach prompt caching over the shared prefix (identical system prompt reused across every request):
+
+One cache_control breakpoint at the END of the shared prefix (system prompt + tool/schema definitions + few-shot examples); leave each per-document block after it uncached
+Prefix-match caching only — the identical leading blocks are reused, so variable per-document content MUST sit after the breakpoint
+One breakpoint is enough — do NOT re-add cache_control every N documents or place it per-document
+1h TTL extends the idle window, not a guarantee of a hit; cache writes cost a premium, reads are cheap
+
 TASK STATEMENT 4.6: MULTI-INSTANCE REVIEW
 Teach the self-review limitation:
 
@@ -717,6 +775,15 @@ DOMAIN 4 COMPLETION
 ````
 
 ---
+
+Teach self-critique for variable completeness gaps:
+Add an evaluator-optimizer step: the agent checks its own draft against explicit completeness criteria (addresses the concern, includes relevant context, anticipates follow-ups) before presenting
+Use it when output is accurate but inconsistently explained and the gaps vary by case (missing policy detail here, a timeline there)
+few-shot fixes consistent patterns, not highly variable per-case omissions; a higher model tier or a customer confirmation step doesn't fix incomplete explanation
+Distinguish from the self-review limitation above: self-critique against criteria catches variable coverage gaps (q99); an independent fresh instance catches confirmation-bias blind spots the same context already rationalised (q103)
+Teach inline reasoning + confidence to cut investigation time:
+When the bottleneck is developers clicking into each finding AND filtering findings before review is off the table, require Claude to include its reasoning and confidence assessment inline per finding
+Surfacing high-confidence only, or suppressing historical false-positive signatures, filters pre-review — rejected by the constraint; re-tiering blocking vs suggestion reorganises the queue but doesn't cut per-finding investigation time
 
 ## Domain 5 — Context Management & Reliability (15%)
 

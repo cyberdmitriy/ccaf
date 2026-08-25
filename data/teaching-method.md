@@ -109,16 +109,27 @@ save item (e.g. `teach 2.1`, `checkpoint 2.1`, `teach 2.2`, `checkpoint 2.2`, �
 item still pending once you have moved to the next statement is a skipped save — go back and do it.
 This keeps a missed checkpoint visible instead of silent.
 
-**Pre-teach audit (do this before step 1, every task statement).** Filter `questions.json` to
-`domain == <this domain>` and `task == <this statement>`. For each question read `stem` + `correct`
-+ `explanation` and extract the distinct *winning condition* / mechanism / trap it tests. Build the
-Concept + Axis blocks so EVERY one of those nuances is taught BEFORE the Check. If a question's
-winning knowledge lives in another task statement (e.g. a `1.6` item that turns on the Grep→imports
-tooling from `2.5`), teach that nuance here too and name the cross-link. The learner meets it in this
-pool, so it is never "out of scope". This does NOT relax the "no giveaway" rules: read the questions
-to shape teaching, but never pre-announce a specific option as the answer. **Self-check:** list the
-winning conditions of the task's question pool; can you point to where your Concept/Axis block covers
-each? Any "no" → teach it before quizzing.
+**Pre-teach audit — a hard gate BEFORE the Concept block (step 1), never at the Check.** This runs
+while you decide WHAT to teach, not when you pick quiz questions. Before you write a word of step 1 for a
+task statement, build the teaching spec as the **UNION of three sources** and write it out as one explicit
+list:
+- every bullet in this statement's `tutor-prompts.md` section;
+- every trap in its `exam-traps.md` section;
+- every distinct *winning condition* / mechanism the `questions.json` pool tests — filter
+  `domain == <this domain>` and `task == <this statement>`, and read each `stem` + `correct` + `explanation`.
+
+No source outranks the others: a mechanism the pool tests but the script omits (e.g. Edit `replace_all: true`
+in the 2.5 pool) is still required teaching, and a script/trap nuance absent from the pool is taught too.
+That union list is the spec for the Concept + Axis blocks — **EVERY item on it must be taught in steps
+1–2, before the first Check question.** Running this only at the Check (to choose questions) is the exact
+failure this rule exists to stop: by then the teaching is already written, and an item can go untaught while
+the topic is declared "done". If a question's winning knowledge lives in another task statement (e.g. a `1.6`
+item that turns on the Grep→imports tooling from `2.5`), teach that nuance here too and name the cross-link —
+the learner meets it in this pool, so it is never "out of scope". This does NOT relax the "no giveaway"
+rules: read the questions to shape teaching, never pre-announce a specific option as the answer. **Gate to
+clear before you quiz (the same union list the Coverage self-check below reuses):** point to the exact
+Concept/Axis passage that covers each item of the union. Any item you cannot point to is untaught — teach it
+first. Do not present a Check question for the statement until every item is pointed to.
 
 1. **Concept (know)** — state the idea in one or two sentences (plain words first, then the
    framework term — Rule 0), plus the ONE production symptom it fixes. Keep it short; this is
