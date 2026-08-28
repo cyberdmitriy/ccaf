@@ -1,11 +1,11 @@
 {
   "meta": {
-    "total": 240,
+    "total": 245,
     "per_domain": {
       "1": 64,
       "2": 47,
-      "3": 42,
-      "4": 41,
+      "3": 45,
+      "4": 43,
       "5": 46
     }
   },
@@ -322,7 +322,7 @@
       },
       "correct": "A",
       "axis": 5,
-      "task": "2.4",
+      "task": "2.1",
       "explanation": "Tool selection is driven by the descriptions the model sees. A one-line description like 'Analyzes dependency graph' loses against Grep's rich description. Beef up the MCP tool's description."
     },
     {
@@ -337,7 +337,7 @@
       },
       "correct": "B",
       "axis": 4,
-      "task": "2.4",
+      "task": "2.1",
       "explanation": "Tool selection is driven by the descriptions Claude sees. When the MCP tools say 'extracts a function from code' and Write/sed come with rich documentation, Claude picks Write/sed. Beef up the descriptions."
     },
     {
@@ -637,7 +637,7 @@
       },
       "correct": "D",
       "axis": 3,
-      "task": "5.4",
+      "task": "5.1",
       "explanation": "Structured per-agent reports keep fidelity (the findings, with schema), let the coordinator stay in charge of orchestration, and keep each subagent's context focused. This is the orchestrator + compact artifact pattern."
     },
     {
@@ -952,7 +952,7 @@
       },
       "correct": "B",
       "axis": 3,
-      "task": "1.4",
+      "task": "1.6",
       "explanation": "Option B (decompose-parallelize-synthesize) directly addresses both problems: sequential investigation causing excessive tool calls, and redundant customer data gathering. By decomposing the request into distinct concerns first and reusing the same customer context across parallel investigations, the agent eliminates redundancy and reduces total calls. Option A would make the sequential problem worse by adding more gates. Option C doesn't systematically address context reuse or parallel investigation. Option D hides useful tool structure and doesn't address the workflow pattern issue."
     },
     {
@@ -1492,7 +1492,7 @@
       },
       "correct": "A",
       "axis": 3,
-      "task": "4.6",
+      "task": "4.1",
       "explanation": "Self-critique (evaluator-optimizer pattern) directly addresses the root cause: inconsistent inclusion of explanation elements. By having the agent evaluate its own response against specific criteria before presenting it, you catch case-specific gaps that vary with each situation. Few-shot examples (B) help with consistent patterns but cannot cover highly variable gaps. Model tier upgrades (C) don't address the structural issue—the resolutions are already accurate, just incompletely explained. Confirmation steps (D) shift the burden to customers rather than improving the agent's output quality."
     },
     {
@@ -1657,7 +1657,7 @@
       },
       "correct": "B",
       "axis": 3,
-      "task": "4.6",
+      "task": "4.3",
       "explanation": "Including reasoning and confidence inline directly addresses the stated bottleneck (investigation time from clicking into findings) while respecting the constraint that findings cannot be filtered before developer review. Option A violates the explicit constraint against filtering. Option C also filters/suppresses findings before review. Option D reorganizes workflow but doesn't reduce investigation time—developers still need to click into findings in whichever category they review to understand why Claude flagged them."
     },
     {
@@ -2932,7 +2932,7 @@
       },
       "correct": "D",
       "axis": 3,
-      "task": "1.2",
+      "task": "1.3",
       "explanation": "Subagents do not inherit the coordinator's conversation history, so unless the coordinator explicitly passes the search findings into the synthesis agent's prompt, they were never in its context."
     },
     {
@@ -3487,7 +3487,7 @@
       },
       "correct": "D",
       "axis": 3,
-      "task": "4.4",
+      "task": "4.3",
       "explanation": "A structured detected_pattern field attributes every finding to a specific rule, which makes each finding auditable and lets you compute precision per pattern and route findings by type. Free-text reasoning and separate reasoning logs are unstructured and not queryable at scale, and adding severity levels increases granularity without telling you which rule fired or how accurate each rule is."
     },
     {
@@ -3609,6 +3609,81 @@
       "axis": 1,
       "task": "4.3",
       "explanation": "Prompt directives, few-shot examples, and self-check instructions only raise the odds of well-formed output—free-text generation can still drift or emit malformed JSON. A tool_use schema makes the model emit tool input that conforms to the declared structure, turning 'usually valid' into a structural guarantee (semantic correctness still needs separate validation)."
+    },
+    {
+      "id": 241,
+      "domain": 4,
+      "stem": "An automated invoice-processing pipeline must extract fields into a JSON object that strictly conforms to a fixed schema; malformed or off-schema output breaks the downstream system with no human in the loop. A developer proposes prefilling the assistant response with `{` to force the model to emit JSON. What is the most reliable approach?",
+      "options": {
+        "A": "Prefill the assistant turn with `{` so the model must continue as JSON, then parse and forward the result.",
+        "B": "Add an explicit \"Respond with valid JSON only\" instruction plus a few-shot example of the target object in the system prompt.",
+        "C": "Define the object as a `tool_use` schema and set `tool_choice` to `\"any\"`, so the model must return a tool call matching the schema.",
+        "D": "Prefill the assistant turn with the expected key skeleton (`{\"invoice_id\":`) and keep `tool_choice` at `\"auto\"`."
+      },
+      "correct": "C",
+      "axis": 1,
+      "task": "4.3",
+      "explanation": "Strict schema compliance for an unattended pipeline needs an enforced shape, which only `tool_use` with a JSON schema (forced via `tool_choice: \"any\"` or a named tool) provides. Prefilling (A, D) pins the opening tokens and can skip preamble, but it enforces no schema — the model can still drift off-shape, omit required fields, or emit invalid JSON after the prefilled prefix — and a prefill can't coexist with a forced tool call. Prompt-based instructions and few-shot (B) are followed inconsistently and can't be reliably parsed. Prefill and prompting steer output; only the schema guarantees it."
+    },
+    {
+      "id": 242,
+      "domain": 4,
+      "stem": "A conversational assistant returns correct summaries, but it keeps prepending a chatty preamble (\"Sure! Here's the summary:\") before the text. A downstream regex expects the response to begin immediately with the summary and breaks on the preamble. No structured schema is required — only the leading tokens must be controlled. What is the best fix?",
+      "options": {
+        "A": "Prefill the assistant turn with the opening of the summary so the model continues from there and never emits the preamble.",
+        "B": "Switch the endpoint to `tool_use` with a single `summary` string field and `tool_choice: \"any\"` to force structured output.",
+        "C": "Add a system-prompt instruction: \"Do not include any preamble; begin your reply directly with the summary.\"",
+        "D": "Set temperature to 0 so the model stops adding conversational filler."
+      },
+      "correct": "A",
+      "axis": 4,
+      "task": "4.3",
+      "explanation": "Controlling the first tokens / skipping preamble is exactly what response prefilling is for — begin the assistant turn with the summary's opening and the model continues in place, no preamble emitted. Forcing `tool_use` (B) is disproportionate: there's no schema to enforce, and wrapping a plain string in a tool adds machinery for a formatting nuisance. A prompt instruction (C) is followed inconsistently — the same class of failure. Temperature (D) controls randomness, not response structure. Prefill is the lightweight, reliable lever when the requirement is format/first-token control rather than schema compliance."
+    },
+    {
+      "id": 243,
+      "domain": 3,
+      "stem": "A team's root CLAUDE.md says \"Never commit directly to `main`\" and \"Always run the linter before committing,\" but developers still occasionally push to `main` and skip the linter because Claude doesn't reliably follow the prose. How should they restructure the configuration?",
+      "options": {
+        "A": "Move the two rules into a higher-in-the-hierarchy project CLAUDE.md and rephrase them emphatically (bold, \"MUST\").",
+        "B": "Move the rules into a `.claude/rules/git.md` file loaded via a glob so they apply in every directory.",
+        "C": "Duplicate the rules into both user-level and project-level CLAUDE.md so they always load no matter who clones the repo.",
+        "D": "Add a pre-commit hook that blocks any commit to `main` and fails the commit if the linter does not pass."
+      },
+      "correct": "D",
+      "axis": 1,
+      "task": "3.1",
+      "explanation": "These are hard constraints that must hold regardless of model compliance, so they belong in an enforcement mechanism (a git/PreToolUse hook), not in prose. CLAUDE.md has no strict precedence and is always model-followed guidance — so re-scoping (A), moving to `.claude/rules/` (B), or duplicating across levels (C) all still depend on the model choosing to obey, which is the exact failure being reported. Guidance advises; hooks enforce."
+    },
+    {
+      "id": 244,
+      "domain": 3,
+      "stem": "A team needs three things configured for Claude Code: (1) the agent must be blocked from editing files under `infra/` without review; (2) Python docstring conventions should apply only when working inside `services/`; (3) a house preference — \"prefer composition over inheritance\" — that Claude should weigh but may override with a stated reason. Which configuration assigns each to the right mechanism?",
+      "options": {
+        "A": "All three in the root CLAUDE.md, with (1) written as \"NEVER edit files under infra/.\"",
+        "B": "(1) a settings.json permission deny (or PreToolUse hook); (2) a `.claude/rules/` file scoped by glob to `services/`; (3) a CLAUDE.md guideline.",
+        "C": "(1) a CLAUDE.md rule; (2) a CLAUDE.md rule; (3) a PreToolUse hook that rejects any code using inheritance.",
+        "D": "(1) `.claude/rules/infra.md`; (2) a settings.json permission; (3) `.claude/rules/style.md`."
+      },
+      "correct": "B",
+      "axis": 1,
+      "task": "3.1",
+      "explanation": "Match the mechanism to the guidance type. (1) is a hard constraint → deterministic enforcement (settings permission or PreToolUse hook). (2) is a convention that should load conditionally by path → `.claude/rules/` with a glob. (3) is a soft preference the model should apply with judgement → CLAUDE.md. A inverts this by leaving a hard block as prose; C both leaves the hard block as prose and puts a soft preference behind a hook (over-enforcing a judgement call); D uses path-scoped rules for a hard block and a permission for a formatting convention. Only B places enforce/scope/guide where each belongs."
+    },
+    {
+      "id": 245,
+      "domain": 3,
+      "stem": "A CLAUDE.md instructs the agent \"Do not read files under `secrets/` or any `.env`.\" A security review finds the agent still reads them when a task appears to need config values. Which change most reliably prevents this?",
+      "options": {
+        "A": "Rewrite the instruction more forcefully and also add it to a `.claude/rules/security.md` loaded on every path.",
+        "B": "Run the agent with `context: fork` so it works in an isolated context and can't reach the secrets.",
+        "C": "Add a settings.json `deny` permission (or a PreToolUse hook) that blocks `Read` on `secrets/` and `.env`.",
+        "D": "Add a PostToolUse hook that logs every read of `secrets/` or `.env` so the team can audit violations."
+      },
+      "correct": "C",
+      "axis": 5,
+      "task": "3.1",
+      "explanation": "The read must be prevented independent of model judgement, which only a deny permission or a PreToolUse gate on `Read` achieves. Strengthening the prose or adding a rules file (A) keeps it as model-followed guidance — the same thing that already failed. `context: fork` (B) isolates conversation context, not filesystem access, so it doesn't stop a Read. A PostToolUse log (D) is the tempting near-miss: it uses a hook, but it fires after the file has already been read — detection, not prevention — leaving the root problem (the access itself) unaddressed."
     }
   ]
 }

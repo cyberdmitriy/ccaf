@@ -6,6 +6,22 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.19.1] — 2026-08-28
+### Added
+- **Prefill coverage — the one blueprint gap found by a score-report cross-check.** A colleague's official Score Report listed *response prefilling* as one of three structured-output methods (task 4.3), but the plugin taught only `tool_use` + schema and prompt-based formatting. `data/tutor-prompts.md` (4.3) now teaches assistant-turn prefill and the reliability order (`tool_use` + schema > prefill / prompt-based); `data/exam-traps.md` (4.3) gains a matching trap + Core-rule clause. Two bank questions added: **241** (strict schema compliance → `tool_use`, prefill enforces no schema) and **242** (prefill's real niche — skip preamble / control first tokens).
+- **Domain 3 config-enforcement drill deepened (`3.1` 4→7 questions).** The most-failed objective on the same report — distinguishing what belongs in a hook/`settings.json` vs `CLAUDE.md` — was thin in the bank. Added **243** (violated commit rules → deterministic hook, not prose), **244** (map each of hard-block / path-convention / soft-preference to the right mechanism), **245** (blocked `Read` → `deny`/PreToolUse prevention, PostToolUse log only detects).
+- **Cheatsheet synced to the five new questions (204 reference rows, 100% coverage).** `quick-reference.json` gains four rows (prefill-for-schema, prefill-for-preamble, mechanism-by-guidance-type, prevent-vs-detect forbidden reads) and attaches 243; `maintenance/reference-coverage.py` reports 0 unreferenced per domain.
+
+### Changed
+- **Mock exam — `unseen` mode is now strictly never-answered.** `data/app-template.html`: the unseen pool no longer tops up with least-seen questions once true-unseen runs out; the Length buttons disable above what a mode+domain actually offers, and `All` caps at the shown-available count (the mode card's "N new" for unseen). Removes the old fallback that could inflate an "unseen" sitting with seen questions.
+- **Eight bank questions retagged to their canonical `task`.** Cross-session `task` drift corrected on ids 21, 22, 42, 63, 99, 110, 195, 232 (each stays within its domain); `quick-reference.json` q_id attachments realigned to match.
+
+### Fixed
+- **Reference tab: active domain filter now visible.** `data/app-template.html`: added the missing `.miss-chip.active` rule (accent fill + white text, mirroring `.cs-chip.on`) so the selected `All`/`D1`–`D5` chip is distinguishable from the rest.
+
+### Internal
+- **New authoring guard against the "reasoning tell."** `maintenance/authoring-questions.md`: the correct option must never name or justify the tested principle (rationale lives in `explanation` only) — otherwise a candidate keyword-matches instead of reasoning. Reworded Q243 (dropped "Enforce them with deterministic mechanisms …") and Q245 (dropped "… regardless of what the model decides") whose correct option gave the answer away in its wording.
+
 ## [0.19.0] — 2026-08-25
 ### Changed
 - **Weaknesses card redesigned — grouped by task, theme paired to its question.** Misses now aggregate into **one card per task statement `<d>.<n>`** (via `topicKey`, the canonical grouping — every 2.3 miss lands in the 2.3 card regardless of per-miss wording), all-collapsible and closed by default under a domain-coloured header. Inside, a `Failed questions · N` list where **each failed question is paired with its own theme**: a `Тема:` chevron disclosure (its study note) joined to the question by a light left thread, so which theme belongs to which question is unambiguous. Each question's summary **is the question** — the bank stem clamped to two lines, un-clamping to the full stem on open (no repeated question, no stats in the header); its body reorders to **options → `Breakdown` panel → `Answer stats` panel** (the learner's wrong pick in **red**, the correct one green; `Breakdown` = `rule` + the three beats + axis badge; `Answer stats` = every attempt `✗n · ✓n` + `✓/✗ · Exam #N · date` rows). Replaces the previous decision-headline summary + dots/attempt-list body (`wkDots`/`wkLast`/`wkHistory`/`cheatScenario` removed; `wkQuestion` is 2-arg with new `wkOptions`/`wkStatsPanel`).

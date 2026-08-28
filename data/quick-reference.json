@@ -13,7 +13,7 @@
           { "see": "what to do with a tool result before the next call / why append it to history", "answer": "Append it as a new message and resend the **whole** conversation — the Messages API is **stateless**, so the model only sees what its call returned (and reasons about the next step) if the full history is carried each turn. Not server-side session memory, an external-store reference id, or replacing the earlier message; not caching, dedup, or a role-alternation rule.", "q_ids": [128, 194] }
         ] },
         { "title": "1.2 multi-agent orchestration", "rows": [
-          { "see": "make subagents talk to each other / share memory", "answer": "No. Subagents are isolated. They talk only through the coordinator and inherit none of its history.", "q_ids": [6, 195] },
+          { "see": "make subagents talk to each other / share memory", "answer": "No. Subagents are isolated. They talk only through the coordinator and inherit none of its history.", "q_ids": [6] },
           { "see": "independent tasks running one after another", "answer": "Run them at the same time. Issue parallel Task calls in one response.", "q_ids": [124] },
           { "see": "coordinator already holds the findings, or a small single-file task alongside a large multi-file one", "answer": "Delegate by size. The coordinator answers trivial or already-held work **directly**; it delegates only the large, scoped task to a subagent. Don't re-ingest what it already holds.", "q_ids": [7, 126] },
           { "see": "parallel agents all working from the **original** code/data", "answer": "Order by dependency. Run the **producer first**, then parallelize the now-independent consumers on its output. Not a shared memory store, not strict all-sequential.", "q_ids": [133] },
@@ -29,7 +29,7 @@
           { "see": "cut latency on a big analysis — recursive agent hierarchy, self-spawning subagents, or an async worker-pool queue?", "answer": "Coordinator spawns **flat parallel subagents** over subsets and aggregates. Avoid recursive hierarchies, letting subagents spawn their own subagents, or a message-queue pool — they lose the coordinator's single hub for monitoring and debugging.", "q_ids": [4] }
         ] },
         { "title": "1.3 subagent invocation & context passing", "rows": [
-          { "see": "subagent can't see the coordinator's history / other outputs", "answer": "Pass the full context in the prompt, metadata included. Nothing is shared for you.", "q_ids": [2, 132, 197] },
+          { "see": "subagent can't see the coordinator's history / other outputs", "answer": "Pass the full context in the prompt, metadata included. Nothing is shared for you.", "q_ids": [2, 132, 195, 197] },
           { "see": "missing citations in the synthesis output", "answer": "The cause is context passed without metadata, not the synthesis agent.", "q_ids": [198] },
           { "see": "coordinator talks about delegating but no subagent runs, and logs show no errors", "answer": "The `Task` tool (renamed `Agent`) is missing from the coordinator's `allowedTools` — it can reason about delegating but has no tool to actually spawn a subagent. Not a `max_tokens` truncation or a missing-context issue.", "q_ids": [1] },
           { "see": "subagent given an exact step-by-step procedure (queries, source priorities, file/line edits) and won't adapt or recover", "answer": "Delegate goals + quality criteria (coverage breadth, source diversity, recency), let the subagent pick its own approach. Rigid procedures block adaptation; bare goals with no criteria at all are the opposite failure.", "q_ids": [8, 127] },
@@ -41,8 +41,7 @@
         { "title": "1.4 workflow enforcement & handoff", "rows": [
           { "see": "handing off to a human", "answer": "Carry every important field, like customer ID and recommended action. The human cannot see the transcript.", "q_ids": [213] },
           { "see": "a required tool order must hold every time (verify identity before `lookup_order`/`process_refund`, rollback script before `DROP`/`ALTER TABLE DROP`, synthesis before final report)", "answer": "Add a **programmatic prerequisite gate** that blocks the later tool until the precondition returns success. A system prompt or few-shot 'always do X first' is probabilistic and cannot guarantee compliance when errors are costly. A routing classifier that enables a *subset* of tools fixes tool **availability**, not **ordering**.", "q_ids": [61, 134, 199] },
-          { "see": "the test suite must pass before a task is marked complete, every time", "answer": "A **Stop/PreToolUse hook** that blocks completion unless the test command exited `0` enforces it in code, outside the model. A CLAUDE.md line, a system-prompt line, and a `.claude/rules/` entry are all read by the model = probabilistic; `.claude/rules/` looks authoritative but is still just model-read.", "q_ids": [239] },
-          { "see": "complex multi-part request balloons to 12+ tool calls with low resolution, investigating concerns sequentially and re-gathering the same customer data", "answer": "**Decompose** into distinct concerns, **investigate in parallel** over shared customer context, then **synthesize** one resolution. Adding more verification gates/checkpoints makes the sequential problem worse; few-shot ideal sequences don't systematically fix context reuse or parallelism.", "q_ids": [63] }
+          { "see": "the test suite must pass before a task is marked complete, every time", "answer": "A **Stop/PreToolUse hook** that blocks completion unless the test command exited `0` enforces it in code, outside the model. A CLAUDE.md line, a system-prompt line, and a `.claude/rules/` entry are all read by the model = probabilistic; `.claude/rules/` looks authoritative but is still just model-read.", "q_ids": [239] }
         ] },
         { "title": "1.5 Agent SDK hooks", "rows": [
           { "see": "high-stakes compliance must not fail / drop to 0%", "answer": "Use a hook. A stronger prompt, few-shot or routing can still fail, because the model can ignore text.", "q_ids": [18, 182] },
@@ -51,6 +50,7 @@
           { "see": "a step must **run** after every subagent / tool call — the model can't be trusted to do it", "answer": "A PostToolUse hook (e.g. on the `Task` tool) fires it deterministically after each call returns. A system prompt, a `CLAUDE.md` note or a few-shot transcript only nudges — the model may skip it.", "q_ids": [238] }
         ] },
         { "title": "1.6 task decomposition", "rows": [
+          { "see": "complex multi-part request balloons to 12+ tool calls with low resolution, investigating concerns sequentially and re-gathering the same customer data", "answer": "**Decompose** into distinct concerns, **investigate in parallel** over shared customer context, then **synthesize** one resolution. Adding more verification gates/checkpoints makes the sequential problem worse; few-shot ideal sequences don't systematically fix context reuse or parallelism.", "q_ids": [63] },
           { "see": "coverage gaps in a multi-agent system / subagents missed things", "answer": "Fix how the coordinator splits the work. Do not blame the subagents or add more of them.", "q_ids": [] },
           { "see": "attention dilution / the model loses focus across many files", "answer": "Split the work into passes, then add one pass that joins the batches. A bigger model or window does not fix it.", "q_ids": [73] },
           { "see": "open-ended investigation", "answer": "Use a flow that adapts, not a fixed pipeline.", "q_ids": [15, 183] },
@@ -71,6 +71,7 @@
       "title": "Tool Design & MCP Integration",
       "sections": [
         { "title": "2.1 tool interface design", "rows": [
+          { "see": "MCP server connected and healthy, but the agent keeps using a built-in (Grep, Write, `sed`) instead — MCP tool descriptions are one-liners", "answer": "Enrich the MCP tool **descriptions** — capabilities, outputs, and when to prefer it. Selection is driven by the description the model sees, so a terse line loses to a built-in's rich one. Not removing the built-in, not a system-prompt router, not splitting into granular tools.", "q_ids": [21, 22] },
           { "see": "the agent picks the wrong tool / misroutes", "answer": "Improve the tool descriptions first. Claude picks tools from them, not from few-shot or a classifier.", "q_ids": [75, 77, 187] },
           { "see": "single-concern works (94%) but multi-concern tool selection drops (58%)", "answer": "The model already knows the tools — add **few-shot** showing the multi-concern reasoning and tool sequence. Not a decompose preprocessing call, tool consolidation, or re-prompt validation.", "q_ids": [76] },
           { "see": "which few-shot examples fix ambiguous tool selection", "answer": "**4-6** examples targeting the ambiguous cases, each with explicit comparative reasoning (why this tool over the alternative). Not 10-15 unambiguous or tool-grouped examples.", "q_ids": [79] },
@@ -99,7 +100,6 @@
           { "see": "a standard integration (e.g. Jira)", "answer": "Use the standard MCP server that already exists. Do not build your own.", "q_ids": [] },
           { "see": "secrets in the MCP config", "answer": "Use env-var expansion `${VAR}`. Never commit credentials.", "q_ids": [80] },
           { "see": "two same-named MCP tools collide (e.g. prod + staging `query_postgres`); agent calls the wrong one on a context-free prompt", "answer": "Rename the personal tool to a distinct id in `~/.claude.json`, put the **environment** in its description, **and** add an explicit session routing instruction. Description tuning alone cannot route a prompt with no environment cue.", "q_ids": [135] },
-          { "see": "MCP server connected and healthy, but the agent keeps using a built-in (Grep, Write, `sed`) instead — MCP tool descriptions are one-liners", "answer": "Enrich the MCP tool **descriptions** — capabilities, outputs, and when to prefer it. Selection is driven by the description the model sees, so a terse line loses to a built-in's rich one. Not removing the built-in, not a system-prompt router, not splitting into granular tools.", "q_ids": [21, 22] },
           { "see": "agents make many exploratory tool calls just to discover what documentation/data is available before their real search", "answer": "Expose a **content catalog as an MCP resource** — a browsable hierarchy of topics/summaries the agent reads once. Not caching exploratory results, raising `max_tokens`, or pre-loading every summary into the system prompt.", "q_ids": [179] }
         ] },
         { "title": "2.5 built-in tools", "rows": [
@@ -129,8 +129,10 @@
           { "see": "a new hire gets no instructions, same repo", "answer": "The instructions sit in the personal `~/.claude/` folder, which git never shares. Move them into the project.", "q_ids": [89] },
           { "see": "first diagnostic step — works for one dev, not another", "answer": "Run `/memory`. It shows which files really loaded.", "q_ids": [201] },
           { "see": "guarantee / always / at every save / regardless of what Claude does", "answer": "Use a hook. It is a script that runs on an event. Never CLAUDE.md, a rule, or 'mark as important'.", "q_ids": [151] },
-          { "see": "two rules conflict, must always hold", "answer": "Use a hook or `settings.json`. CLAUDE.md has no hard precedence.", "q_ids": [] },
-          { "see": "CLAUDE.md has grown to 400–500 lines, all mixed together", "answer": "Split it. Use `@import` for separate files, or a `.claude/rules/` folder by topic.", "q_ids": [93] }
+          { "see": "two rules conflict, must always hold", "answer": "Use a hook or `settings.json`. CLAUDE.md has no hard precedence.", "q_ids": [243] },
+          { "see": "CLAUDE.md has grown to 400–500 lines, all mixed together", "answer": "Split it. Use `@import` for separate files, or a `.claude/rules/` folder by topic.", "q_ids": [93] },
+          { "see": "which mechanism for which rule — hard block vs path-only convention vs soft preference", "answer": "Match the type: a **hard constraint** → `settings.json` permission or a **PreToolUse** hook; a **path-scoped convention** → a `.claude/rules/` file with a glob; a **soft preference** the model may override → `CLAUDE.md`. Don't put a hard block in prose or a soft preference behind a hook.", "q_ids": [244] },
+          { "see": "agent still reads forbidden paths (secrets / `.env`) despite a CLAUDE.md ban", "answer": "Prevent it: a `deny` permission or a **PreToolUse** hook on `Read` refuses the access regardless of the model. A **PostToolUse** log only detects after the read; strengthening the prose keeps it model-followed; `context: fork` isolates conversation, not the filesystem.", "q_ids": [245] }
         ] },
         { "title": "3.2 slash commands & skills", "rows": [
           { "see": "available to the whole team (command / skill)", "answer": "Put it in `.claude/commands/` or `.claude/skills/` and commit it.", "q_ids": [84, 203] },
@@ -188,6 +190,7 @@
       "title": "Prompt Engineering & Structured Output",
       "sections": [
         { "title": "4.1 explicit criteria", "rows": [
+          { "see": "accurate but inconsistently explained, and the gaps vary by case", "answer": "Add a **self-critique / evaluator-optimizer** step: the agent checks its draft against explicit completeness criteria before presenting. `few-shot` fixes consistent patterns, not per-case variable gaps; a bigger model or a customer-confirmation step doesn't fix incomplete explanation.", "q_ids": [99] },
           { "see": "too many false positives in review", "answer": "Write explicit criteria: exactly what to flag and what to skip, plus code examples. Not 'be conservative', and not a confidence threshold.", "q_ids": [] },
           { "see": "severity ratings inconsistent across runs / prose like 'critical means dangerous'", "answer": "Replace prose descriptions with concrete code examples per severity level (critical/major/minor). Not an issue-type→severity **map** (loses code-path context), not proportional 'rate relative to this PR', not `temperature=0`, not a second reconciliation pass.", "q_ids": [104, 157] },
           { "see": "vague instruction like 'check comments are accurate and up-to-date'", "answer": "Define the exact target the model must test (e.g. flag a comment only when its claimed behavior contradicts the actual code). Explicit criteria beats **few-shot examples** here — examples only pattern-match what's shown and won't generalize to novel cases.", "q_ids": [106] },
@@ -202,6 +205,8 @@
           { "see": "few-shot agent correctly handles a case in a language none of the examples used", "answer": "Few-shot conveys the underlying judgment criteria, which generalize to structurally similar, previously unseen cases — not literal token/pattern matching, memorized language-specific rules, or decomposition into example tokens.", "q_ids": [209] }
         ] },
         { "title": "4.3 structured output with tool_use", "rows": [
+          { "see": "findings aren't auditable, no way to measure precision per rule", "answer": "Add a structured `detected_pattern` enum naming the rule that fired (plus a detail field). Free-text reasoning or separate reasoning logs aren't queryable at scale, and more severity tiers add granularity without telling you which rule fired.", "q_ids": [232] },
+          { "see": "cut investigation time, but findings must not be filtered before review", "answer": "Require **reasoning + confidence inline** with each finding. Don't surface high-confidence only or suppress false-positive signatures (that filters pre-review); re-tiering blocking vs suggestion doesn't cut per-finding investigation time.", "q_ids": [110] },
           { "see": "guarantee a tool call / structured output", "answer": "`tool_choice:'any'` forces a call. `'auto'` can return text.", "q_ids": [233] },
           { "see": "does a JSON schema prevent all extraction errors?", "answer": "No. A schema stops syntax errors only. You still validate that the values are right.", "q_ids": [] },
           { "see": "the model fabricates values when the source lacks info", "answer": "Make the fields optional or nullable. Do not require every field.", "q_ids": [165] },
@@ -210,14 +215,15 @@
           { "see": "guarantee always-valid JSON with a fixed field set, not merely 'usually parseable'", "answer": "A `tool_use` input schema constrains output to the declared shape. Prompt directives, few-shot examples, and self-check only raise the odds — and semantic correctness still needs separate validation.", "q_ids": [240] },
           { "see": "an enum keeps failing validation as new categories keep appearing", "answer": "Add an `\"other\"` value plus a free-text detail field — keeps clean joins for the common cases with a typed escape hatch. Beats a free-form string, endlessly expanding the enum, or few-shot mapping to the nearest value.", "q_ids": [31] },
           { "see": "source formatting is inconsistent (prices, units, dietary tags)", "answer": "Strict output schema **plus** explicit normalization rules in the prompt — extract and normalize in one pass. Beats normalizing in post-processing code, multi-attempt voting, or a separate call per field.", "q_ids": [36] },
-          { "see": "fields are already nullable but the model still invents plausible values for absent info", "answer": "Add a prompt instruction to return `null` for any field not directly stated in the source. The schema is fine — a stronger model tier or a second-LLM verifier is overkill.", "q_ids": [37] }
+          { "see": "fields are already nullable but the model still invents plausible values for absent info", "answer": "Add a prompt instruction to return `null` for any field not directly stated in the source. The schema is fine — a stronger model tier or a second-LLM verifier is overkill.", "q_ids": [37] },
+          { "see": "prefill the assistant turn to force JSON / pick a structured-output method for strict schema compliance", "answer": "Use `tool_use` + a JSON schema (`tool_choice:'any'` or a named tool) — that guarantees the shape. Response prefilling and prompt-based formatting only steer the opening tokens, enforce no schema, and a prefill can't run while `tool_choice` forces a tool.", "q_ids": [241] },
+          { "see": "strip a chatty preamble / control the first tokens, no schema needed", "answer": "Prefill the assistant turn with the answer's opening — the model continues from there, no preamble. Forcing `tool_use` is overkill with no schema to enforce; a prompt instruction is followed inconsistently; temperature doesn't control structure.", "q_ids": [242] }
         ] },
         { "title": "4.4 validation-retry loops", "rows": [
           { "see": "extraction failed — retry", "answer": "Send the original document, the failed extraction and the exact error. A blind retry repeats the mistake.", "q_ids": [162] },
           { "see": "the information is genuinely absent", "answer": "A retry cannot invent it. Retries fix format and structure, never missing data.", "q_ids": [32] },
           { "see": "sum of line items doesn't match the extracted total (OCR or extraction errors)", "answer": "Add a `calculated_total` the model sums alongside the `stated_total`, and flag mismatches for human review — the discrepancy becomes a first-class signal. Proportionally adjusting the numbers hides the error instead of catching it.", "q_ids": [29] },
-          { "see": "retries keep failing only on unfamiliar-language / capability cases", "answer": "Apply the retry boundary: retry format errors (empty field, wrong shape) on analysable inputs, but route capability gaps to human review. More attempts, a bigger prompt, or 'try harder' can't create understanding the model lacks.", "q_ids": [160] },
-          { "see": "findings aren't auditable, no way to measure precision per rule", "answer": "Add a structured `detected_pattern` enum naming the rule that fired (plus a detail field). Free-text reasoning or separate reasoning logs aren't queryable at scale, and more severity tiers add granularity without telling you which rule fired.", "q_ids": [232] }
+          { "see": "retries keep failing only on unfamiliar-language / capability cases", "answer": "Apply the retry boundary: retry format errors (empty field, wrong shape) on analysable inputs, but route capability gaps to human review. More attempts, a bigger prompt, or 'try harder' can't create understanding the model lacks.", "q_ids": [160] }
         ] },
         { "title": "4.5 batch processing", "rows": [
           { "see": "cut cost — move everything to batch", "answer": "Use the Batch API only where waiting is fine. Keep real-time and multi-turn flows synchronous. Batch costs 50% less and can take up to 24 hours.", "q_ids": [33, 100, 101, 107] },
@@ -230,9 +236,7 @@
         ] },
         { "title": "4.6 multi-instance review", "rows": [
           { "see": "review its own code in the same session", "answer": "Use a separate instance with no prior context. In the same session the model keeps its own reasoning and will not question it.", "q_ids": [103] },
-          { "see": "large multi-file review", "answer": "Review each file in its own pass, then add one pass across files. One big pass or a bigger-context model does not fix it.", "q_ids": [163] },
-          { "see": "accurate but inconsistently explained, and the gaps vary by case", "answer": "Add a **self-critique / evaluator-optimizer** step: the agent checks its draft against explicit completeness criteria before presenting. `few-shot` fixes consistent patterns, not per-case variable gaps; a bigger model or a customer-confirmation step doesn't fix incomplete explanation.", "q_ids": [99] },
-          { "see": "cut investigation time, but findings must not be filtered before review", "answer": "Require **reasoning + confidence inline** with each finding. Don't surface high-confidence only or suppress false-positive signatures (that filters pre-review); re-tiering blocking vs suggestion doesn't cut per-finding investigation time.", "q_ids": [110] }
+          { "see": "large multi-file review", "answer": "Review each file in its own pass, then add one pass across files. One big pass or a bigger-context model does not fix it.", "q_ids": [163] }
         ] }
       ]
     },
@@ -240,6 +244,7 @@
       "title": "Context Management & Reliability",
       "sections": [
         { "title": "5.1 context preservation", "rows": [
+          { "see": "resume a multi-agent run without repeating work or losing fidelity", "answer": "Each agent persists a structured report to a known location; on resume the coordinator loads them and injects relevant state into agent prompts (orchestrator + compact artifact). Not a shared vector store each agent semantic-searches, and not each agent blindly reloading its own file — the coordinator stays in charge.", "q_ids": [42] },
           { "see": "long conversation with transactional data (numbers / dates / IDs)", "answer": "Pull the facts into a structured block and send it with every prompt. Summarising loses them.", "q_ids": [113] },
           { "see": "“lost in the middle”", "answer": "Fix the structure. Put the key facts first and add section headers. Do not write 'pay attention'.", "q_ids": [120] },
           { "see": "multiple issues in one session — resolved topics plus one active issue, near the context limit", "answer": "Summarise the resolved topics into a narrative and keep the active issue's turns verbatim. A sliding window silently drops old issues; re-fetching on demand is slower and lossy.", "q_ids": [52] },
@@ -271,7 +276,6 @@
         { "title": "5.4 codebase exploration", "rows": [
           { "see": "context degradation exploring a large codebase", "answer": "This is an attention problem. Use scratchpad files, subagents for isolation, and state manifests. A bigger window does not fix it.", "q_ids": [46, 167, 169, 174] },
           { "see": "why delegate to a subagent", "answer": "The main gain is context isolation, not speed.", "q_ids": [168] },
-          { "see": "resume a multi-agent run without repeating work or losing fidelity", "answer": "Each agent persists a structured report to a known location; on resume the coordinator loads them and injects relevant state into agent prompts (orchestrator + compact artifact). Not a shared vector store each agent semantic-searches, and not each agent blindly reloading its own file — the coordinator stays in charge.", "q_ids": [42] },
           { "see": "build understanding of a subsystem spanning many files under context limits", "answer": "Start from the architectural root: analyze imports/class hierarchy to find the base interface, read that, then trace only the specific implementations you need. Do not sequentially Read all files, and do not just size-rank them.", "q_ids": [45] },
           { "see": "context already degraded mid-exploration, need to switch topic", "answer": "Condense what you learned into a compact summary and give a **fresh** subagent that summary plus the new task. Spawning a subagent but then synthesizing its output back in the already-degraded main context loses the signal you were trying to save.", "q_ids": [47] }
         ] },

@@ -670,6 +670,8 @@ Teach the reliability hierarchy:
 
 tool_use with JSON schemas = eliminates syntax errors entirely
 Prompt-based JSON = model can produce malformed JSON
+Response prefilling (assistant-turn prefill) = start the assistant message (e.g. with `{` or the opening of the answer) to force in-format continuation and skip preamble. Steers the FIRST tokens only; enforces no schema and can't be combined with a forced tool_choice. Use it to skip "Here is the JSON:" preamble or pin the opening token — NOT for guaranteed schema compliance.
+Reliability order: tool_use + schema (guarantees shape) > prefill / prompt-based (steer only).
 
 Teach what tool_use does NOT prevent:
 

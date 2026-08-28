@@ -254,8 +254,9 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Making all schema fields required → model fabricates values when the source lacks info (use optional/nullable).
 - For a CI/automation pipeline, forcing review structure via a CLAUDE.md "Output Format" section or a prompt template — prompt-based formatting is followed inconsistently and can't be reliably parsed; use the CLI flags `--output-format json` + `--json-schema`.
 - Blaming instruction/tool-name keyword overlap on temperature, an unset `tool_choice`, or too-sparse tool descriptions — then adding longer descriptions or a security-over-performance priority rule; the cause is the shared wording, fixed only by distinct terminology.
+- Reaching for response prefilling (or prompt-based JSON) when the requirement is *strict schema compliance* — prefill pins the opening tokens and skips preamble but enforces no schema (and can't be used while `tool_choice` forces a tool); `tool_use` + schema is the method that guarantees shape.
 
-**Core rule:** `tool_use` with optional or nullable fields stops syntax errors and fabrication. You still validate the values separately. For a CLI/automation pipeline `--output-format json` + `--json-schema` enforce parseable output, and instruction wording must stay distinct from tool names so the model invokes the tool instead of following the prose.
+**Core rule:** `tool_use` with optional or nullable fields stops syntax errors and fabrication. You still validate the values separately. For a CLI/automation pipeline `--output-format json` + `--json-schema` enforce parseable output, and instruction wording must stay distinct from tool names so the model invokes the tool instead of following the prose. Response prefilling only steers format / skips preamble — it is not a schema guarantee; reserve it for controlling the first tokens.
 
 ### 4.4 Validation, Retry, and Feedback Loops
 **Exam Traps:**

@@ -353,6 +353,7 @@
   .miss-chips{display:flex;flex-wrap:wrap;gap:.45rem;flex:1;min-width:0}
   .miss-chip{display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;font-weight:600;
     padding:.3rem .6rem;border:1px solid var(--line2);border-radius:999px;background:var(--surface);color:var(--ink2);cursor:pointer}
+  .miss-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
   .miss-chip .dot{width:.55rem;height:.55rem}
   .miss-open{flex:none}
   .miss-clean{color:var(--ok)}
@@ -1526,17 +1527,14 @@ function poolFor(mode,domains,merged){
   if(domains.size) pool=pool.filter(q=>domains.has(q.domain));
   if(mode==="review") pool=pool.filter(q=>merged[q.id]&&merged[q.id].last_correct===false);
   if(mode==="failed") pool=pool.filter(q=>{const m=merged[q.id]; return m&&(m.wrong>0||m.last_correct===false);});   // ever wrong (incl. legacy compact records with no per-attempt counts)
-  // unseen keeps the FULL domain-filtered pool here on purpose: selectSet() orders unseen-first then
-  // least-seen, so a request larger than the true-unseen count tops up with least-seen instead of
-  // truncating the exam. (availByMode still shows the true-unseen count as "N new".)
+  if(mode==="unseen") pool=pool.filter(q=>!merged[q.id]);   // ONLY never-answered; length is capped at this count (no least-seen top-up)
   return pool;
 }
 function availByMode(domains,merged){
   const inDoms=q=>!domains.size||domains.has(q.domain);
   return {
     weak: poolFor("weak",domains,merged).length,
-    unseen: BANK.filter(q=>inDoms(q) && !merged[q.id]).length,   // TRUE unseen (no fallback inflation)
-    unseenPool: BANK.filter(inDoms).length,                       // fallback pool → keeps unseen usable
+    unseen: poolFor("unseen",domains,merged).length,   // TRUE unseen — same pool the exam draws from
     random: poolFor("random",domains,merged).length,
     review: BANK.filter(q=>inDoms(q) && merged[q.id]&&merged[q.id].last_correct===false).length,
     failed: BANK.filter(q=>{const m=merged[q.id]; return inDoms(q)&&m&&(m.wrong>0||m.last_correct===false);}).length,
@@ -1794,19 +1792,25 @@ function renderConfig(){
   const focus=(HISTORY.focus_domains)||[];
   const MODES=[
     {id:"weak",t:"Weak areas",d:"Leans towards your weak domains and the questions you got wrong."},
-    {id:"unseen",t:"Unseen",d:"Questions you have never answered. If there are too few, it adds the ones you have seen least."},
+    {id:"unseen",t:"Unseen",d:"Questions you have never answered — capped at how many you have left."},
     {id:"random",t:"Random",d:"A random draw from the whole bank."},
     {id:"review",t:"Review misses",d:"Only questions you got wrong last time."},
     {id:"failed",t:"Ever failed",d:"Every question you've EVER gotten wrong, even one you've passed since."},
   ];
   const av=availByMode(cfg.domains,merged);
+  // "Length" is capped at what this mode+domains actually make available (the count the mode card shows;
+  // for unseen that is the true-unseen "N new", no least-seen top-up). A numeric length above that is
+  // disabled, and if the current pick no longer fits (mode/domain changed) it snaps to All — so All is the
+  // only choice, and the active one, whenever every numeric length exceeds the available count.
+  const shownAvail = av[cfg.mode];
+  if(cfg.count!=="all" && cfg.count>shownAvail) cfg.count="all";
 
   let html=`<div class="cfg-grid">
       <div class="field"><div class="flabel">Mode</div><div class="modes" id="modes">`;
   MODES.forEach(m=>{
     const n=av[m.id];
     // unseen stays usable via least-seen fallback, so disable it only when its whole pool is empty
-    const dis = m.id==="unseen" ? av.unseenPool===0 : n===0;
+    const dis = n===0;   // every mode (unseen included) is disabled when it has 0 available
     const availLbl = m.id==="unseen" ? `${n} new` : `${n} available`;
     html+=`<label class="mode ${cfg.mode===m.id?"sel":""} ${dis?"disabled":""}" data-mode="${m.id}">
       <div class="mt">${m.t}<span class="avail">${availLbl}</span></div><div class="md">${m.d}</div></label>`;
@@ -1818,7 +1822,7 @@ function renderConfig(){
   }
   html+=`</div></div>
       <div class="field"><div class="flabel">Length</div><div class="counts" id="counts">`;
-  [15,30,60].forEach(c=>html+=`<button class="count-btn ${cfg.count===c?"sel":""}" data-count="${c}">${c}</button>`);
+  [15,30,60].forEach(c=>{ const dis=c>shownAvail; html+=`<button class="count-btn ${cfg.count===c?"sel":""}" data-count="${c}"${dis?" disabled":""}>${c}</button>`; });
   html+=`<button class="count-btn ${cfg.count==="all"?"sel":""}" data-count="all">All</button></div></div>
       <div class="field"><div class="flabel">Time limit <span class="hint">(2 minutes per question. At zero you get a warning. It never submits for you.)</span></div><div class="counts" id="limits">`;
   html+=`<button class="count-btn ${!cfg.timed?"sel":""}" data-timed="0">No limit</button>`;
@@ -1837,7 +1841,11 @@ function renderConfig(){
 function updateCfgSummary(merged){
   const pool=poolFor(cfg.mode,cfg.domains,merged);
   const avail=pool.length;
-  const want = cfg.count==="all"?avail:cfg.count;
+  // "All" = every question actually AVAILABLE for this mode+domains, i.e. the count the mode card shows
+  // (for unseen that is the TRUE-unseen count, not the least-seen top-up pool). A numeric length still
+  // draws from the full pool so unseen can top up past its true-unseen count — only "all" caps at the shown avail.
+  const shownAvail = availByMode(cfg.domains,merged)[cfg.mode];
+  const want = cfg.count==="all"?shownAvail:cfg.count;
   const actual=Math.min(want,avail);
   const sum=$("#cfgSummary");
   let note="", cls="cfg-note";
@@ -1882,9 +1890,7 @@ function selectSet(pool,n,mode,merged){
     };
     chosen=pool.slice().sort((a,b)=>score(b)-score(a)).slice(0,n);
   } else if(mode==="unseen"){
-    const un=shuffle(pool.filter(q=>!merged[q.id]));
-    const seenSorted=pool.filter(q=>merged[q.id]).sort((a,b)=>(merged[a.id].seen)-(merged[b.id].seen));
-    chosen=[...un,...seenSorted].slice(0,n);
+    chosen=shuffle(pool.slice()).slice(0,n);   // pool is already only the never-answered questions
   } else { // random, review, failed
     chosen=shuffle(pool.slice()).slice(0,n);
   }
