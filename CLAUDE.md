@@ -143,7 +143,14 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 /plugin install ccaf@ccaf-marketplace
 /ccaf:init            # opens the app (hook rebuild); click Mock Exam → sit it → copy JSON → /ccaf:result → /ccaf:dashboard
 ```
-Reinstall after edits: `/plugin marketplace update ccaf-marketplace`.
+**Ship after edits — the installed copy is what runs.** The hook and every `/ccaf:*` command execute from
+`~/.claude/plugins/cache/ccaf-marketplace/ccaf/<version>/`, not from this repo. Until the steps below are done the
+user sees nothing, and the next `/ccaf:dashboard` rebuilds the app from the OLD cached template. After any change:
+(1) version bump + commit, only with the user's approval per God Rule #12; (2) `claude plugin update ccaf@ccaf-marketplace`;
+(3) `CCAF_NO_OPEN=1 python3 ~/.claude/plugins/cache/ccaf-marketplace/ccaf/<new-version>/data/build-app.py`;
+(4) grep `~/.claude/ccaf-progress/ccaf-exam.html` for a symbol from the change to prove it landed; (5) the user must
+reload the app page, and an exam already started keeps its old question set. **The first sentence of the report
+after an edit names which of these are done and what the user still has to do.**
 
 ## Staying current (content freshness)
 Keeping bundled content aligned with the official exam is a **maintainer task, every 6–12 months** — NOT
