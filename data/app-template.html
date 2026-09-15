@@ -1793,7 +1793,7 @@ function renderConfig(){
   const MODES=[
     {id:"weak",t:"Weak areas",d:"Leans towards your weak domains and the questions you got wrong."},
     {id:"unseen",t:"Unseen",d:"Questions you have never answered — capped at how many you have left."},
-    {id:"random",t:"Random",d:"A random draw from the whole bank."},
+    {id:"random",t:"Random",d:`A random draw from the whole bank. Skips questions from your last ${RECENT_EXAMS_N} exams (past ${RECENT_EXAMS_DAYS} days) unless needed to fill the length.`},
     {id:"review",t:"Review misses",d:"Only questions you got wrong last time."},
     {id:"failed",t:"Ever failed",d:"Every question you've EVER gotten wrong, even one you've passed since."},
   ];
@@ -1851,6 +1851,14 @@ function updateCfgSummary(merged){
   let note="", cls="cfg-note";
   if(avail===0){ note=(cfg.mode==="review"||cfg.mode==="failed")?"You have no missed questions yet. Try Weak areas or Random.":"No questions match this selection."; cls="cfg-note warn"; }
   else if(actual<want){ note=`Only ${avail} questions match this selection, so the exam will have ${actual}.`; cls="cfg-note warn"; }
+  else if(cfg.mode==="random"){
+    const rank=recentExamRank(); const skipped=pool.filter(q=>rank.has(String(q.id))).length; const fresh=avail-skipped;
+    if(skipped>0){
+      const topUp=Math.max(0,actual-fresh);
+      note=`${skipped} of these were in your last ${RECENT_EXAMS_N} exams (past ${RECENT_EXAMS_DAYS} days) and are skipped. ${fresh} fresh questions remain`
+        +(topUp>0?`, so ${topUp} will be topped up from the oldest of those exams.`:".");
+    }
+  }
   sum.innerHTML=`<div class="big">${actual} question${actual===1?"":"s"}${cfg.timed?` · ${actual*2} min`:""}</div>
     <div class="${cls}">${note||(cfg.timed?`2 minutes per question, so ${actual*2} minutes in total. At zero you get a warning and the attempt is marked over time. You still finish every question.`:"Ready when you are.")}</div>
     <button class="primary" id="startBtn" style="margin-left:auto" ${avail===0?"disabled":""}>Start exam →</button>`;
@@ -1860,6 +1868,26 @@ function updateCfgSummary(merged){
 /* ================= EXAM ================= */
 let exam=null; // {question_ids, questions, exam_id, mode, answers, elapsed, paused, submitted, started_ts}
 function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+/* ---- Random mode: skip questions that appeared in the last RECENT_EXAMS_N exams sat within the past
+   RECENT_EXAMS_DAYS days (recorded + pending). If that leaves fewer than the requested length, top up from
+   the skipped ones, OLDEST of those exams first. Returns Map(question id -> rank of the most recent of those
+   exams it appeared in; 0 = newest). A question absent from the map is "fresh". ---- */
+const RECENT_EXAMS_N=3, RECENT_EXAMS_DAYS=7;
+function recentExamRank(){
+  const now=Date.now();
+  const rows=[...((HISTORY.exam_history)||[]), ...pending].filter(e=>e&&e.exam_id&&e.ts)
+    .filter(e=>{ const t=Date.parse(e.ts); return !isNaN(t)&&(now-t)<=RECENT_EXAMS_DAYS*86400000; })
+    .sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));            // newest first
+  const ids=[]; rows.forEach(e=>{ if(ids.length<RECENT_EXAMS_N&&!ids.includes(e.exam_id)) ids.push(e.exam_id); });
+  const rankOf=new Map(ids.map((id,i)=>[id,i]));
+  const rank=new Map();
+  const mark=(qid,examId)=>{ const r=rankOf.get(examId); if(r==null)return; const k=String(qid); if(!rank.has(k)||rank.get(k)>r) rank.set(k,r); };
+  const auth=HISTORY.answered||{};
+  for(const id in auth) (auth[id].log||[]).forEach(a=>mark(id,a.exam_id));
+  pending.forEach(p=>(p.answers||[]).forEach(a=>mark(a.id,p.exam_id)));
+  return rank;
+}
 
 function selectSet(pool,n,mode,merged){
   let chosen;
@@ -1888,10 +1916,22 @@ function selectSet(pool,n,mode,merged){
       s+=dueOf(q);                                 // spaced-repetition recency (due)
       return s;
     };
-    chosen=pool.slice().sort((a,b)=>score(b)-score(a)).slice(0,n);
+    // score ONCE per question, then sort by the cached value — score() has a random jitter term, so calling
+    // it inside the comparator would give an inconsistent (non-transitive) ordering.
+    chosen=pool.map(q=>({q,s:score(q)})).sort((a,b)=>b.s-a.s).slice(0,n).map(x=>x.q);
   } else if(mode==="unseen"){
     chosen=shuffle(pool.slice()).slice(0,n);   // pool is already only the never-answered questions
-  } else { // random, review, failed
+  } else if(mode==="random"){
+    const rank=recentExamRank();
+    const fresh=pool.filter(q=>!rank.has(String(q.id)));
+    chosen=shuffle(fresh).slice(0,n);
+    if(chosen.length<n){
+      // top up from the skipped questions: oldest of the recent exams first (highest rank); shuffle first so
+      // the order inside one exam is random — Array.prototype.sort is stable, so the shuffle survives.
+      const rest=shuffle(pool.filter(q=>rank.has(String(q.id)))).sort((a,b)=>rank.get(String(b.id))-rank.get(String(a.id)));
+      chosen=chosen.concat(rest.slice(0,n-chosen.length));
+    }
+  } else { // review, failed
     chosen=shuffle(pool.slice()).slice(0,n);
   }
   return shuffle(chosen); // present in random order
