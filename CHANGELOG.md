@@ -6,6 +6,14 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.19.3] — 2026-09-15
+### Fixed
+- **Trend charts no longer overlap when several mocks land on the same day.** Root cause: `dateScale()` split a fixed 1000-unit width equally per calendar DATE, so a day with 3–4 sittings squeezed them (and their score labels) into one cell. `data/app-template.html`: every sitting now gets a guaranteed `TREND_STEP` (44 px); a date's cell is sized to its sitting count; when the sittings outgrow the base width the SVG grows 1:1 inside a horizontally scrollable `.trend-scroll` wrapper, auto-scrolled to the newest sitting (also when a collapsed domain card opens). The `NN% pass line` label is now an HTML element pinned over the plot so it stays visible while scrolling; date ticks thin from the real plot width instead of a fixed ~12. Applies to both the Score trend and every domain's Error trend (shared `trendWidth`/`trendScroll`/`trendTickStep` helpers). Documented in `maintenance/app-internals.md` ("Trend-chart sizing").
+
+## [0.19.2] — 2026-09-15
+### Changed
+- **Random mode skips questions from the last 3 exams (7 days)**, topping up from the rest of the pool when the filter leaves too few; the mode card + config summary explain the skip / top-up. Weak mode caches its score before sorting. (Shipped without a changelog entry or a `marketplace.json` bump; both recorded here.)
+
 ## [0.19.1] — 2026-08-28
 ### Added
 - **Prefill coverage — the one blueprint gap found by a score-report cross-check.** A colleague's official Score Report listed *response prefilling* as one of three structured-output methods (task 4.3), but the plugin taught only `tool_use` + schema and prompt-based formatting. `data/tutor-prompts.md` (4.3) now teaches assistant-turn prefill and the reliability order (`tool_use` + schema > prefill / prompt-based); `data/exam-traps.md` (4.3) gains a matching trap + Core-rule clause. Two bank questions added: **241** (strict schema compliance → `tool_use`, prefill enforces no schema) and **242** (prefill's real niche — skip preamble / control first tokens).

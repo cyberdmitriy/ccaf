@@ -472,6 +472,14 @@
   /* ---------- score-trend sparkline ---------- */
   .trend-card{margin-top:1rem;padding:1.1rem 1.2rem}
   .trend-svg{width:100%;height:auto;display:block;overflow:visible}
+  /* trend charts grow with the number of sittings (TREND_STEP each); past the base width the wrapper
+     scrolls horizontally and the pass-line label stays pinned on top of the plot */
+  .trend-wrap{position:relative}
+  .trend-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+  .trend-scroll.is-scroll{padding-bottom:.4rem}
+  .trend-passlbl{position:absolute;transform:translateY(-50%);font-size:11px;line-height:1.2;color:var(--muted);
+    background:color-mix(in srgb,var(--surface) 90%,transparent);padding:.1rem .4rem .1rem 0;border-radius:4px;
+    white-space:nowrap;pointer-events:none;z-index:1}
   .trend-legend{display:flex;gap:1.1rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:.7rem;align-items:center}
   .trend-legend .lg{display:inline-flex;align-items:center;gap:.4rem}
   .trend-legend .sw{width:.85rem;height:.85rem;border-radius:3px;display:inline-block}
@@ -999,21 +1007,38 @@ function fmtDate(ts, style){
   if(style==="short") return D+"."+M+"."+Y.slice(2);
   return D+"."+M+"."+Y;
 }
-/* Date-grouped x-scale for the trend charts: each unique CALENDAR DATE gets one equal cell (and ONE axis
-   label); several sittings on the same date are spread in time order INSIDE that cell (never overlapping,
-   never spilling into the neighbour). tsList must be chronological. Returns { xs[], ticks:[{x,label}] }. */
+/* Date-grouped x-scale for the trend charts: every SITTING gets the same horizontal step; each unique
+   CALENDAR DATE owns one cell sized to its sitting count (a date with 4 sittings is 4 steps wide) and ONE
+   axis label centred on that cell. Sittings inside a cell sit in time order one step apart — never
+   overlapping, never spilling into the neighbour. tsList must be chronological. The caller sizes x1 via
+   trendWidth() so the step never drops below TREND_STEP. Returns { xs[], ticks:[{x,label}], step }. */
 function dateScale(tsList, x0, x1){
   const keys=tsList.map(t=>String(t||"").slice(0,10));
   const uniq=[...new Set(keys)];
-  const D=uniq.length, cellW=(x1-x0)/Math.max(1,D), idxOf={};
-  uniq.forEach((k,i)=>idxOf[k]=i);
-  const total={}, seen={};
+  const step=(x1-x0)/Math.max(1,keys.length);
+  const total={}, start={}, seen={};
   keys.forEach(k=>{ total[k]=(total[k]||0)+1; });
-  const xs=keys.map(k=>{ const di=idxOf[k], cnt=total[k], j=(seen[k]=(seen[k]||0)+1)-1;
-    const frac=cnt>1?(j+1)/(cnt+1):0.5; return x0 + di*cellW + frac*cellW; });
-  const ticks=uniq.map((k,i)=>({x:x0 + i*cellW + cellW/2, label:fmtDate(k,'md')}));
-  return {xs, ticks};
+  let acc=0; uniq.forEach(k=>{ start[k]=acc; acc+=total[k]; });
+  const xs=keys.map(k=>{ const j=(seen[k]=(seen[k]||0)+1)-1; return x0 + (start[k]+j+0.5)*step; });
+  const ticks=uniq.map(k=>({x:x0 + (start[k]+total[k]/2)*step, label:fmtDate(k,'md')}));
+  return {xs, ticks, step};
 }
+/* Trend-chart sizing, shared by renderTrend + domErrTrend. TREND_STEP = minimum room per sitting (viewBox
+   units ≈ px): enough for an 11px score label ("100") and a rotated dd.mm tick with clear space around
+   both. Up to TREND_BASE_W the SVG fills the card as before; beyond it the SVG grows (fixed px width) and
+   its .trend-scroll wrapper scrolls horizontally, auto-scrolled to the newest sittings. Ticks are thinned
+   from the real plot width (one per TREND_TICK_MIN units), not to a fixed count. */
+const TREND_STEP=44, TREND_BASE_W=1000, TREND_TICK_MIN=56;
+function trendWidth(n, fixed){ return Math.max(TREND_BASE_W, Math.ceil(fixed + n*TREND_STEP)); }
+function trendSvgStyle(W){ return W>TREND_BASE_W ? ` style="width:${W}px;max-width:none"` : ""; }
+function trendTickStep(ticks, plotW){ return Math.max(1, Math.ceil(ticks/Math.max(1, Math.floor(plotW/TREND_TICK_MIN)))); }
+// Wrap a trend SVG; `pinned` = HTML laid over the plot (the pass-line label) that stays put while the SVG
+// scrolls underneath. data-scroll-end marks wrappers that scrollTrendsToEnd() jumps to the newest sitting.
+function trendScroll(svg, W, pinned){ const sc=W>TREND_BASE_W;
+  return `<div class="trend-wrap">${pinned||""}<div class="trend-scroll${sc?" is-scroll":""}"${sc?' data-scroll-end="1"':""}>${svg}</div></div>`; }
+function scrollTrendsToEnd(root){ (root||document).querySelectorAll(".trend-scroll[data-scroll-end]").forEach(el=>{ el.scrollLeft=el.scrollWidth; }); }
+// Domain cards render collapsed; a hidden scroller has no scrollWidth, so re-run when a card opens.
+document.addEventListener("toggle", e=>{ const d=e.target; if(d&&d.matches&&d.matches("details.dom-card")&&d.open) scrollTrendsToEnd(d); }, true);
 function domVar(d){return getComputedStyle(document.documentElement).getPropertyValue(DOMAIN_VAR[d]).trim();}
 function uid(){try{return crypto.randomUUID();}catch(e){return "x"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}}
 function loadLS(k,f){try{const v=JSON.parse(localStorage.getItem(k)||"null");return v==null?f:v;}catch(e){return f;}}
@@ -1106,21 +1131,23 @@ function renderTrend(allExams){
   }
   // viewBox sized close to the real rendered width (1 unit ≈ 1px) so text/dots/strokes stay crisp instead
   // of ballooning when a small viewBox is stretched to full width. See domErrTrend for the same reasoning.
-  const W=1000,H=230,padL=40,padR=40,padT=30,padB=56, iw=W-padL-padR, ih=H-padT-padB, n=withTs.length;
-  // Reserve a left lane for the inline "NN% pass line" label; the reference lines + data start to its right
-  // ( "72% pass line ----●----●----" ), so the label never sits under a marker.
+  const H=230,padL=40,padR=40,padT=30,padB=56, ih=H-padT-padB, n=withTs.length;
+  // Reserve a left lane for the pinned "NN% pass line" label; the reference lines + data start to its right
+  // ( "72% pass line ----●----●----" ), so at scroll position 0 the label never sits under a marker.
   const LX=112, plotX0=padL+LX, lineX0=plotX0-14;
+  const W=trendWidth(n, plotX0+padR);   // grows past TREND_BASE_W when the sittings need more room (→ scroll)
   const _ds=dateScale(withTs.map(e=>e.ts), plotX0, W-padR);   // one cell per date; same-date sittings spread inside it
   const X=i=> _ds.xs[i];
   const Y=p=> padT + (1-Math.max(0,Math.min(100,p))/100)*ih;
   const passY=Y(PASS_PCT);
   const mpath=mock.map(p=>X(p.i).toFixed(1)+","+Y(p.pct).toFixed(1)).join(" ");
-  let svg=`<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mock exam score trend over time">`;
+  let svg=`<svg class="trend-svg" viewBox="0 0 ${W} ${H}"${trendSvgStyle(W)} role="img" aria-label="Mock exam score trend over time">`;
   svg+=`<line x1="${lineX0}" y1="${Y(0).toFixed(1)}" x2="${W-padR}" y2="${Y(0).toFixed(1)}" style="stroke:var(--line)" stroke-width="1"/>`;
   svg+=`<line x1="${lineX0}" y1="${passY.toFixed(1)}" x2="${W-padR}" y2="${passY.toFixed(1)}" style="stroke:var(--faint)" stroke-width="1" stroke-dasharray="4 5"/>`;
-  // "NN% pass line" inline at the far left, vertically centred on the dashed line. The lines + markers start
-  // to its right (lineX0/plotX0), so the label has its own lane and never overlaps a marker.
-  svg+=`<text x="${padL}" y="${(passY+4).toFixed(1)}" text-anchor="start" style="fill:var(--muted)" font-size="11">${PASS_PCT}% pass line</text>`;
+  // "NN% pass line" is HTML pinned over the plot (not SVG text) so it stays visible while a wide chart
+  // scrolls: vertically centred on the dashed line (top in % of H, valid at any render scale), left on
+  // the padL lane (px when the SVG is 1:1 and scrolls; % when it is stretched to the card width).
+  const passLbl=`<span class="trend-passlbl" style="top:${(passY/H*100).toFixed(2)}%;left:${W>TREND_BASE_W?padL+"px":(padL/W*100).toFixed(2)+"%"}">${PASS_PCT}% pass line</span>`;
   svg+=`<polyline points="${mpath}" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
   // per-exam all-domain error breakdown for the dot tooltip (reuses the .dt-dot/DOMTIP tooltip component):
   // mock → wrong/total per domain (from per_domain); external → per-domain % (from per_domain_pct).
@@ -1152,15 +1179,15 @@ function renderTrend(allExams){
   ext.forEach(p=>{ const x=X(p.i),y=Y(p.pct),s=6, id="s-"+(p.e.exam_id||("x"+p.i)); DOMTIP[id]=scoreTip(p.e);
     svg+=`<path class="dt-dot" tabindex="0" role="button" aria-label="external ${fmtDate(p.e.ts,'full')}, ${p.pct} percent" data-tipid="${esc(id)}" d="M ${x.toFixed(1)} ${(y-s).toFixed(1)} L ${(x+s).toFixed(1)} ${y.toFixed(1)} L ${x.toFixed(1)} ${(y+s).toFixed(1)} L ${(x-s).toFixed(1)} ${y.toFixed(1)} Z" style="fill:var(--d4)"></path>`; });
   // ONE angled dd.mm label per calendar date, centred on its cell (svg overflow is visible, so the left-most
-  // never clips); thin to ~12 when there are many dates.
-  const baseY=Y(0)+22, tstep=Math.max(1, Math.ceil(_ds.ticks.length/12));
+  // never clips); thinned from the real plot width so labels never touch.
+  const baseY=Y(0)+22, tstep=trendTickStep(_ds.ticks.length, W-padR-plotX0);
   _ds.ticks.forEach((t,idx)=>{ if(idx%tstep!==0 && idx!==_ds.ticks.length-1) return; const lx=t.x.toFixed(1);
     svg+=`<text x="${lx}" y="${baseY.toFixed(1)}" text-anchor="end" transform="rotate(-28 ${lx} ${baseY.toFixed(1)})" style="fill:var(--muted)" font-size="11">${t.label}</text>`; });
   svg+=`</svg>`;
   const legend=`<div class="trend-legend">
     <span class="lg"><span class="sw" style="background:var(--accent)"></span>Mock (${mock.length})</span>
     ${ext.length?`<span class="lg"><span class="sw" style="background:var(--d4);border-radius:2px;transform:rotate(45deg)"></span>External (${ext.length}) · separate, never averaged</span>`:""}</div>`;
-  return `<div class="card pad trend-card"><h3 style="font-size:1rem;margin-bottom:.6rem">Score trend</h3>${svg}${legend}</div>`;
+  return `<div class="card pad trend-card"><h3 style="font-size:1rem;margin-bottom:.6rem">Score trend</h3>${trendScroll(svg, W, passLbl)}${legend}</div>`;
 }
 
 // One domain's error rate over the mock timeline — a compact sparkline inside that domain's card.
@@ -1183,12 +1210,13 @@ function domErrTrend(d, allExams){
       const b=byExam[m.exam_id]||(byExam[m.exam_id]={}); b[q.task]=(b[q.task]||0)+1; }); });
   // viewBox sized close to the real rendered width so 1 unit ≈ 1px — text/dots/strokes stay crisp and
   // professional instead of ballooning (a tiny viewBox stretched to full width scaled everything up).
-  const W=1000,H=150,padL=42,padR=52,padT=18,padB=40, iw=W-padL-padR, ih=H-padT-padB, n=dp.length;
+  const H=150,padL=42,padR=52,padT=18,padB=40, ih=H-padT-padB, n=dp.length;
+  const W=trendWidth(n, padL+padR);   // grows past TREND_BASE_W when the sittings need more room (→ scroll)
   const _ds=dateScale(dp.map(p=>p.ts), padL, W-padR);   // one cell per date; same-date sittings spread inside it
   const X=i=> _ds.xs[i];
   const Y=p=> padT + (1-Math.max(0,Math.min(100,p))/100)*ih;
   const col=`var(${DOMAIN_VAR[d]})`;
-  let svg=`<svg class="trend-svg dt-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Error rate for domain ${d} over the mock exam timeline">`;
+  let svg=`<svg class="trend-svg dt-svg" viewBox="0 0 ${W} ${H}"${trendSvgStyle(W)} role="img" aria-label="Error rate for domain ${d} over the mock exam timeline">`;
   [0,50,100].forEach(g=>{ const y=Y(g).toFixed(1);
     svg+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" style="stroke:var(--line)" stroke-width="1"${g?' stroke-dasharray="4 5"':''}/>`;
     svg+=`<text x="${(W-padR+7).toFixed(1)}" y="${(Y(g)+4).toFixed(1)}" text-anchor="start" style="fill:var(--muted)" font-size="12">${g}%</text>`; });
@@ -1202,12 +1230,12 @@ function domErrTrend(d, allExams){
     svg+=`<circle class="dt-dot" tabindex="0" role="button" aria-label="${fmtDate(p.ts,'full')}, ${Math.round(p.v)} percent wrong" data-tipid="${esc(id)}" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="4" style="fill:${col}"></circle>`;
   });
   // ONE angled dd.mm label per calendar date, centred on its cell (svg overflow is visible via .trend-svg,
-  // so edges never clip); thin to ~12 when there are many dates.
-  const baseY=Y(0)+20, tstep=Math.max(1, Math.ceil(_ds.ticks.length/12));
+  // so edges never clip); thinned from the real plot width so labels never touch.
+  const baseY=Y(0)+20, tstep=trendTickStep(_ds.ticks.length, W-padL-padR);
   _ds.ticks.forEach((t,idx)=>{ if(idx%tstep!==0 && idx!==_ds.ticks.length-1) return; const lx=t.x.toFixed(1);
     svg+=`<text x="${lx}" y="${baseY.toFixed(1)}" text-anchor="end" transform="rotate(-28 ${lx} ${baseY.toFixed(1)})" style="fill:var(--muted)" font-size="11">${t.label}</text>`; });
   svg+=`</svg>`;
-  return `<div class="dom-trend"><div class="dt-h">Error trend <span class="dt-sub">% wrong per mock exam · hover a dot for the misses</span></div>${svg}</div>`;
+  return `<div class="dom-trend"><div class="dt-h">Error trend <span class="dt-sub">% wrong per mock exam · hover a dot for the misses</span></div>${trendScroll(svg, W)}</div>`;
 }
 // Rich tooltip for the error-trend dots: which task statements were missed that exam + how many each.
 // One shared element, delegated hover/focus on .dt-dot (survives dashboard re-renders). Content built
@@ -1518,6 +1546,7 @@ function renderDashboard(){
     </details>`; }
   html+=`${hasAxis?"":'<p class="hint" style="margin-top:.5rem">This tally fills in when you record exams. Every miss gets one axis.</p>'}</div></section>`;
   v.innerHTML=html;
+  scrollTrendsToEnd(v);   // wide trend charts open on the newest sittings
 }
 
 /* ================= CONFIG / NEW EXAM ================= */
