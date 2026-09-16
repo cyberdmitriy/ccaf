@@ -1902,7 +1902,7 @@ function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.ra
    RECENT_EXAMS_DAYS days (recorded + pending). If that leaves fewer than the requested length, top up from
    the skipped ones, OLDEST of those exams first. Returns Map(question id -> rank of the most recent of those
    exams it appeared in; 0 = newest). A question absent from the map is "fresh". ---- */
-const RECENT_EXAMS_N=3, RECENT_EXAMS_DAYS=7;
+const RECENT_EXAMS_N=5, RECENT_EXAMS_DAYS=10;
 function recentExamRank(){
   const now=Date.now();
   const rows=[...((HISTORY.exam_history)||[]), ...pending].filter(e=>e&&e.exam_id&&e.ts)

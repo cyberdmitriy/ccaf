@@ -6,6 +6,10 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.19.4] — 2026-09-16
+### Changed
+- **Random mode skips the last 5 exams within 10 days** (was 3 exams / 7 days). `data/app-template.html`: `RECENT_EXAMS_N=5`, `RECENT_EXAMS_DAYS=10` — the one tuning point; the mode card and the config note interpolate both. Rationale: a daily 15- or 30-question routine still leaves a full fresh pool for the next sitting; on a 60-question day the fresh pool may run short, and the existing top-up (skipped questions, oldest exam first) covers that. `maintenance/app-internals.md` now documents the mechanism.
+
 ## [0.19.3] — 2026-09-15
 ### Fixed
 - **Trend charts no longer overlap when several mocks land on the same day.** Root cause: `dateScale()` split a fixed 1000-unit width equally per calendar DATE, so a day with 3–4 sittings squeezed them (and their score labels) into one cell. `data/app-template.html`: every sitting now gets a guaranteed `TREND_STEP` (44 px); a date's cell is sized to its sitting count; when the sittings outgrow the base width the SVG grows 1:1 inside a horizontally scrollable `.trend-scroll` wrapper, auto-scrolled to the newest sitting (also when a collapsed domain card opens). The `NN% pass line` label is now an HTML element pinned over the plot so it stays visible while scrolling; date ticks thin from the real plot width instead of a fixed ~12. Applies to both the Score trend and every domain's Error trend (shared `trendWidth`/`trendScroll`/`trendTickStep` helpers). Documented in `maintenance/app-internals.md` ("Trend-chart sizing").
