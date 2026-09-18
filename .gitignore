@@ -16,3 +16,5 @@ Thumbs.db
 # Superpowers SDD scratch
 .superpowers/
 .docs/
+# Private idea notes (not part of the plugin)
+IDEA-*.md

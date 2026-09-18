@@ -167,6 +167,10 @@
   .cs-chip{font-size:.8rem;padding:.3rem .7rem;border:1px solid var(--line2);border-radius:999px;
     background:var(--surface);color:var(--ink2);cursor:pointer}
   .cs-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .cs-chip .cs-cnt{display:inline-block;min-width:1.25em;margin-left:.4em;padding:0 .35em;border-radius:999px;font-size:.72rem;font-weight:700;
+    background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--ink2);text-align:center;font-variant-numeric:tabular-nums}
+  .cs-chip.on .cs-cnt{background:rgba(255,255,255,.28);color:#fff}
+  .cs-chips-lbl{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-right:.2rem}
   .cs-search{flex:1;min-width:12rem;padding:.4rem .7rem;border:1px solid var(--line2);border-radius:8px;
     background:var(--surface);color:var(--ink);font:inherit}
   .cs-dim{color:var(--muted)}
@@ -1609,12 +1613,17 @@ function renderReference(){
   $$("#view-reference [data-ref-dom]").forEach(b=>b.onclick=()=>{ refState.domain=b.dataset.refDom; renderReference(); });
   const qi=$("#ref-q"); if(qi){ qi.oninput=()=>{ refState.q=qi.value; renderReference(); const n=$("#ref-q"); if(n){ n.focus(); const v=n.value.length; n.setSelectionRange(v,v);} }; }
 }
-let cheatState = { domain:"all", q:"" };
+let cheatState = { domain:"all", q:"", exam:"all" };   // exam = exam_id of a mock sitting, or "all"
 
+// Weaknesses order = most recently MISSED first. The key is the canonical per-attempt data
+// (lastMissTs → HISTORY.answered[qid].log + pending), NOT the entry's `last_ts`: /ccaf:result bumps
+// `last_ts` on a correct answer too (status "mastered"), so it means "last touched" and would float a
+// question you just got RIGHT to the top. Fallback for an entry with no attempt data: last_ts/first_ts.
 function cheatList(){
   const cs=(HISTORY.cheatsheet&&HISTORY.cheatsheet.entries)||{};
+  const key=e=> lastMissTs(e.qid) || String(e.last_ts||e.first_ts||"");
   return Object.keys(cs).map(k=>cs[k]).filter(e=>e&&typeof e==="object")
-    .sort((a,b)=>String(b.last_ts||b.first_ts||"").localeCompare(String(a.last_ts||a.first_ts||"")));  // newest miss first
+    .sort((a,b)=>key(b).localeCompare(key(a)));
 }
 function cheatOptText(qid,letter){
   const q=BANK.find(x=>String(x.id)===String(qid));
@@ -1713,21 +1722,29 @@ function examOrdinals(){
   ((HISTORY.exam_history)||[]).slice()
     .filter(e=>e&&e.exam_id&&e.type==="mock")
     .sort((a,b)=>String(a.ts||"").localeCompare(String(b.ts||"")))   // oldest first → ordinal 1..N
-    .forEach(e=>{ if(!(e.exam_id in map)){ n++; map[e.exam_id]={n:n,date:fmtDate(e.ts,'short')}; } });
+    .forEach(e=>{ if(!(e.exam_id in map)){ n++; map[e.exam_id]={n:n,date:fmtDate(e.ts,'short'),ts:String(e.ts||"")}; } });
   return map;
 }
 // Full per-question attempt timeline (recorded `log` + local pending), oldest→newest, each mapped to the
 // exam (#N + date) it happened in via examOrdinals. `log` = [{exam_id, correct, ts}] injected by build-app.py.
 // Fallback: an entry with no `log` (legacy build) → derive red-only dots from `misses`.
-function wkTimeline(qid, ords){
+function wkAttempts(qid){
   const a=(HISTORY.answered&&HISTORY.answered[String(qid)])||null;
   const raw=[];
   if(a&&Array.isArray(a.log)&&a.log.length){ a.log.forEach(x=>{ if(x) raw.push({exam_id:x.exam_id, correct:!!x.correct, ts:x.ts}); }); }
   else if(a&&Array.isArray(a.misses)){ a.misses.forEach(m=>{ if(m) raw.push({exam_id:m.exam_id, correct:false, ts:m.ts}); }); }
   pending.forEach(p=>(p.answers||[]).forEach(x=>{ if(String(x.id)===String(qid))
-    raw.push({exam_id:p.exam_id, correct:!!x.is_correct, ts:p.ts}); }));
+    raw.push({exam_id:p.exam_id, correct:!!x.is_correct, ts:x.answered_at||p.ts}); }));   // per-answer time when present
   raw.sort((x,y)=>String(x.ts||"").localeCompare(String(y.ts||"")));   // chronological
-  return raw.map(x=>{ const o=ords[x.exam_id]; return {correct:x.correct, n:o?o.n:null, date:o?o.date:fmtDate(x.ts,'short')}; });
+  return raw;
+}
+// exam_ids of every WRONG attempt of a question — the Weaknesses exam filter reads this, so a chip shows
+// only questions actually failed in THAT sitting (not merely seen in it).
+function missExamIds(qid){ const s=new Set(); wkAttempts(qid).forEach(x=>{ if(!x.correct&&x.exam_id) s.add(String(x.exam_id)); }); return s; }
+// ts of the most recent WRONG attempt ("" when none) — the Weaknesses sort key (see cheatList).
+function lastMissTs(qid){ let t=""; wkAttempts(qid).forEach(x=>{ if(!x.correct&&String(x.ts||"")>t) t=String(x.ts); }); return t; }
+function wkTimeline(qid, ords){
+  return wkAttempts(qid).map(x=>{ const o=ords[x.exam_id]; return {correct:x.correct, n:o?o.n:null, date:o?o.date:fmtDate(x.ts,'short')}; });
 }
 function examLbl(a){ return (a.n?("Exam #"+a.n):"Exam")+(a.date?" · "+esc(a.date):""); }
 // ---------- Weaknesses: per-topic study note + a collapsible list of the exact failed questions ----------
@@ -1738,7 +1755,7 @@ function renderWeakness(){
       <div><b>Your <span class="kbd">cheatsheet.json</span> could not be read. The JSON is broken.</b> Nothing is shown here, but the file is still on disk. Fix it, then record an exam to build it again.</div></div>`;
     return;
   }
-  const all=cheatList();   // newest miss first (by last_ts/first_ts)
+  const all=cheatList();   // most recently MISSED first (lastMissTs)
   if(!all.length){
     v.innerHTML=`<div class="empty"><div class="em-ic">🗒️</div><h3>No weaknesses yet</h3>
       <p class="hint">This page fills in from the questions you get wrong. Record an exam with <span class="kbd">/ccaf:result</span> to start it.</p></div>`;
@@ -1747,11 +1764,22 @@ function renderWeakness(){
   const domains=[...new Set(all.map(e=>String(e.domain)))].sort();
   const chip=(active,val,label)=>`<button class="cs-chip${active?" on":""}" data-cs-dom="${esc(val)}">${esc(label)}</button>`;
   const domChips=chip(cheatState.domain==="all","all","All domains")+domains.map(d=>chip(cheatState.domain===d,d,"Domain "+d)).join("");
-  const shown=all.filter(cheatMatches);   // domain + free-text search (axis filter dropped for the topic view)
-  // group by topicKey, keeping newest-first order; collect ALL entries in a group (not just the newest)
+  const base=all.filter(cheatMatches);   // domain + free-text search (axis filter dropped for the topic view)
+  const ords=examOrdinals();
+  // Exam filter (chips): one chip per mock sitting in which any of the `base` questions was FAILED, newest
+  // first, with the count of failed questions. Built from `base` (after domain + search) so a chip never
+  // leads to an empty list; a selected exam that dropped out of the set falls back to "all".
+  const perExam={};
+  base.forEach(e=>{ missExamIds(e.qid).forEach(id=>{ perExam[id]=(perExam[id]||0)+1; }); });
+  const examIds=Object.keys(perExam).sort((a,b)=>{ const ta=(ords[a]||{}).ts||(pending.find(p=>p.exam_id===a)||{}).ts||"", tb=(ords[b]||{}).ts||(pending.find(p=>p.exam_id===b)||{}).ts||""; return String(tb).localeCompare(String(ta)); });
+  if(cheatState.exam!=="all"&&!(cheatState.exam in perExam)) cheatState.exam="all";
+  const echip=(active,val,label,cnt)=>`<button class="cs-chip${active?" on":""}" data-cs-exam="${esc(val)}">${esc(label)}${cnt!=null?`<span class="cs-cnt">${cnt}</span>`:""}</button>`;
+  const examLabel=id=>{ const o=ords[id]; if(o) return `#${o.n} · ${fmtDate(o.ts,'md')}`; const p=pending.find(x=>x.exam_id===id); return p&&p.ts?`Unrecorded · ${fmtDate(p.ts,'md')}`:"Unrecorded"; };
+  const examChips=examIds.length>1 ? `<span class="cs-chips-lbl">Exam</span>`+echip(cheatState.exam==="all","all","All exams")+examIds.map(id=>echip(cheatState.exam===id,id,examLabel(id),perExam[id])).join("") : "";
+  const shown=cheatState.exam==="all" ? base : base.filter(e=>missExamIds(e.qid).has(cheatState.exam));
+  // group by topicKey, keeping most-recently-missed-first order; collect ALL entries in a group (not just the newest)
   const order=[], groups={};
   shown.forEach(e=>{ const k=topicKey(e); if(!(k in groups)){ groups[k]=[]; order.push(k); } groups[k].push(e); });
-  const ords=examOrdinals();
   const body = order.length ? order.map(k=>{
     const items=groups[k];                 // already newest-first
     const lead=items[0];                   // newest entry
@@ -1796,8 +1824,10 @@ function renderWeakness(){
       <div class="cs-chips">${domChips}</div>
       <input id="wkSearch" class="cs-search" type="search" placeholder="Search…" value="${esc(cheatState.q)}" aria-label="Search weaknesses">
     </div>
+    ${examChips?`<div class="cs-filters" style="margin-top:-.5rem"><div class="cs-chips">${examChips}</div></div>`:""}
     ${body}`;
   $$("#view-weakness [data-cs-dom]").forEach(b=>b.onclick=()=>{cheatState.domain=b.dataset.csDom;renderWeakness();});
+  $$("#view-weakness [data-cs-exam]").forEach(b=>b.onclick=()=>{cheatState.exam=b.dataset.csExam;renderWeakness();});
   const srch=$("#wkSearch");
   if(srch){ srch.oninput=()=>{ const val=srch.value; cheatState.q=val; renderWeakness();
     const s2=$("#wkSearch"); if(s2){ s2.focus(); try{s2.setSelectionRange(val.length,val.length);}catch(e){} } }; }
@@ -1971,9 +2001,9 @@ function startExam(pool,n){
   const set=selectSet(pool,n,cfg.mode,merged);
   if(!set.length) return;
   exam={ exam_id:"exam-"+uid(), mode:cfg.mode, domains:[...cfg.domains],
-    question_ids:set.map(q=>q.id), answers:{}, flagged:{}, elapsed:0, paused:false, submitted:false,
+    question_ids:set.map(q=>q.id), answers:{}, answered_at:{}, flagged:{}, elapsed:0, paused:false, submitted:false,
     limit_seconds: cfg.timed ? set.length*120 : 0, over_time:false,   // 2 min per question
-    started_ts:new Date().toISOString() };
+    started_ts:new Date().toISOString() };   // answered_at[id] = ISO ts of the LAST pick for that question
   currentQId=null;
   inProgress=null;
   persistExam();
@@ -1983,7 +2013,7 @@ function startExam(pool,n){
 function questionsOf(ids){ const byId={}; BANK.forEach(q=>byId[q.id]=q); return ids.map(id=>byId[id]).filter(Boolean); }
 function persistExam(){ if(!exam||exam.submitted)return;
   saveLS(LS_INPROGRESS,{exam_id:exam.exam_id,mode:exam.mode,domains:exam.domains,question_ids:exam.question_ids,
-    answers:exam.answers,flagged:exam.flagged||{},current:currentQId,elapsed:exam.elapsed,paused:exam.paused,submitted:false,
+    answers:exam.answers,answered_at:exam.answered_at||{},flagged:exam.flagged||{},current:currentQId,elapsed:exam.elapsed,paused:exam.paused,submitted:false,
     limit_seconds:exam.limit_seconds||0,over_time:!!exam.over_time,started_ts:exam.started_ts}); }
 
 function renderExam(){
@@ -2042,6 +2072,7 @@ function pickAnswer(id,L){
   id=String(id);
   if(!exam.question_ids.some(x=>String(x)===id))return;
   exam.answers[id]=L;
+  (exam.answered_at||(exam.answered_at={}))[id]=new Date().toISOString();   // per-answer time → results JSON → attempts[].ts
   const card=$("#q-"+id);
   if(card){ const inp=card.querySelector('input[value="'+L+'"]'); if(inp) inp.checked=true;
     card.querySelectorAll(".opt").forEach(o=>o.classList.toggle("picked",o.dataset.letter===L)); }
@@ -2164,7 +2195,7 @@ function quitExam(){
 
 function resumeExam(){ if(!inProgress)return;
   exam={exam_id:inProgress.exam_id,mode:inProgress.mode,domains:inProgress.domains||[],
-    question_ids:inProgress.question_ids,answers:inProgress.answers||{},flagged:inProgress.flagged||{},elapsed:inProgress.elapsed||0,
+    question_ids:inProgress.question_ids,answers:inProgress.answers||{},answered_at:inProgress.answered_at||{},flagged:inProgress.flagged||{},elapsed:inProgress.elapsed||0,
     paused:false,submitted:false,limit_seconds:inProgress.limit_seconds||0,over_time:!!inProgress.over_time,started_ts:inProgress.started_ts};
   currentQId = inProgress.current!=null?String(inProgress.current):(exam.question_ids.length?String(exam.question_ids[0]):null);
   renderExam(); updateClock(); showView("exam");
@@ -2198,7 +2229,7 @@ function grade(){
   const qs=questionsOf(exam.question_ids);
   const answers=[]; const perDom={}; let correct=0;
   qs.forEach(q=>{ const chosen=exam.answers[q.id]||null; const isc=chosen===q.correct; if(isc)correct++;
-    answers.push({id:q.id,domain:q.domain,chosen,correct:q.correct,is_correct:isc});
+    answers.push({id:q.id,domain:q.domain,chosen,correct:q.correct,is_correct:isc,answered_at:(exam.answered_at||{})[q.id]||null});
     (perDom[q.domain]||(perDom[q.domain]={correct:0,total:0})); perDom[q.domain].total++; if(isc)perDom[q.domain].correct++;
   });
   return { exam_id:exam.exam_id, type:"mock", mode:exam.mode, count:qs.length, ts:exam.started_ts,

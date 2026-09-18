@@ -6,6 +6,18 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.19.5] — 2026-09-18
+### Fixed
+- **Weaknesses: order is by the last time you FAILED a question, not the last time you touched it.** Root cause: `cheatList()` sorted by the cheatsheet entry's `last_ts`, which `/ccaf:result` also bumps on a correct answer (`status:"mastered"`), so a question you had just answered right floated to the top. `data/app-template.html`: new `lastMissTs(qid)` (newest wrong attempt in the canonical `answered[qid].log` + local pending, via the shared `wkAttempts(qid)` extracted from `wkTimeline`) is the sort key; `last_ts`/`first_ts` remain only as a fallback for entries with no attempt data.
+
+### Added
+- **Weaknesses: filter by exam.** A second chip row (`Exam · All exams · #N · dd.mm ⟨count⟩`) lists every mock sitting in which one of the currently shown questions was failed, newest first, with the number of failed questions; click one to see only the questions you failed in that sitting. Composes with the domain chips and the search box (chips are built from the domain/search-filtered set, so a chip never yields an empty list); hidden when only one exam qualifies.
+- **Per-answer time.** The app stamps `answered_at` (ISO, last pick wins) on every answer — persisted with an in-progress exam, restored on resume, emitted in the results JSON — and `/ccaf:result` writes it into `attempts[].ts` (falls back to the sitting's `ts` for older JSON). Same-sitting misses now order by when they happened; sittings recorded before this version keep the sitting's `ts` for all attempts. `commands/result.md` step 3A updated.
+
+### Internal
+- `.gitignore`: `IDEA-*.md` (private idea notes, not part of the plugin).
+- `maintenance/app-internals.md`: Weaknesses paragraph rewritten for the new sort key, the exam filter and per-answer time.
+
 ## [0.19.4] — 2026-09-16
 ### Changed
 - **Random mode skips the last 5 exams within 10 days** (was 3 exams / 7 days). `data/app-template.html`: `RECENT_EXAMS_N=5`, `RECENT_EXAMS_DAYS=10` — the one tuning point; the mode card and the config note interpolate both. Rationale: a daily 15- or 30-question routine still leaves a full fresh pool for the next sitting; on a 60-question day the fresh pool may run short, and the existing top-up (skipped questions, oldest exam first) covers that. `maintenance/app-internals.md` now documents the mechanism.
