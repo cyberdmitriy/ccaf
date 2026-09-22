@@ -1554,21 +1554,25 @@ function renderDashboard(){
 }
 
 /* ================= CONFIG / NEW EXAM ================= */
-let cfg={mode:"weak",domains:new Set(),count:30,timed:false}; // timed = 2 min/question; else untimed
-function poolFor(mode,domains,merged){
+let cfg={mode:"weak",domains:new Set(),count:30,timed:false,fresh:false}; // timed = 2 min/question; fresh = Random pool "fresh only" (no top-up)
+// opts.fresh (Random only): the pool is ONLY the questions outside the last RECENT_EXAMS_N exams — the same
+// count the "Fresh only" segment shows — so the Length cap (shownAvail) and All apply to it exactly like
+// Ever failed. Without it, Random's pool is the whole bank and selectSet skips + tops up (see there).
+function poolFor(mode,domains,merged,opts){
   let pool=BANK.slice();
   if(domains.size) pool=pool.filter(q=>domains.has(q.domain));
+  if(mode==="random"&&opts&&opts.fresh){ const rank=recentExamRank(); pool=pool.filter(q=>!rank.has(String(q.id))); }
   if(mode==="review") pool=pool.filter(q=>merged[q.id]&&merged[q.id].last_correct===false);
   if(mode==="failed") pool=pool.filter(q=>{const m=merged[q.id]; return m&&(m.wrong>0||m.last_correct===false);});   // ever wrong (incl. legacy compact records with no per-attempt counts)
   if(mode==="unseen") pool=pool.filter(q=>!merged[q.id]);   // ONLY never-answered; length is capped at this count (no least-seen top-up)
   return pool;
 }
-function availByMode(domains,merged){
+function availByMode(domains,merged,opts){
   const inDoms=q=>!domains.size||domains.has(q.domain);
   return {
     weak: poolFor("weak",domains,merged).length,
     unseen: poolFor("unseen",domains,merged).length,   // TRUE unseen — same pool the exam draws from
-    random: poolFor("random",domains,merged).length,
+    random: poolFor("random",domains,merged,opts).length,   // fresh-only when opts.fresh (the Random pool segment)
     review: BANK.filter(q=>inDoms(q) && merged[q.id]&&merged[q.id].last_correct===false).length,
     failed: BANK.filter(q=>{const m=merged[q.id]; return inDoms(q)&&m&&(m.wrong>0||m.last_correct===false);}).length,
   };
@@ -1856,7 +1860,12 @@ function renderConfig(){
     {id:"review",t:"Review misses",d:"Only questions you got wrong last time."},
     {id:"failed",t:"Ever failed",d:"Every question you've EVER gotten wrong, even one you've passed since."},
   ];
-  const av=availByMode(cfg.domains,merged);
+  // Random pool segment: "Fresh + top-up" = whole bank (selectSet skips recent, tops up); "Fresh only" = the
+  // questions outside the last RECENT_EXAMS_N exams, nothing else — disabled (and reset) when none are left.
+  const randomAll=poolFor("random",cfg.domains,merged).length, randomFresh=poolFor("random",cfg.domains,merged,{fresh:true}).length;
+  if(cfg.fresh&&randomFresh===0) cfg.fresh=false;
+  // the Random card's count follows the segment only while Random is selected (the segment is hidden otherwise)
+  const av=availByMode(cfg.domains,merged,{fresh:cfg.mode==="random"&&cfg.fresh});
   // "Length" is capped at what this mode+domains actually make available (the count the mode card shows;
   // for unseen that is the true-unseen "N new", no least-seen top-up). A numeric length above that is
   // disabled, and if the current pick no longer fits (mode/domain changed) it snaps to All — so All is the
@@ -1879,6 +1888,12 @@ function renderConfig(){
   for(let d=1;d<=5;d++){
     html+=`<div class="chip ${cfg.domains.has(d)?"sel":""}" data-dom="${d}"><span class="dot" style="background:var(${DOMAIN_VAR[d]})"></span>D${d} ${DOMAIN_SHORT[d]} <span class="chip-count">${counts[d]}</span>${focus.includes(d)?'<span class="focus-flag">focus</span>':''}</div>`;
   }
+  if(cfg.mode==="random"){
+    html+=`</div></div>
+      <div class="field"><div class="flabel">Random pool <span class="hint">(fresh = not in your last ${RECENT_EXAMS_N} exams, past ${RECENT_EXAMS_DAYS} days)</span></div><div class="counts" id="pool">`;
+    html+=`<button class="count-btn ${!cfg.fresh?"sel":""}" data-fresh="0">Fresh + top-up · ${randomAll}</button>`;
+    html+=`<button class="count-btn ${cfg.fresh?"sel":""}" data-fresh="1"${randomFresh===0?" disabled":""}>Fresh only · ${randomFresh}</button>`;
+  }
   html+=`</div></div>
       <div class="field"><div class="flabel">Length</div><div class="counts" id="counts">`;
   [15,30,60].forEach(c=>{ const dis=c>shownAvail; html+=`<button class="count-btn ${cfg.count===c?"sel":""}" data-count="${c}"${dis?" disabled":""}>${c}</button>`; });
@@ -1895,21 +1910,25 @@ function renderConfig(){
   $$("#chips .chip").forEach(c=>c.onclick=()=>{ const d=+c.dataset.dom; cfg.domains.has(d)?cfg.domains.delete(d):cfg.domains.add(d); renderConfig(); });
   $$("#counts .count-btn").forEach(b=>b.onclick=()=>{ cfg.count=b.dataset.count==="all"?"all":+b.dataset.count; renderConfig(); });
   $$("#limits .count-btn").forEach(b=>b.onclick=()=>{ cfg.timed=b.dataset.timed==="1"; renderConfig(); });
+  $$("#pool .count-btn").forEach(b=>b.onclick=()=>{ if(b.disabled)return; cfg.fresh=b.dataset.fresh==="1"; renderConfig(); });
   updateCfgSummary(merged);
 }
 function updateCfgSummary(merged){
-  const pool=poolFor(cfg.mode,cfg.domains,merged);
+  const pool=poolFor(cfg.mode,cfg.domains,merged,{fresh:cfg.fresh});
   const avail=pool.length;
   // "All" = every question actually AVAILABLE for this mode+domains, i.e. the count the mode card shows
   // (for unseen that is the TRUE-unseen count, not the least-seen top-up pool). A numeric length still
   // draws from the full pool so unseen can top up past its true-unseen count — only "all" caps at the shown avail.
-  const shownAvail = availByMode(cfg.domains,merged)[cfg.mode];
+  const shownAvail = availByMode(cfg.domains,merged,{fresh:cfg.fresh})[cfg.mode];
   const want = cfg.count==="all"?shownAvail:cfg.count;
   const actual=Math.min(want,avail);
   const sum=$("#cfgSummary");
   let note="", cls="cfg-note";
   if(avail===0){ note=(cfg.mode==="review"||cfg.mode==="failed")?"You have no missed questions yet. Try Weak areas or Random.":"No questions match this selection."; cls="cfg-note warn"; }
   else if(actual<want){ note=`Only ${avail} questions match this selection, so the exam will have ${actual}.`; cls="cfg-note warn"; }
+  else if(cfg.mode==="random"&&cfg.fresh){
+    note=`Fresh only: none of these were in your last ${RECENT_EXAMS_N} exams (past ${RECENT_EXAMS_DAYS} days), and nothing is topped up. ${avail} fresh question${avail===1?"":"s"} available.`;
+  }
   else if(cfg.mode==="random"){
     const rank=recentExamRank(); const skipped=pool.filter(q=>rank.has(String(q.id))).length; const fresh=avail-skipped;
     if(skipped>0){
@@ -1932,7 +1951,7 @@ function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.ra
    RECENT_EXAMS_DAYS days (recorded + pending). If that leaves fewer than the requested length, top up from
    the skipped ones, OLDEST of those exams first. Returns Map(question id -> rank of the most recent of those
    exams it appeared in; 0 = newest). A question absent from the map is "fresh". ---- */
-const RECENT_EXAMS_N=5, RECENT_EXAMS_DAYS=10;
+const RECENT_EXAMS_N=10, RECENT_EXAMS_DAYS=14;
 function recentExamRank(){
   const now=Date.now();
   const rows=[...((HISTORY.exam_history)||[]), ...pending].filter(e=>e&&e.exam_id&&e.ts)
