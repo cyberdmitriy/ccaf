@@ -52,6 +52,19 @@ Practice scenario: Present a case where a developer's agent sometimes terminates
 
 Teach batching to cut round-trips: prompt Claude to batch multiple tool requests in one turn, then return all tool results together before the next API call (e.g. `get_customer` + `lookup_order` requested upfront, not in separate sequential turns). NOT composite/bundled tools (`get_customer_with_orders`), NOT speculative execution of likely-needed tools, NOT raising `max_tokens`.
 Nuance on iteration caps: a cap is acceptable as a SECONDARY runaway backstop (bug / pathological input burning tokens) while `stop_reason` stays the PRIMARY completion signal. The anti-pattern is the cap AS the primary stop — not the cap existing alongside correct stop_reason handling.
+
+Teach the full stop_reason map, not just the two-value loop:
+
+"tool_use" → execute EVERY requested tool, return the results, continue the loop.
+"end_turn" → Claude finished; present the final response.
+"max_tokens" → the response was cut off. It is NOT a final answer and NOT a tool call you can run. If the last content block is an incomplete tool_use, discard it and retry the request with a higher max_tokens to get the full tool call. NOT executing the partial input, NOT splicing a "continue" onto it, NOT treating it like end_turn. Here raising max_tokens IS the fix, because the truncation itself is the problem. Everywhere else the exam tests it (too many round-trips that batching should fix, verbose exploration that belongs in a subagent, an input too long for the context window) a bigger max_tokens is still the wrong answer.
+"stop_sequence" → a custom stop string was hit; handle it the way your design intends.
+Mention these in one line only, because they are beyond the Guide and not drilled: pause_turn (a server-tool loop paused; send the assistant content back as-is to continue), refusal (read stop_details), model_context_window_exceeded (treat the response as truncated).
+A stop reason arrives on a successful HTTP 200 response, never as an error. API errors are 4xx/5xx responses your code has to catch, so the loop needs a stop_reason branch AND error handling.
+
+Teach how to return parallel tool results: when one response carries several tool_use blocks, return one tool_result per tool_use block, matched by tool_use_id, all together in the next single user message, with every tool_result block placed before any text. A call that failed, or that you chose not to run, still gets a tool_result with is_error: true and a brief explanation. NOT one user message per result, NOT dropping the failed call's result, NOT a merged plain-text summary. Text can also accompany tool_use blocks (Claude often comments on what it is doing), which is one more reason text presence never means completion.
+
+Practice scenario: A code-generation agent's write_file call comes back with stop_reason "max_tokens" and a tool_use whose file contents stop mid-file. Ask the student what the loop does. Answer: discard the partial call and retry with a higher max_tokens. Then give a second case, where three parallel search calls return and one times out, and ask for the shape of the next user message. Answer: three tool_result blocks in one message, the timed-out one marked is_error: true.
 TASK STATEMENT 1.2: MULTI-AGENT ORCHESTRATION
 Teach the hub-and-spoke architecture:
 
@@ -138,6 +151,27 @@ The human agent does NOT have access to the conversation transcript
 The handoff summary must be self-contained
 
 Practice scenario: Production data shows that in 8% of cases, a customer support agent processes refunds without verifying account ownership, occasionally leading to refunds on wrong accounts. Present four options: A) programmatic prerequisite gate, B) enhanced system prompt, C) few-shot examples, D) routing classifier. Walk through why A is correct and why B, C, and D are insufficient.
+
+Teach the outcome guarantee: every session must end in exactly one terminal outcome, either a completed resolution or a human escalation that carries a structured handoff, however the loop stopped. The orchestrator CODE enumerates every exit path and maps each one to an outcome; the model does not. end_turn / success → deliver and record the resolution. max_tokens → retry. Iteration cap reached, budget reached, or API errors after retries run out → escalate_to_human with a handoff (or a deliberate resume branch in code that itself still ends in a resolution or an escalation). The iteration cap is only the backstop. The safeguard is what the orchestrator does after the backstop, or any other non-success exit, fires. Tell the student plainly that this rule is synthesized from the stop-reason and result-subtype docs; no single doc sentence states it.
+
+Teach the Agent SDK version: check the result message's subtype before reading result, because result is present only on success. The subtypes are success, error_max_turns, error_max_budget_usd, error_during_execution and error_max_structured_output_retries. Every subtype still carries session_id, total_cost_usd, usage and num_turns, so a non-success session can be resumed or handed off. A single-shot query() also raises after it yields an error result, and a connection or process failure produces no result message at all, so wrap the call in try/catch as well. max_turns and the budget default to no limit; setting a budget is a good production default, but the limit is not the safeguard.
+
+Reconcile this with the enforcement spectrum above: hooks stay the deterministic answer for gating tool calls (PreToolUse, see 1.5). What a hook cannot do is guarantee how a session ends. The docs warn that hooks may not fire when the agent hits the max_turns limit, and an API error ends the turn through StopFailure rather than Stop.
+
+Name the traps: a Stop hook that escalates (hooks may not fire when the agent hits max_turns, Stop does not run on a user interrupt, and StopFailure output is ignored); a system-prompt rule such as "escalate if you are stuck" (probabilistic, and the model never gets a turn to react to a budget cut-off or an API failure); raising or removing max_turns or the budget (this moves the limit and still leaves the exit unhandled); rerunning the whole session until it happens to succeed (no bound, and no path that ever reaches a human); parsing the final text for "resolved" or asking the model whether it succeeded (self-report); and a loop that closes the ticket on every non-tool_use exit.
+
+Practice scenario: An audit shows 5% of support sessions end with the ticket still open and nobody helping the customer. Their result subtypes are error_max_turns, error_max_budget_usd and error_during_execution. Present four options: A) route every non-success subtype to escalate_to_human with a handoff in orchestrator code, B) a Stop hook that escalates, C) a system-prompt escalation rule, D) raise max_turns. Walk through why A is correct: B misses max_turns exits, C is probabilistic, and D moves the limit without handling the exit.
+
+Teach handoff packages that preserve authorization state:
+
+A handoff, whether to the next agent step or to a human operator, is an explicit structured artifact. It is NOT the raw transcript and NOT a resumed session. It carries: the goal and scope, verified findings with their sources, what was tried and what failed, open questions, AND the authorization state. Authorization state means what was verified and how (e.g. identity verified via get_customer), what was approved, by whom, the limits (amount cap, which order), what was already done, and what the receiver may and may not do.
+Approvals and verification do NOT carry over implicitly. The Agent SDK docs say sessions persist the conversation, not the filesystem. An approval that exists only in a resumed conversation or a pasted transcript is prose the next step has to interpret, and nothing checks it. For work that moves between steps or hosts, the SDK docs suggest capturing the results you need (analysis output, decisions) as application state and passing them into a fresh session's prompt, which they call often more robust than shipping transcript files around.
+The receiver must neither silently re-trust nor silently re-do. It reads the record's verification status and completed actions and acts on them. When a limit must hold every time (never refund above the approved cap, never refund an unverified customer), the prerequisite gate on the downstream tool checks the handoff record's fields: the cap approved for THAT order, not the agent's generic limit. The record carries the state and the gate enforces it.
+In a multi-agent research system each subagent handoff states an objective, an output format, guidance on the tools and sources to use, and clear task boundaries (see 1.3). Subagents store their work in external systems and pass lightweight references back to the lead.
+For human escalation the Guide's fields (customer ID, root cause, refund amount, recommended action) are the floor. On the exam an option with them beats a transcript or a vague note. When the agent already verified the customer or took an action, the payload also states the verification status and method, the actions already completed, and the amount still outstanding. Otherwise the human re-verifies the customer or repeats an action already taken (a duplicate credit or refund).
+Exam trap: "resume the session so the approval carries over", "pass the full transcript to the next step", "run the next step with bypassPermissions because the previous step already checked", "gate the next agent on its own re-verification and its standard limit". The first two leave authorization state implicit. The third removes the check. The fourth enforces the wrong limit and repeats work already done.
+
+Practice scenario: An intake agent verifies a caller via get_customer and a supervisor approves a refund up to $150 for one order. A separate refund agent in a fresh session, with a standard $500 limit, sometimes re-asks for verification and twice refunded more than $150. Ask the student what the intake step must hand over, what must check it, and why gating on the refund agent's own $500 limit is not enough.
 TASK STATEMENT 1.5: AGENT SDK HOOKS
 Teach PostToolUse hooks:
 
@@ -374,6 +408,30 @@ Fix has TWO parts: (1) make them structurally distinct — rename the personal t
 Description tuning ALONE cannot route a context-free prompt — with no environment cue in the user's words, a richer description still leaves the pick ambiguous. Structural rename + a routing rule is what resolves it.
 Do the rename in the developer's own `~/.claude.json` so it never touches the shared team config.
 Exam trap: distractors that mutate shared team state (editing/removing from `.mcp.json`), pin the agent with forced `tool_choice`, or 'disambiguate by identical scope' — all wrong; keep the change local and structural.
+
+Teach the three Claude Code MCP scopes and their precedence:
+
+Local (the default for claude mcp add): stored in ~/.claude.json under this project's path, private to you, loads only in this project.
+Project: .mcp.json at the repo root, committed, shared with the team. Interactive sessions ask for approval before a project server from .mcp.json is used (reset with claude mcp reset-project-choices).
+User: ~/.claude.json, private to you, loads in all your projects.
+MCP "local scope" is NOT .claude/settings.local.json.
+When the same server name is defined in more than one scope, the order is local > project > user. The whole entry from the winning scope is used and fields are NOT merged, so a user-scope copy of a team server never overrides the project .mcp.json entry.
+The exam follows the Guide's two-way framing: team-shared servers go in project .mcp.json, personal or experimental servers go in user-level ~/.claude.json.
+
+Teach environment-variable authentication:
+
+${VAR} and ${VAR:-default} expand in command, args, env, url and headers of .mcp.json. Commit "Authorization": "Bearer ${GITHUB_TOKEN}" and have each developer set their own token in their own environment.
+An unset ${VAR} with no default does NOT block loading. The server loads with the literal ${VAR} text, and claude mcp list and /mcp show a missing-variable warning that names the variable, so authentication fails. Fix it by setting the variable in your environment. Do not inline the token and do not commit a secret as a :-default.
+One exception: in a remote server's url and headers, some credential variable names (Claude Code's own ANTHROPIC_* credentials, cloud-provider credentials such as AWS_BEARER_TOKEN_BEDROCK, and others such as NPM_TOKEN and HTTPS_PROXY) always read as empty, with no warning, so the server gets "Bearer " and usually answers 401. Give a server's token its own name.
+
+Teach verifying tool discovery:
+
+The Added line that claude mcp add prints only means the configuration was written. It does NOT mean the server connected or that its tools are available (claude mcp add does not validate credentials).
+Verify with claude mcp list (health per server: Connected, Needs authentication, Failed to connect, Pending approval), claude mcp get <name> for detail and the failure reason (e.g. the HTTP status), and /mcp inside a session for status, tool count and OAuth sign-in. Connected tools appear as mcp__<server>__<tool>.
+If tools are missing, check discovery first. Do not tune descriptions, prompts or CLAUDE.md for a server that never connected. Once the server shows Connected with its tools and Claude still prefers Grep, THEN enrich the tool descriptions (the Guide 2.4 fix).
+Exam trap: "it printed Added, so the tools work", "an unset ${VAR} stops the server from loading", "a same-named user-scope entry overrides the project one", "put the token in .mcp.json or CLAUDE.md".
+
+Practice scenario: A new developer clones a repo whose .mcp.json uses Bearer ${TRACKER_TOKEN}. claude mcp list shows a missing-variable warning and a failed connection. Ask the student why the server still loaded, what the warning means, and why a user-scope copy with the token inline would not help.
 TASK STATEMENT 2.5: BUILT-IN TOOLS
 Teach the Grep vs Glob distinction:
 
@@ -451,6 +509,25 @@ Teach modular organisation:
 
 Teach /memory command for verifying which memory files are loaded. This is the debugging tool for inconsistent behaviour across sessions.
 Practice scenario: Developer A's Claude Code follows the team's API naming conventions perfectly. Developer B (who joined last week) gets inconsistent naming from Claude Code. Both are working on the same repo. Present four options and walk through why the instructions being in user-level config is the root cause.
+
+Teach the enforcement boundary. CLAUDE.md is context Claude reads, not enforced configuration: it shapes what Claude tries to do, but it does not change what Claude Code allows. When a CLAUDE.md mixes hard prohibitions with style guidance, teach the restructure. Test every line with one question: must this hold even if Claude ignores it?
+A hard prohibition on a tool, path or command (never edit db/migrations/, never read .env) moves to permissions.deny in the committed .claude/settings.json, which everyone who clones the repo gets. It does NOT go in a bolder CLAUDE.md line, NOT in a .claude/rules/ file (with or without paths, a rule is still text the model reads), and NOT in each developer's .claude/settings.local.json, which is personal.
+A rule that needs logic (inspect the arguments, allow curl to one host only) or must run at a fixed point (after every edit, before every commit) moves to a hook.
+Style and judgement guidance (prefer early returns, naming) stays in CLAUDE.md. Do NOT put it behind a blocking hook.
+Teach the evaluation order: deny, then ask, then allow. The first match wins, and a more specific rule does not change the order. An allow rule cannot carve an exception out of a deny rule. If a tool is denied at any level, no other level can allow it. Settings precedence (managed > command-line arguments > .claude/settings.local.json > .claude/settings.json > ~/.claude/settings.json) does not help: even --allowedTools cannot allow what another level denies.
+Teach how hooks and permission rules interact. A PreToolUse hook that returns allow does NOT bypass a deny rule. A hook that blocks (exit code 2) DOES win, even over a matching allow rule. So to permit one narrow case of a broadly denied command, replace the broad deny with a PreToolUse hook that blocks every case except the permitted one. Name the other documented route for network access too: deny curl and wget, and allow the WebFetch tool with WebFetch(domain:host). Neither is airtight on its own: a Bash deny does not match the same program by path or inside sh -c, and a URL check can be dodged by redirects or variables.
+Practice scenario: the committed settings deny Bash(curl *). A developer adds a narrower curl allow for one internal host to settings.local.json, and the call is still blocked. Walk through why moving the allow to another scope, passing --allowedTools, or a hook that returns allow all fail, and why a URL-checking PreToolUse hook that replaces the deny works.
+
+Teach how to give Claude Code project context. Choose by reusability, specificity and cross-session need (this is a rule of thumb built from the docs, not an official table):
+
+Reusable facts needed in every session or by the whole team (build commands, conventions, anything you would otherwise re-explain) → CLAUDE.md, or @import an existing doc from it.
+A specific file needed for THIS task → @path/to/file in the prompt. It includes the full content of the file in the conversation. Reference files with @ instead of describing in prose where the code lives.
+A one-off constraint or intent for this task only → say it inline in the prompt. NOT in CLAUDE.md, NOT in an imported file.
+
+Teach the @directory trap: @src/payments/ gives a file listing, NOT the files' contents. To put the contents in front of Claude, reference the files themselves (you can reference several in one message).
+Teach that an @ FILE reference also adds the CLAUDE.md files of that file's directory and its parent directories to context.
+Teach that @import inside CLAUDE.md is expanded at launch (relative paths resolve from the importing file, at most four hops deep). It helps organisation but does NOT reduce context. The Guide's use of it is modular standards per package, which is still always-loaded content. Importing a one-off task file into CLAUDE.md therefore loads it into every session for every teammate: the right idea (the @ syntax) in the wrong place.
+Practice scenario: A developer has three needs: (1) the team's test command, which Claude keeps asking for; (2) the one file a refactor ticket touches today; (3) a constraint for this ticket only, "keep the public signature unchanged". Ask the student where each goes: (1) CLAUDE.md, (2) @file in the prompt, (3) inline in the prompt. Then ask what @src/billing/ would give and why it is not the same as referencing the file.
 TASK STATEMENT 3.2: CUSTOM SLASH COMMANDS AND SKILLS
 Teach the directory structure:
 
@@ -498,7 +575,16 @@ Practice scenario: A codebase has test files co-located with source files throug
 
 Also teach hooks here (the bank tests them under 3.3): rules/globs load conventions the model still reads, so enforcement stays probabilistic. A hook runs OUTSIDE the model, so it is deterministic.
 PostToolUse hook = deterministic post-write enforcement. Runs a formatter/linter/validator on the COMPLETED file after the tool call, on every matching Edit/Write. Use it when the requirement is 'on every edit', not 'usually'. Formatting/linting acts on finished output, so it is PostToolUse, NEVER PreToolUse.
-PreToolUse hook = deny/block BEFORE the tool runs. Evaluates the target path and blocks a write to a forbidden path (e.g. /secrets) before it executes. The ONLY hard, no-exceptions guarantee — CLAUDE.md text and .claude/rules can be ignored.
+PreToolUse hook = deny/block BEFORE the tool runs. Evaluates the target path and blocks a write to a forbidden path (e.g. /secrets) before it executes. Together with a settings `permissions.deny` rule, it is the hard, no-exceptions block — CLAUDE.md text and .claude/rules can be ignored. Use the deny rule for a static path/command match; use the PreToolUse hook when the decision needs logic.
+
+Teach how to pick a mechanism by WHEN the guidance must apply.
+Every session, as advice → CLAUDE.md.
+Only when Claude works with matching files → a .claude/rules/ file WITH a paths: glob.
+Only for one task, on demand (a release checklist, a migration runbook) → a skill. Its description is in context from the start, and its full content loads only when it is invoked.
+On every matching event, with no exceptions (regenerate stubs after each .proto edit) → a hook. Use PostToolUse for actions on the finished file, NOT PreToolUse, which runs before the change.
+Must never happen → permissions.deny or a PreToolUse hook that blocks the call. Both are hard blocks; a PreToolUse hook is not the only one.
+Teach the trap: a .claude/rules/ file WITHOUT paths frontmatter loads at launch every session, with the same priority as .claude/CLAUDE.md. Moving text into rules/ does not make it conditional on its own, and if the frontmatter YAML fails to parse, Claude Code loads the rule as if it had no paths. Teach that @import in CLAUDE.md organises content but does NOT reduce context: imported files are expanded and loaded at launch. Only hooks and permission rules enforce; CLAUDE.md, rules and skills are all text the model reads.
+Practice scenario: a team moved its Terraform conventions into .claude/rules/terraform.md, a file that starts straight with a heading, and the conventions still appear in every frontend session. The .tf files live in several directories. Walk through why adding paths: ["**/*.tf"] wins over a directory CLAUDE.md, a skill, or an @import.
 TASK STATEMENT 3.4: PLAN MODE VS DIRECT EXECUTION
 Teach the decision framework:
 Plan mode when:
@@ -529,6 +615,14 @@ Direct execution for implementing the planned approach
 This hybrid is common in practice and tested on the exam
 
 Practice scenario: Present three tasks: (1) restructure a monolith into microservices, (2) fix a null pointer exception in a single function, (3) migrate from one logging library to another across 30 files. Ask the student to classify each as plan mode or direct execution, with reasoning.
+
+Teach two more deciders beyond scope and ambiguity: reversibility and review before implementation. Both come from the score-report objective and the docs; the Guide's own 3.4 list names only scope, multiple approaches, architecture and multi-file.
+
+Reversibility: every prompt that starts a turn creates a checkpoint, and Esc Esc or /rewind restores it. The docs even suggest trying something risky and rewinding if it fails, which is why "just rewind" sounds right. But checkpoints track only edits made through Claude's file-editing tools: changes made through Bash commands or external processes are not captured, and checkpoints are not a replacement for git. It follows that a rewind cannot restore anything that is not a tracked local file, such as rows a migration rewrote in a shared database, a deploy, or a remote API call. A git commit reverts the code too, not the data. So a small change with an irreversible or externally visible effect still gets a plan and a review before it runs. Do NOT accept "it's one file, we can rewind".
+Review before implementation: when others must approve the approach before any code is written, use plan mode. Claude reads files, runs exploratory shell commands and writes a plan, but does not edit source until the plan is approved (in the live docs, Ctrl+G opens the plan in your editor). Share the plan, get the go-ahead, then approve and execute. The plan-then-execute hybrid is still the right shape; what the requirement adds is the other people's sign-off between plan and execution. NOT a draft PR after the code exists: the review then arrives after the rework cost. NOT approving your own plan and switching to execution when the approvers are someone else.
+Teach that plan mode is a review gate, not a sandbox: it still runs exploratory shell commands (prompted or classifier-reviewed), so the protection is that nothing irreversible runs before the approval step.
+Teach the counter-trap too: plan mode adds overhead. The docs say that if you could describe the diff in one sentence, skip the plan; that holds for a reversible code edit. "Always plan for safety" is wrong.
+Practice scenario: Present three one-file tasks: (1) add a date validation conditional; (2) a migration that backfills rows in the shared staging database, run through Bash; (3) a token-refresh change whose approach the security team must approve first. Ask the student to classify each: (1) direct execution; (2) plan mode, because a rewind cannot undo the data change; (3) plan mode, with the plan shared and accepted before execution.
 TASK STATEMENT 3.5: ITERATIVE REFINEMENT
 Teach the technique hierarchy:
 

@@ -9,7 +9,7 @@
       "name": "ccaf",
       "source": "./",
       "description": "Interactive CCAF tutor + configurable mock-exam generator with per-user progress tracking.",
-      "version": "0.19.7"
+      "version": "0.20.0"
     }
   ]
 }

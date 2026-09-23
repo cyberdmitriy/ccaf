@@ -21,8 +21,13 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Forcing `tool_choice: 'any'` to prevent the agent returning text — creates infinite loops.
 - Cutting round-trips with composite/bundled tools (`get_customer_with_orders`), speculative execution, or a larger `max_tokens` — the fix is prompting Claude to batch tool requests per turn and return all results together.
 - Treating every iteration cap as an anti-pattern — a cap is fine as a SECONDARY backstop against runaway loops, as long as `stop_reason` stays the primary stop.
+- Treating `stop_reason: "max_tokens"` like `end_turn` and presenting the cut-off text as the final answer — the response is truncated: not done, and not a tool call to run.
+- Executing an incomplete `tool_use` block after `max_tokens`, or splicing a "continue" reply onto its cut-off input — discard it and retry the request with a higher `max_tokens`.
+- Returning parallel tool results one user message per result — return one `tool_result` per `tool_use` id, all together in the next single user message, `tool_result` blocks before any text.
+- Omitting the result of a parallel call that failed or was skipped — it still gets a `tool_result` with `is_error: true` and a brief explanation.
+- Merging parallel results into one plain-text summary — each result is its own `tool_result` block matched by `tool_use_id`.
 
-**Core rule:** Stop on the `stop_reason` field. Never stop on text presence, an iteration cap, a natural-language phrase, or a forced `tool_choice`. An iteration cap is allowed only as a secondary runaway backstop, never as the primary stop.
+**Core rule:** Stop on the `stop_reason` field: `tool_use` → run every requested tool and return one `tool_result` per call, all in the next user message; `end_turn` → final answer; `max_tokens` → truncated, never final — retry an incomplete `tool_use` with a higher `max_tokens`. Never stop on text presence, an iteration cap, a natural-language phrase, or a forced `tool_choice`. An iteration cap is allowed only as a secondary runaway backstop, never as the primary stop.
 
 ### 1.2 Multi-Agent Orchestration
 **Exam Traps:**
@@ -54,8 +59,19 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Few-shot examples as sufficient for guaranteed compliance (still probabilistic).
 - Routing classifiers to fix per-agent compliance (failure is within the agent sequence, not routing).
 - Handoff summaries that omit critical fields (customer ID, recommended action) — the human can't see the transcript.
+- A loop that treats every non-`tool_use` exit as "done" and closes the ticket — only an `end_turn` / `success` exit may be closed as resolved; the cap firing, the budget running out, and errors after retries must retry, resume or escalate.
+- A Stop hook as the "always escalate" safeguard — hooks may not fire when the agent hits `max_turns`, and an API error ends the turn via `StopFailure`, not `Stop`; route on the result `subtype` in orchestrator code.
+- A system-prompt rule such as "escalate if you can't finish" — probabilistic, and the model never gets a turn to react to a budget cut-off or an API failure.
+- Raising or removing `max_turns` / the budget so sessions stop dying unresolved — this moves the limit and still leaves the exit unhandled.
+- Rerunning the whole session until one run ends normally — unbounded, repeats the same failing exit, and never reaches a human; the failure exit must end in an escalation.
+- Reading `result`, or parsing the final text for "resolved", without checking `subtype` — `result` exists only on `success`; a connection failure yields no result message at all (needs try/catch).
+- Resuming the previous step's session so an approval "carries over" — a session persists the conversation, so the approval stays prose the model interprets and nothing checks it. Pass a structured handoff record and gate the next tool on its fields.
+- Pasting the full transcript into the next agent or the human's ticket — the verification and approval state is buried. Compile a structured package instead.
+- Running the next step with `bypassPermissions` because "the previous step already verified" — that removes the check instead of carrying the verified state forward.
+- Gating the next agent on its own re-verification and its generic limit — it guarantees verification but repeats work already done and enforces the wrong cap. Gate on the approved cap and order from the handoff record.
+- A human handoff that leaves out what the agent already verified and did — the human re-verifies or repeats the credit/refund. Add verification status and method, completed actions, and the amount still outstanding to the core fields.
 
-**Core rule:** High-stakes compliance needs deterministic enforcement, not prompts, few-shot or routing. Every handoff must carry every critical field.
+**Core rule:** High-stakes compliance needs deterministic enforcement, not prompts, few-shot or routing. Every session ends in a resolution or a human escalation: orchestrator code (not a hook, not the prompt) maps every exit path — each `stop_reason`, each result `subtype`, thrown exceptions — to one outcome. Every handoff, to the next agent step or to a human, is a structured package: the critical fields (customer ID, root cause, amount, recommended action) AND the authorization state — what was verified and how, what was approved, by whom, and the limits. A transcript or a resumed session carries approvals only as prose.
 
 ### 1.5 Agent SDK Hooks
 **Exam Traps:**
@@ -130,8 +146,15 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Editing or removing a server from the shared `.mcp.json` to dodge a local collision (mutates team state for a personal problem).
 - Forcing `tool_choice` to pin the agent to one tool for the whole session instead of making the tools distinguishable.
 - Moving the personal server into the shared `.mcp.json` at equal precedence to 'let the agent disambiguate' — identical scope disambiguates nothing.
+- Treating the `Added …` line from `claude mcp add` as proof the server works — it only means the config was written. Check `claude mcp list` / `claude mcp get <name>` / `/mcp` for Connected, Needs authentication, Failed to connect or Pending approval.
+- Tuning tool descriptions or adding CLAUDE.md lines when the server never connected — verify discovery (status, tool count) first; enrich descriptions only once the tools are there.
+- Believing an unset `${VAR}` blocks the server from loading — it loads with the literal `${VAR}` text and a missing-variable warning, and auth fails. Set the variable in your own environment.
+- Fixing a missing token by inlining it, or by adding a `${VAR:-<secret>}` default, in the committed `.mcp.json` — either way the secret gets committed.
+- Naming a remote server's token after a covered credential (`NPM_TOKEN`, `ANTHROPIC_API_KEY`, `AWS_BEARER_TOKEN_BEDROCK`) in `url`/`headers` — it always reads as empty with no warning, so the server returns 401. Use a server-specific name.
+- Adding a same-named `--scope user` copy to override a project server — the order is local > project > user and the whole entry wins with no merge, so the user copy is shadowed.
+- Confusing MCP "local scope" (`~/.claude.json` under the project path) with `.claude/settings.local.json`.
 
-**Core rule:** A project `.mcp.json` serves the whole team. A user `~/.claude.json` is personal. Keep secrets in `${VAR}` expansion. When two same-named tools collide across scopes, resolve it locally in `~/.claude.json` by renaming to a distinct id + putting the environment in the description AND adding an explicit session routing rule — description tuning alone cannot route a context-free prompt.
+**Core rule:** A project `.mcp.json` serves the whole team. A user `~/.claude.json` is personal. Keep secrets in `${VAR}` expansion, which each developer sets in their own environment. An unset `${VAR}` with no default still loads, but as literal text with a warning, so set the variable. The same server name in several scopes is not merged: local > project > user, and the whole entry wins. `Added …` only means the config was written, so verify discovery with `claude mcp list` / `/mcp` before tuning anything. When two same-named tools collide across scopes, resolve it locally in `~/.claude.json` by renaming to a distinct id, putting the environment in the description, AND adding an explicit session routing rule. Description tuning alone cannot route a context-free prompt.
 
 ### 2.5 Built-in Tools
 **Exam Traps:**
@@ -164,8 +187,18 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - New team member not receiving instructions despite same repo/branch (check whether config is committed / where it lives).
 - Thinking `/memory` *triggers* configuration loading.
 - Assuming a directory-level CLAUDE.md is best for cross-directory conventions.
+- Writing a hard prohibition ("never edit db/migrations/", "never read .env") in CLAUDE.md, making it bolder, or moving it into a `.claude/rules/` file — all of these are context the model reads, not enforced configuration. Move it to `permissions.deny` (or a PreToolUse hook) and keep only style/behavioural guidance in CLAUDE.md.
+- Putting a team-wide deny in `.claude/settings.local.json` — that file is personal. Team enforcement goes in the committed `.claude/settings.json` (or managed settings).
+- Adding a narrower `allow` rule (in another scope, or via `--allowedTools`) to override a broad `deny` — rules evaluate deny → ask → allow, a deny at any level wins, and an allow can't carve an exception out of a deny.
+- Using a PreToolUse hook that returns "allow" to get past a deny rule — hook decisions don't bypass deny/ask rules. A blocking hook (exit 2) does beat an allow rule, so replace the broad deny with a hook that blocks everything except the permitted case.
+- Putting a soft style preference behind a blocking hook — that over-enforces a judgement call. Preferences stay in CLAUDE.md.
+- Adding a file needed for one task to CLAUDE.md (or `@import`ing it there): it then loads in every session for every teammate. Reference `@path` in the prompt instead.
+- Assuming `@src/some-dir/` loads every file's contents: it gives a file listing only. Reference the files themselves.
+- Describing in prose where the code lives ("the invoice module in billing"): reference it with `@path` so the full content is included.
+- Putting a one-off constraint for this task into CLAUDE.md: state it inline in the prompt.
+- Thinking `@import` in CLAUDE.md saves context: imports expand at launch. They organise, they don't shrink.
 
-**Core rule:** CLAUDE.md joins up across 3 levels (user, project, directory) and has **no strict precedence**. Enforce conflicting rules with `settings.json` or a hook, not with scoping.
+**Core rule:** CLAUDE.md joins up across 3 levels (user, project, directory) and has **no strict precedence**. It is context the model reads, not enforced configuration: keep behavioural and style guidance there, and move anything that must hold (a forbidden path or command, a rule that conflicts across levels) into `permissions` in the committed `.claude/settings.json` or a hook. Permission rules evaluate **deny → ask → allow**; a deny at any level wins and no allow rule can carve an exception out of it. Give context by how far it must reach: every session or the whole team → CLAUDE.md (or `@import`); one file for this task → `@file` in the prompt (`@dir` only lists files); a one-off constraint → inline in the prompt.
 
 ### 3.2 Custom Slash Commands and Skills
 **Exam Traps:**
@@ -184,8 +217,11 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Trusting a bold 'NEVER write to /secrets' in CLAUDE.md (or a `.claude/rules` glob scoped to the path) to hard-block it — instructions are probabilistic, the model can override or skip them.
 - Putting the formatter/linter in a `PreToolUse` hook — formatting acts on the completed file, so it belongs in `PostToolUse`; `PreToolUse` is for denying a call before it runs.
 - Reaching for a path-specific rule or CLAUDE.md when the requirement says 'on every edit' / 'no exceptions' — only a hook (code outside the model) enforces deterministically.
+- Creating a `.claude/rules/` file with no `paths` frontmatter (or with YAML that doesn't parse) and expecting it to load conditionally — it loads at launch every session, like `.claude/CLAUDE.md`. Add `paths: [...]`.
+- Using `@import` in CLAUDE.md to save context — imports organise the files, but they still load into context at launch.
+- Putting an on-demand runbook or checklist in a rules file — rules load by file or at launch, not by task. Use a skill.
 
-**Core rule:** Path-specific rules use a glob in the frontmatter. They load conventions only when you edit a matching file type, so they stay cheap across many folders. For deterministic enforcement use a hook instead: a `PostToolUse` hook runs a formatter/linter/validator on the finished file on every edit, and a `PreToolUse` hook that denies a forbidden path is the only hard no-exceptions block.
+**Core rule:** Path-specific rules use a `paths:` glob in the frontmatter. They load conventions only when Claude works with a matching file, so they stay cheap across many folders. A rule file **without** `paths` loads every session like CLAUDE.md, and an `@import` still loads at launch. Pick the mechanism by *when* the guidance applies: always, as advice → CLAUDE.md; on matching files → a `paths` rule; for one task, on demand → a skill; on every matching event → a hook (`PostToolUse` runs a formatter/linter/generator on the finished file); must never happen → a `permissions.deny` rule or a `PreToolUse` hook that blocks the call. Only hooks and permission rules enforce; everything else is text the model reads.
 
 ### 3.4 Plan Mode vs Direct Execution
 **Exam Traps:**
@@ -193,8 +229,13 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Using plan mode for a single-file bug fix with a clear stack trace.
 - Not recognising the plan-then-execute hybrid pattern.
 - Starting direct execution and switching to plan mode only when complexity emerges.
+- "It's one file, just run it and `/rewind` if it breaks" for a migration, deploy or data change run through Bash: checkpoints track only Claude's file edits, not Bash or external processes. Plan and review first.
+- Committing to git as the safety net for a data migration: git reverts the code, not rows already rewritten.
+- Coding first and opening a draft PR when the approach must be approved before implementation: use plan mode, share the plan, get the go-ahead, then execute.
+- Approving your own plan and switching to execution when others must accept the approach: plan-then-execute is right, but their sign-off goes between the two.
+- Always entering plan mode "for safety": it adds overhead. If the diff fits in one sentence and is a reversible code edit, execute directly.
 
-**Core rule:** Choose by **scope and ambiguity, not difficulty**. Plan mode for multi-file or architectural work, direct execution for a well-scoped fix.
+**Core rule:** Choose by **scope, ambiguity, reversibility and review need, not difficulty**. Plan mode for multi-file or architectural work, for a change whose effect a rewind can't undo (Bash side effects, shared data, deploys), and when others must approve the approach before coding (plan → their sign-off → execute). Direct execution for a well-scoped, reversible fix you could describe in one sentence.
 
 ### 3.5 Iterative Refinement Techniques
 **Exam Traps:**

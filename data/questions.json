@@ -1,10 +1,10 @@
 {
   "meta": {
-    "total": 245,
+    "total": 261,
     "per_domain": {
-      "1": 64,
-      "2": 47,
-      "3": 45,
+      "1": 70,
+      "2": 49,
+      "3": 53,
       "4": 43,
       "5": 46
     }
@@ -770,10 +770,10 @@
         "C": "Immediately call escalate_to_human with the conversation history.",
         "D": "Acknowledge the frustration and ask one targeted question to understand the specific issue before escalating."
       },
-      "correct": "D",
-      "axis": 4,
+      "correct": "C",
+      "axis": 3,
       "task": "5.2",
-      "explanation": "The customer has said 'twice' but you have no context yet. One acknowledging, focused question gives you a shot at first-contact resolution without dismissing the frustration or delaying a potential handoff."
+      "explanation": "The customer explicitly demands a human (\"I want to talk to a real person NOW\"). Exam Guide v1.0, task 5.2: honor explicit requests for human agents immediately, without first attempting investigation — so escalate now. D (one clarifying question first) and A (call tools first) are exactly the investigation the Guide rules out. B is the playbook for a different case: a frustrated customer who has NOT asked for a human, where you offer resolution and escalate only if they reiterate. Frustration alone is not the trigger here; the explicit request is."
     },
     {
       "id": 52,
@@ -3684,6 +3684,246 @@
       "axis": 5,
       "task": "3.1",
       "explanation": "The read must be prevented independent of model judgement, which only a deny permission or a PreToolUse gate on `Read` achieves. Strengthening the prose or adding a rules file (A) keeps it as model-followed guidance — the same thing that already failed. `context: fork` (B) isolates conversation context, not filesystem access, so it doesn't stop a Read. A PostToolUse log (D) is the tempting near-miss: it uses a hook, but it fires after the file has already been read — detection, not prevention — leaving the root problem (the access itself) unaddressed."
+    },
+    {
+      "id": 246,
+      "domain": 1,
+      "stem": "Your customer support agent runs on the Claude Agent SDK with max_turns set to 25 and a per-session max_budget_usd. A weekly audit finds that about 5% of sessions end with the customer neither helped nor handed to a human, and the ticket just stays open. Logs show that each of those sessions produced a final result message whose subtype was error_max_turns, error_max_budget_usd, or error_during_execution. Which change closes this gap?",
+      "options": {
+        "A": "In the orchestrator, read the subtype of each session's final result message and call escalate_to_human with a structured handoff whenever it is anything other than success.",
+        "B": "Register a Stop hook that calls escalate_to_human whenever a session ends before the agent has called process_refund or recorded a resolution on the ticket.",
+        "C": "Add a system-prompt rule that the agent must call escalate_to_human with a case summary whenever it cannot resolve the issue within its remaining turns.",
+        "D": "Raise max_turns and max_budget_usd so that sessions have enough headroom to reach a resolution before either limit stops the agent loop."
+      },
+      "correct": "A",
+      "axis": 2,
+      "task": "1.4",
+      "explanation": "A is correct. The result message's subtype is the authoritative record of how the SDK loop ended. Only success carries `result`, and every error subtype still carries session_id, total_cost_usd, usage and num_turns. Orchestrator code that runs after every query() call can therefore build a handoff (or resume) for exactly the sessions that fell through. Wrapping the call in try/catch covers the one remaining exit path, a connection or process failure, which produces no result message. B fails and is the strongest near-miss (axis 2, right mechanism family at the wrong point in the lifecycle): a hook looks deterministic, but the SDK docs warn that hooks may not fire when the agent hits the max_turns limit, and an API error ends the turn through StopFailure rather than Stop, so the hook misses the very sessions in the audit. C fails: a prompt rule is probabilistic, and the model never gets another turn to react when the budget cuts it off or execution errors out. D fails: raising the limits moves where sessions stop. Some still hit the limits, errors still happen, and runaway cost grows. What is missing is handling the exit, not avoiding it."
+    },
+    {
+      "id": 247,
+      "domain": 1,
+      "stem": "Your support agent's Messages API loop runs while stop_reason is \"tool_use\". It has a 15-iteration cap as a runaway backstop and retries failed API calls three times. Whenever the loop exits, for any reason, the orchestrator sends Claude's last text to the customer and closes the ticket as resolved. QA finds tickets closed as resolved where the customer got a half-finished reply or no reply at all. All of them come from sessions that hit the cap or ran out of API retries. What change fixes this?",
+      "options": {
+        "A": "Remove the iteration cap so the loop keeps running until Claude returns end_turn, and keep retrying failed API calls until one of them succeeds.",
+        "B": "Close the ticket only when the loop exits on end_turn, and route exits caused by the cap or by exhausted retries to escalate_to_human with a handoff.",
+        "C": "Before closing, ask Claude in one extra call whether the customer's issue was fully resolved, and close the ticket only when it answers yes.",
+        "D": "Rerun the whole session from the start whenever it exits on the cap or on exhausted retries, and close the ticket once a rerun ends on end_turn."
+      },
+      "correct": "B",
+      "axis": 5,
+      "task": "1.4",
+      "explanation": "B is correct. The defect is that the orchestrator treats every loop exit as a resolution. Only an end_turn exit means Claude finished its answer. The cap firing and exhausted API retries are failure exits, so orchestrator code must route them to escalate_to_human with a structured handoff instead of closing the ticket; every session then ends in a resolution or an escalation. D fails and is the strongest near-miss (axis 5, it patches the symptom instead of handling the exit): a rerun looks like a deterministic safeguard, but it is unbounded, a case that hit the cap or a persistent API outage will usually fail the same way again, and nothing in it ever hands the customer to a human. A fails: it blames the cap, but the cap is a legitimate secondary backstop behind stop_reason; removing it and retrying forever invites runaway loops and still gives persistent API errors no escalation path. C fails: a yes/no self-assessment is a self-reported signal, and a session that ended on API failure has no reliable model call left to ask."
+    },
+    {
+      "id": 248,
+      "domain": 1,
+      "stem": "A code-generation agent in your developer tooling writes files through a write_file tool whose input carries the complete file contents. For large files, the API response comes back with stop_reason \"max_tokens\", and its last content block is a write_file tool_use whose input is cut off partway through the file. How should the agentic loop handle this response?",
+      "options": {
+        "A": "Execute write_file with the partial input that was received, append the tool_result, and let Claude correct the file on the next iteration.",
+        "B": "Treat the response as the end of the task, the same as end_turn, and return the assistant's text so far to the developer as the result.",
+        "C": "Discard the incomplete tool_use block and re-send the same request with a higher max_tokens value, then handle the new response.",
+        "D": "Append a user message asking Claude to continue where it stopped, then join the new output onto the cut-off tool input and run it."
+      },
+      "correct": "C",
+      "axis": 2,
+      "task": "1.1",
+      "explanation": "C is correct. stop_reason \"max_tokens\" means the response was truncated. When the last block is an incomplete tool_use, the documented handling is to retry the request with a higher max_tokens to get the full tool call. Raising max_tokens is the right fix here because the truncation itself is the problem. D fails and is the strongest near-miss (axis 2, right family but the wrong variant). Asking Claude to continue is a way to extend truncated text, but a tool_use input has to arrive as one complete block; splicing a continuation onto cut-off JSON is not the documented handling and risks an invalid call. A fails: running a tool on a partial input writes a truncated file, a real side effect produced by a malformed call. B fails: max_tokens is not end_turn. The task is unfinished and the text is not a final answer."
+    },
+    {
+      "id": 249,
+      "domain": 1,
+      "stem": "In the multi-agent research system, the web search subagent's API response ends with stop_reason \"tool_use\" and contains three tool_use blocks: search_papers, search_news, and fetch_patent. Your code runs them concurrently. The first two return results, but fetch_patent times out even after retries. How should the loop return the tool results before the next API call?",
+      "options": {
+        "A": "Send each tool_result in its own user message, one API call per result, in the order in which the three tools finish executing.",
+        "B": "Return tool_results for search_papers and search_news only, and leave out fetch_patent so the model is not misled by the failed call.",
+        "C": "Merge the three outputs into one plain-text block in the next user message, with a closing line noting that fetch_patent timed out.",
+        "D": "Send one user message holding a tool_result for each of the three tool_use ids, with the fetch_patent result marked is_error: true."
+      },
+      "correct": "D",
+      "axis": 2,
+      "task": "1.1",
+      "explanation": "D is correct. For parallel calls, the loop returns one tool_result for each tool_use block, all together in the next user message, matched by tool_use_id and placed before any text. A call that failed or was not run still gets a tool_result with is_error: true and a brief explanation. The model then knows fetch_patent failed and can decide whether to retry, work around it, or report the gap. B fails and is the strongest near-miss (axis 2, one result short of the exact protocol): leaving out a result leaves a tool_use id unanswered, and it hides an access failure that the model and the coordinator need to reason about. A fails: parallel results belong together in the next single user message, not spread across separate messages and API calls. C fails: results must be tool_result blocks tied to their tool_use_id, and a merged plain-text summary loses that link."
+    },
+    {
+      "id": 250,
+      "domain": 1,
+      "stem": "In a customer support system, an intake agent verifies the caller with get_customer, and a supervisor then approves a refund of up to $150 for one specific order. A separate refund agent, started in a fresh session and configured with a standard $500 refund limit, executes the refund. Audits show the refund agent sometimes asks the customer to verify again, and twice it refunded more than the approved amount. The refund must never run for an unverified customer or above the approved cap. What should the architect implement?",
+      "options": {
+        "A": "Resume the intake agent's session inside the refund step so the verification result and the supervisor's approval already in the conversation carry over to it.",
+        "B": "Have the intake step emit a handoff record with the verified customer ID, how it was verified, the approver, cap and order ID, and gate process_refund on those fields.",
+        "C": "Append the full intake transcript, including every tool result and the supervisor's approval message, to the refund agent's prompt with an instruction to honor the approval.",
+        "D": "Add a gate in the refund agent that blocks process_refund until its own get_customer call returns a verified ID and the amount is within its standard $500 limit."
+      },
+      "correct": "B",
+      "axis": 2,
+      "task": "1.4",
+      "explanation": "B is correct. It makes the authorization state an explicit structured artifact: who was verified, by which tool, who approved, the cap, and the order it applies to. A prerequisite gate on process_refund checks those exact fields before the call runs, so every refund is blocked unless the customer is verified and the amount is within the $150 approved for that order. The refund agent gets the verified state, so it has no reason to re-verify. D is the strongest near-miss: it is also a deterministic gate, and it does guarantee a verified customer, but it checks the wrong limit. The agent's generic $500 limit still allows the over-cap refunds that were reported, and gating on its own get_customer call makes the re-verification the stem complains about mandatory. A resumes the conversation, not an enforced state: the approval exists only as prose the refund agent has to interpret, and nothing stops it from exceeding the cap. C carries the same information but buries it in a transcript, and honoring the cap still depends on the model following an instruction, which has a non-zero failure rate."
+    },
+    {
+      "id": 251,
+      "domain": 1,
+      "stem": "A support agent handles a dispute over a $300 duplicate charge. It verified the customer through get_customer and applied a $40 account credit, the most it may issue without approval, then escalates the remaining $260 to a tier-2 human who works in a separate console with no access to the conversation transcript. Tier-2 staff report that they often re-run identity checks the agent already completed, and in several cases refunded the full $300 on top of the credit. What should the escalation payload contain?",
+      "options": {
+        "A": "Labeled fields for the customer ID, the root-cause diagnosis, the $300 duplicate charge as the refund amount, and a recommended next action for tier-2 to take.",
+        "B": "The full conversation transcript with every tool result attached as a file, plus the customer ID in the ticket header so tier-2 can locate the account quickly.",
+        "C": "Labeled fields for the customer ID verified via get_customer, the root cause, the $40 credit already applied, the $260 still owed, and a recommended next action.",
+        "D": "The customer ID, root cause and recommended action, plus an instruction for tier-2 to re-verify identity and look up any credits on the account before refunding."
+      },
+      "correct": "C",
+      "axis": 3,
+      "task": "1.4",
+      "explanation": "C is correct. It keeps the core handoff fields and adds the authorization state the reported failures need: that identity was already verified and how, that the $40 credit was already applied, and that only $260 is still owed. With that, tier-2 neither repeats the identity check nor refunds the full $300 on top of the credit. A is the strongest near-miss. It has the right structure, labeled fields, but it treats a neighbouring problem (missing case context) and not the stated one (lost verification and completed-action state). Tier-2 still can't tell the customer was verified, and the $300 refund amount ignores the credit, which is exactly how the double refunds happen. B hands over raw material instead of a compiled summary: tier-2 has to re-derive what was verified and done from the transcript, which is the re-work a structured handoff exists to prevent. D makes the redundant re-verification a rule and still leaves the applied credit and the outstanding amount out of the payload."
+    },
+    {
+      "id": 252,
+      "domain": 2,
+      "stem": "A developer runs `claude mcp add --transport http tracker https://tracker.example.com/mcp` and sees the `Added …` confirmation line. In a new session, asked to summarize ticket PROJ-42, Claude searches the repository with Grep instead, and when asked which tools it has for tickets it names only built-in tools. A teammate says the tracker tools' descriptions are too sparse, so Claude prefers built-ins. What should the developer do first?",
+      "options": {
+        "A": "Rewrite the tracker tools' descriptions to explain their capabilities and outputs in detail so that Claude prefers them over Grep for ticket lookups.",
+        "B": "Re-add the server with `claude mcp add --scope project` so the configuration is committed to `.mcp.json` and loaded in every developer session.",
+        "C": "Add a line to the project CLAUDE.md telling Claude to always use the tracker MCP tools, never Grep or Bash, whenever a ticket ID is mentioned.",
+        "D": "Run `claude mcp list`, or open `/mcp` inside the session, and check the tracker server's connection status and how many tools it exposes."
+      },
+      "correct": "D",
+      "axis": 3,
+      "task": "2.4",
+      "explanation": "D is correct. The `Added …` line only means the configuration was written; `claude mcp add` does not validate that the server connects. `claude mcp list` shows each server's health (Connected, Needs authentication, Failed to connect, Pending approval), and `/mcp` shows the same status plus the tool count and lets you sign in with OAuth. Claude naming only built-in tools points at discovery, not selection, so confirm the server connected before changing anything else. A is the strongest near-miss because enriching descriptions is a real Guide 2.4 fix for when Claude prefers built-ins over capable MCP tools. It fixes a neighbouring problem, though: choosing among tools that are present. If the server never connected, there are no tracker descriptions in play to improve. B changes who shares the config, not whether the server connects, and it commits an unverified server to the team. C only influences selection and has the same flaw as A: it assumes the tools exist."
+    },
+    {
+      "id": 253,
+      "domain": 2,
+      "stem": "A team commits a `.mcp.json` that configures a remote issue-tracker server named `tracker` with `\"headers\": {\"Authorization\": \"Bearer ${TRACKER_TOKEN}\"}`. A new developer clones the repository, approves the project server, and starts Claude Code. `claude mcp list` shows a missing-variable warning naming TRACKER_TOKEN, and the server fails to connect with a 401. The team wants every developer on the same shared server definition, with no credentials in version control. What should the new developer do?",
+      "options": {
+        "A": "Export their own TRACKER_TOKEN in the shell that launches Claude Code, restart it, and check the server's status again in `claude mcp list`.",
+        "B": "Replace `${TRACKER_TOKEN}` in `.mcp.json` with their personal token, then add `.mcp.json` to `.gitignore` so the edited copy is never committed.",
+        "C": "Change the header in `.mcp.json` to `Bearer ${TRACKER_TOKEN:-<team service token>}` so developers without the variable fall back to one shared token.",
+        "D": "Add a server with the same name via `claude mcp add --scope user`, putting their personal token directly in the header of that entry in `~/.claude.json`."
+      },
+      "correct": "A",
+      "axis": 2,
+      "task": "2.4",
+      "explanation": "A is correct. An unset `${VAR}` with no default does not stop the server from loading. Claude Code loads it with the literal `${TRACKER_TOKEN}` text and shows a missing-variable warning in `claude mcp list` and `/mcp`, so the tracker receives `Bearer ${TRACKER_TOKEN}` and rejects it. Setting the variable in the developer's own environment makes the committed definition expand correctly, which keeps the team on one definition and the secret out of git. D is the strongest near-miss: keeping a personal credential in personal config sounds right, but it creates a second, forked definition of a server the team wants shared. It also does not take effect: when the same server name is defined in more than one scope the order is local > project > user and the whole entry from the winning scope is used, with no field merging, so the project `.mcp.json` entry still wins and the user copy is shadowed. B edits the shared file and relies on `.gitignore`, which does not untrack a file already committed, so the token is one commit away from leaking. C commits a real secret as the default value."
+    },
+    {
+      "id": 254,
+      "domain": 3,
+      "stem": "A platform team's committed root CLAUDE.md mixes two kinds of lines. Some are hard prohibitions: \"Never edit anything under `db/migrations/`\" and \"Never read `.env` files.\" Others are style guidance: \"Prefer early returns\" and \"Name booleans with an is/has prefix.\" A security review finds that Claude Code edited a migration during refactors on two developers' machines. The team wants the prohibitions to hold for everyone who clones the repository, and wants the style guidance to stay advice that Claude can weigh against the situation. How should they restructure the configuration?",
+      "options": {
+        "A": "Move the two prohibitions into `.claude/rules/security.md` with `paths: [\"db/migrations/**\", \"**/.env\"]`, and keep the style guidance in CLAUDE.md.",
+        "B": "Add `Edit(db/migrations/**)` and `Read(**/.env)` to `permissions.deny` in each developer's `.claude/settings.local.json`, and move the style guidance into `.claude/rules/style.md`.",
+        "C": "Add `Edit(db/migrations/**)` and `Read(**/.env)` to `permissions.deny` in the committed `.claude/settings.json`, and keep the style guidance in CLAUDE.md.",
+        "D": "Add `Edit(db/migrations/**)` and `Read(**/.env)` to `permissions.deny` in the committed `.claude/settings.json`, and add a PreToolUse hook that rejects edits without early returns."
+      },
+      "correct": "C",
+      "axis": 2,
+      "task": "3.1",
+      "explanation": "C is correct. The memory docs say Claude treats CLAUDE.md as \"context, not enforced configuration\", and the permissions docs say CLAUDE.md shapes \"what Claude tries to do, but they don't change what Claude Code allows\". Claude Code enforces permission rules itself. The committed `.claude/settings.json` is the shared project scope, so every clone gets the deny rules. The style lines stay in CLAUDE.md as behavioural guidance.\nB is the strongest near-miss: right mechanism, wrong file. `.claude/settings.local.json` is personal, so a new clone gets no deny and the team depends on every developer remembering to add it. (Moving the style lines into a rules file would be harmless; the scope is what fails.)\nA only moves the text. A `paths`-scoped rule loads when Claude works with matching files, but it is still context the model can ignore, which is the same failure that already happened.\nD enforces the prohibitions correctly but also puts a style preference behind a blocking hook. The team said that preference should stay advice, and such a hook would reject reasonable edits."
+    },
+    {
+      "id": 255,
+      "domain": 3,
+      "stem": "A team's committed `.claude/settings.json` contains `\"deny\": [\"Bash(curl *)\"]` to stop Claude Code from sending data to arbitrary hosts. A new health-check workflow needs Claude to run curl against `https://status.internal.example.com`. A developer added `Bash(curl https://status.internal.example.com/*)` to the `allow` list in their `.claude/settings.local.json`, but Claude Code still blocks the call. The team lead agrees to change the shared configuration. Which change lets Claude reach that one host while every other curl call stays blocked?",
+      "options": {
+        "A": "Move the narrow allow rule from `.claude/settings.local.json` into the committed `.claude/settings.json`, next to the curl deny.",
+        "B": "Launch Claude Code with `--allowedTools \"Bash(curl https://status.internal.example.com/*)\"` for the health-check sessions.",
+        "C": "Keep the curl deny and add a PreToolUse hook that returns an allow decision for curl commands whose URL is on that host.",
+        "D": "Replace the curl deny with a PreToolUse hook that inspects each curl command and blocks any whose URL is not on that host."
+      },
+      "correct": "D",
+      "axis": 2,
+      "task": "3.1",
+      "explanation": "D is correct. The permissions docs say rules are evaluated \"deny, then ask, then allow\", that the first match decides, and that \"rule specificity doesn't change the order\". They also say \"An allow rule can't carve an exception out of a deny rule.\" So as long as `Bash(curl *)` is denied, no allow rule for curl can take effect. The docs list a PreToolUse hook that \"validates URLs in Bash commands and blocks disallowed domains\" as a way to filter URLs, and \"A blocking hook also takes precedence over allow rules.\" Once the broad deny is gone, the developer's narrow allow can apply to the one host, and the hook blocks every other host.\nC is the strongest near-miss: the right tool used the wrong way. \"Hook decisions don't bypass permission rules\", so the matching deny still blocks the call when the hook returns allow.\nA misreads the problem as a scope mismatch. Deny rules are evaluated before allow rules whatever file they are in, so an allow in the same file still loses.\nB misreads it as a precedence problem. \"If a tool is denied at any level, no other level can allow it\", and command-line arguments don't change that."
+    },
+    {
+      "id": 256,
+      "domain": 3,
+      "stem": "A monorepo team moved its Terraform conventions out of the root CLAUDE.md into `.claude/rules/terraform.md` to stop them using tokens in frontend sessions. Terraform files live in `infra/`, `modules/`, and `services/*/deploy/`. A week later the team finds the Terraform conventions still in context at the start of every session, including sessions that never touch a `.tf` file. The rule file opens with a `# Terraform conventions` heading, followed by the bullet list. What change makes the conventions load only when Claude works with Terraform files?",
+      "options": {
+        "A": "Add YAML frontmatter to `terraform.md` with `paths: [\"**/*.tf\", \"**/*.tfvars\"]`.",
+        "B": "Move the conventions into `infra/CLAUDE.md` so they load when Claude works inside that directory.",
+        "C": "Turn `terraform.md` into a skill at `.claude/skills/terraform/SKILL.md` that developers invoke before Terraform work.",
+        "D": "Delete the rule file and pull the conventions into the root CLAUDE.md with an `@docs/terraform.md` import."
+      },
+      "correct": "A",
+      "axis": 3,
+      "task": "3.3",
+      "explanation": "A is correct. The memory docs say rules without `paths` frontmatter \"are loaded at launch with the same priority as `.claude/CLAUDE.md`\". The file starts straight with a heading, so it has no frontmatter, and moving text into `.claude/rules/` does not make it conditional by itself. A `paths` glob does: the rule loads only when Claude works with matching files, and a `**/*.tf` glob matches Terraform files in every directory.\nD is the strongest near-miss. It solves a neighbouring problem, organisation, rather than the stated one, conditional loading. Imported files \"are expanded and loaded into context at launch\", so the conventions would still be in every session.\nB covers only `infra/` and misses `modules/` and `services/*/deploy/`. This is the Guide's point that glob rules beat directory CLAUDE.md files when files are spread across the codebase.\nC makes the conventions depend on someone remembering to invoke a skill. The team wants them applied automatically whenever Claude works on Terraform files."
+    },
+    {
+      "id": 257,
+      "domain": 3,
+      "stem": "A platform team is configuring Claude Code for a monorepo and has three pieces of guidance: (1) a 120-line release checklist whose full text should enter context only when someone is cutting a release; (2) GraphQL resolver conventions that should load automatically whenever Claude works on resolver files, which sit in `resolvers/` folders across a dozen packages, and should stay out of context during other work; (3) a requirement that `make stubs` regenerates the client stubs every time Claude changes a `.proto` file, with no exceptions. Which configuration fits each piece?",
+      "options": {
+        "A": "(1) `.claude/rules/release.md` with no `paths` field; (2) `.claude/rules/resolvers.md` with `paths: [\"**/resolvers/*.ts\"]`; (3) a PostToolUse hook on Edit|Write for `*.proto` that runs `make stubs`.",
+        "B": "(1) a skill in `.claude/skills/release/SKILL.md`; (2) `.claude/rules/resolvers.md` with `paths: [\"**/resolvers/*.ts\"]`; (3) a PostToolUse hook on Edit|Write for `*.proto` that runs `make stubs`.",
+        "C": "(1) a skill in `.claude/skills/release/SKILL.md`; (2) `.claude/rules/resolvers.md` with `paths: [\"**/resolvers/*.ts\"]`; (3) a PreToolUse hook on Edit|Write for `*.proto` that runs `make stubs`.",
+        "D": "(1) `.claude/rules/release.md` with no `paths` field; (2) a resolver section in the root CLAUDE.md; (3) `.claude/rules/proto.md` with `paths: [\"**/*.proto\"]` telling Claude to run `make stubs`."
+      },
+      "correct": "B",
+      "axis": 2,
+      "task": "3.3",
+      "explanation": "B is correct. Each piece goes to the mechanism that matches when it applies. (1) Only for one task → a skill: its description is in context from the start, and its full content loads only when it is invoked. (2) Whenever Claude works with matching files, across many folders, and not otherwise → a `.claude/rules/` file with a `paths` glob. (3) On every matching edit, with no exceptions → a hook. It must be PostToolUse, because it has to run after the `.proto` change is written.\nC is the strongest near-miss: the right mechanism on the wrong event. PreToolUse runs before the edit, so `make stubs` would regenerate from the old `.proto` file.\nA misses on one piece: a rules file with no `paths` field loads at launch in every session, so the 120-line checklist would sit in context during unrelated work.\nD fails all three. The checklist rule and the root CLAUDE.md section both load in every session. The stub regeneration becomes a rule the model reads, which can load correctly and still be skipped, and that fails \"with no exceptions\"."
+    },
+    {
+      "id": 258,
+      "domain": 3,
+      "stem": "A developer on a Developer Productivity team asks Claude Code to simplify the `calculateTax` function in `src/billing/invoice.ts` for a one-time cleanup ticket. No teammate needs this file for their own work, and later sessions will not need it either. What is the most effective way to give Claude this file as context?",
+      "options": {
+        "A": "Add a line to the project CLAUDE.md stating that the tax logic lives in `src/billing/invoice.ts`, then ask for the refactor.",
+        "B": "Describe the file's location in the prompt (\"the invoice module in the billing folder\") and let Claude search for it.",
+        "C": "Add `@src/billing/invoice.ts` as an import in the project CLAUDE.md, then ask for the refactor in the prompt.",
+        "D": "Reference `@src/billing/invoice.ts` in the prompt itself, in the same message that asks Claude to simplify `calculateTax`."
+      },
+      "correct": "D",
+      "axis": 4,
+      "task": "3.1",
+      "explanation": "D is correct: an `@file` reference in a prompt includes the full content of that file in the conversation. That fits the need exactly: one file, one task, no later sessions. C is the near-miss: the `@` syntax is right, but an `@import` in CLAUDE.md is expanded at launch in every session, and a project CLAUDE.md reaches every teammate. Imports help organisation but do not reduce context, so this is far too heavy for a one-off. A is also persistent and team-wide for a one-time need, and it only tells Claude where to look instead of giving it the content. B goes against the documented best practice to reference files with @ instead of describing where code lives: Claude has to search first and may land on the wrong file."
+    },
+    {
+      "id": 259,
+      "domain": 3,
+      "stem": "In a Code Generation session, a developer types: `@src/payments/ compare the retry logic in client.ts and webhook.ts and unify it`. Claude starts its reply by reading the two files. A teammate watching says those reads were wasted, because `@src/payments/` had already put every file in the folder into the conversation. What does the directory reference actually provide, and how should the developer write the prompt next time?",
+      "options": {
+        "A": "A listing of the folder's files, not their contents; reference `@src/payments/client.ts` and `@src/payments/webhook.ts`.",
+        "B": "The folder's `CLAUDE.md` file only; move the retry conventions into `src/payments/CLAUDE.md` so they load with the reference.",
+        "C": "The full contents of every file, trimmed at the context limit; split the request into one prompt per file to stay under it.",
+        "D": "The full contents of every file in the folder; the extra reads are redundant, so tell Claude to skip re-reading those files."
+      },
+      "correct": "A",
+      "axis": 2,
+      "task": "3.1",
+      "explanation": "A is correct: a directory reference shows file listings, not contents. To put the contents in the conversation, reference each file with `@path`; a single message can reference several files. D is the near-miss and the teammate's claim: it is the right mechanism family (`@` references) but assumes a directory reference behaves like a file reference. The reads were not redundant, and telling Claude to skip them would leave it working from file names alone. B misapplies a real fact: an `@` FILE reference also adds the CLAUDE.md files of that file's directory and its parents, but the docs do not say a directory reference provides a CLAUDE.md, let alone only that. It also turns a code-comparison task into a conventions problem. C invents truncation behaviour, and splitting the request per file would break the comparison the developer asked for."
+    },
+    {
+      "id": 260,
+      "domain": 3,
+      "stem": "A CI/CD engineer asks Claude Code to add a NOT NULL `region` column to the `orders` table. The code change is a single new migration file, but Claude will apply it by running `npm run migrate` through Bash against the shared staging database, and the migration backfills and rewrites existing rows that other teams rely on. The engineer says: \"It's one file, so just run it, and if it's wrong we'll rewind.\" What approach should they take?",
+      "options": {
+        "A": "Use direct execution to write and run the migration, then use `/rewind` to restore the earlier checkpoint if the backfill is wrong.",
+        "B": "Use plan mode to inspect the schema and draft the migration, have the plan reviewed, then approve running it against staging.",
+        "C": "Use direct execution after an Explore subagent summarises the `orders` schema, then write and run the migration in one step.",
+        "D": "Use direct execution, but commit the working tree to git before running the migration so the change can be reverted if needed."
+      },
+      "correct": "B",
+      "axis": 3,
+      "task": "3.4",
+      "explanation": "B is correct: the diff is small, but its effect is not something a rewind can undo. Checkpoints track only edits made through Claude's file-editing tools; changes made through Bash commands or external processes are not captured, and checkpoints are not a replacement for git. The staging rows the backfill rewrites are not a tracked file at all. So the migration should be planned and reviewed before it runs, and in plan mode Claude reads the schema and writes the plan but makes no edits until the plan is approved. A is the near-miss: it solves a neighbouring problem, undoing Claude's own file edits. `/rewind` could remove the migration file, not the rows the migration already rewrote. D has the same flaw: git can revert the migration file, not the data. C adds discovery but still runs the migration with no plan or review first; the risk was never missing context about the schema."
+    },
+    {
+      "id": 261,
+      "domain": 3,
+      "stem": "A team must change how the API gateway and three backend services refresh authentication tokens. The security team and the tech lead have asked to approve the approach before any code is written. A developer will do the work in Claude Code. Which workflow fits this requirement?",
+      "options": {
+        "A": "Use direct execution on a feature branch and open a draft pull request so the security team and tech lead review the diff.",
+        "B": "Use direct execution with upfront instructions that restate the approach the tech lead outlined in the team's chat thread.",
+        "C": "Use plan mode to produce the plan, send it to the security team and tech lead, and implement only after they accept it.",
+        "D": "Use plan mode to explore the four services, then approve the plan yourself and switch to direct execution to implement it."
+      },
+      "correct": "C",
+      "axis": 2,
+      "task": "3.4",
+      "explanation": "C is correct: the requirement is approval of the approach before implementation. In plan mode Claude explores the code and writes a plan without editing source until the plan is approved, so the plan can go to the security team and tech lead first and the edits start only after they accept it. The work also spans four services and is security-sensitive, which the Guide assigns to plan mode. D is the near-miss: plan-then-execute is the right shape (the same hybrid the Guide recommends for a library migration), but the developer approves their own plan, so the people the stem names never see it before code is written. A provides a review, but of finished code after implementation; any rejected approach means rework. B assumes the approach is already settled by an informal chat, so there is no reviewed artefact and no exploration of the four services before coding."
     }
   ]
 }

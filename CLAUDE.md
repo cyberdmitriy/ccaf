@@ -107,7 +107,7 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 
 ## questions.json — schema & rules
 ```json
-{ "meta": { "total": 240, "per_domain": {"1":64,"2":47,"3":42,"4":41,"5":46} },
+{ "meta": { "total": 261, "per_domain": {"1":70,"2":49,"3":53,"4":43,"5":46} },
   "questions": [
     { "id": 1, "domain": 3, "stem": "…", "options": {"A":"…","B":"…","C":"…","D":"…"},
       "correct": "A", "axis": 1, "task": "3.1", "explanation": "…" }
@@ -117,7 +117,7 @@ in **`maintenance/app-internals.md`** — read it before editing the app. Hard c
 - **`domain`** = integer 1–5. **`correct`** = single letter A–D. **`explanation`** verbatim (or "").
 - **`axis`** = integer **1–5** — the ONE axis (`data/axes.md`) the strongest near-miss distractor trips on: **1** Determinism · **2** Exact-hit · **3** Right-diagnosis · **4** Proportionality · **5** Root-cause. Every question carries exactly one; it powers the dashboard 5-axis tally + the results-review badge and is read directly by `/ccaf:result`.
 - **`task`** = the canonical task-statement string `"<d>.<n>"` (e.g. `"3.1"`) — a **key in `data/task-statements.json`** whose domain-prefix must equal `domain`. Every question carries exactly one. It is the single source of truth for which sub-topic a question tests, so `/ccaf:result` and the tutors **look it up** instead of guessing (fixes cross-session drift — the same question tagged `1.2` in one sitting and `1.6` in another). The number lives here; the human label lives once in `task-statements.json`.
-- Current count: **240** (D1:64 D2:47 D3:42 D4:41 D5:46).
+- Current count: **261** (D1:70 D2:49 D3:53 D4:43 D5:46).
 - **Detailed authoring rules** (answer-letter balance · real near-miss / length-tell · imported-vs-authored scope · axis detail · batch provenance) **and the full "extend the bank" workflow** (extract → classify → dedupe → assign ids+axis+task → `validate.py` → version bump) live in **`maintenance/authoring-questions.md`** — read it before adding/editing questions.
 
 ## quick-reference.json — the Reference tab's see→answer map

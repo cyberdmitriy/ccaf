@@ -6,6 +6,19 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.20.0] — 2026-09-23
+### Fixed
+- **q51 re-keyed D → C** (axis 4 → 3). An explicit "I want to talk to a real person NOW" is escalated at once — Exam Guide v1.0 task 5.2: *"Honoring explicit customer requests for human agents immediately without first attempting investigation"*. The imported key (one clarifying question first) was exactly the investigation the Guide rules out. The same wrong rule had propagated into the 5.2 Cheatsheet row ("a bare human request is not an unconditional immediate handoff"); that row is split into the explicit-request case (q51 → escalate at once) and the frustration case (q58 → offer resolution, escalate if they reiterate).
+- **"PreToolUse is the only hard block"** corrected in `tutor-prompts.md` 3.3 and its Cheatsheet row — a `permissions.deny` rule is an equally hard block; the hook is for decisions that need logic.
+
+### Added
+- **Score-report gap fill (8 objectives the bank/lessons did not cover).** A Sept-2026 official score report lists 29 TEST OBJECTIVES, several naming sub-points absent from Exam Guide v1.0. Researched against official docs (Claude Code settings/permissions/memory/mcp/checkpointing, Messages API stop reasons, Agent SDK agent-loop/sessions/hooks), then drafted and adversarially verified by a subagent workflow:
+  - **Bank ids 246–261** (16 questions, 2 per gap): loop-exit safeguards / every session ends in resolution or escalation (1.4), full `stop_reason` handling incl. `max_tokens` + parallel `tool_result`s (1.1), handoff authorization state (1.4), MCP discovery verification + `${VAR}` auth (2.4), settings permissions vs CLAUDE.md incl. deny-beats-allow (3.1), the five-mechanism choice incl. a rule without `paths` (3.3), `@` references vs CLAUDE.md vs inline (3.1), plan-mode reversibility + stakeholder approval (3.4). Bank = 261.
+  - **Lessons** appended to `tutor-prompts.md` 1.1, 1.4, 2.4, 3.1, 3.3, 3.4; matching **traps + core rules** in `exam-traps.md`; **19 Cheatsheet rows** in `quick-reference.json` with hand-picked `q_ids`.
+
+### Content review
+- `maintenance/sources.md`: new **Layer 1b — live exam objectives (score reports)** as a coverage source alongside the Guide; new divergence (forced `tool_choice` returns 400 on the newest models — content follows the Guide); stamps updated (docs checked 2026-09-23, bank 261). `CLAUDE.md` / `maintenance/authoring-questions.md` counts corrected (were stale at 240).
+
 ## [0.19.7] — 2026-09-23
 ### Added
 - **Cheatsheet: "Show" filter tied to your misses.** A chip row under the domain chips + search: `Everything` (default, the whole bundled reference) · `My misses · all exams` (rows tied to any question you ever failed) · one chip per mock sitting (`#N · dd.mm`, with the number of rows). The tie is each row's hand-picked `q_ids` ∩ the questions you failed (canonical attempt log + local pending); filtered rows carry an `N missed` badge. Counts are over rows passing domain + search, so a chip never yields an empty list; the row is hidden when you have no misses. Rows with `q_ids: []` (20 of 204) never show under a misses/exam chip — `CLAUDE.md` now states that `q_ids` feed this filter and must be filled for new rows.

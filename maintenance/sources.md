@@ -13,8 +13,8 @@ so it can be checked directly. The **technical behavior** the exam tests (CLI fl
 ## Last verified (against the official Exam Guide, primary source)
 - **Exam Guide:** **v1.0 · Effective July 2026 · exam code CCAR-F** (title page). "Subject to change
   without notice." Verified against the PDF on 2026-07-18.
-- **Product docs / changelogs checked:** 2026-07-19 (Layer-2 fact-currency audit — 0 stale facts across all 5 domains).
-- **Bundled content built/last-synced:** 2026-07-18 (bank = 240 questions).
+- **Product docs / changelogs checked:** 2026-07-19 (Layer-2 fact-currency audit — 0 stale facts across all 5 domains); 2026-09-23 targeted check for the Layer-1b gaps (Claude Code settings/permissions/memory/mcp/checkpointing docs, Messages API stop reasons, Agent SDK agent-loop/sessions/hooks).
+- **Bundled content built/last-synced:** 2026-09-23 (bank = 261 questions).
 
 > When you refresh content against the sources below, bump these lines and the plugin version.
 
@@ -59,6 +59,9 @@ for the exam** — do not edit them to match current docs:
 - **`/memory` command** — the Guide (task 3.1) says `/memory` shows **which memory files are loaded**;
   current docs route "which actually loaded" to `/context` and describe `/memory` as listing file
   locations + toggling auto-memory. Content follows the Guide. (bank q201; tutor 3.1)
+- **Forced `tool_choice`** — the Guide (tasks 2.3, 4.3) keys `tool_choice: "any"` / `{"type":"tool"}` as the
+  way to guarantee a tool call; current API docs say Claude Opus 5.5 / Fable 5.1 return a 400 for
+  `any`/`tool` (use `auto` + strict tool use or structured outputs). Content follows the Guide.
 Re-evaluate each only when a **new Exam Guide version** changes the framing (Layer-1 review).
 
 ## Layer 1 — Exam blueprint (PUBLIC · downloadable, checkable directly)
@@ -73,6 +76,14 @@ The single authoritative source for the blueprint, domain weights, and task stat
   https://www.pearsonvue.com/us/en/anthropic.html
 - Public overview mirrors (unofficial, quick sanity-check only, NOT authoritative):
   https://claudecertifications.com/claude-certified-architect · .../domains
+
+## Layer 1b — Live exam objectives (from score reports)
+Score reports list per-objective "TEST OBJECTIVES" that are more granular than Exam Guide v1.0 and
+name sub-points the Guide omits (settings permissions vs CLAUDE.md, the five-mechanism choice,
+@ references vs CLAUDE.md vs inline, plan-mode reversibility + stakeholder review, verifying MCP
+tool discovery, loop-exit safeguards, authorization state in handoffs). Treat them as a coverage
+source alongside the Guide: every objective must map to a lesson, a trap, and ≥2 bank questions.
+- 2026-09-23 score report (29 objectives) → gaps closed in bank ids 246–261 + lessons 1.1/1.4/2.4/3.1/3.3/3.4.
 
 ## Layer 2 — Technical behavior (PUBLIC · fetchable during review)
 Official product docs the exam is built on. During a review (see `RUNBOOK.md`), fetch these and check
