@@ -6,6 +6,13 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.19.7] — 2026-09-23
+### Added
+- **Cheatsheet: "Show" filter tied to your misses.** A chip row under the domain chips + search: `Everything` (default, the whole bundled reference) · `My misses · all exams` (rows tied to any question you ever failed) · one chip per mock sitting (`#N · dd.mm`, with the number of rows). The tie is each row's hand-picked `q_ids` ∩ the questions you failed (canonical attempt log + local pending); filtered rows carry an `N missed` badge. Counts are over rows passing domain + search, so a chip never yields an empty list; the row is hidden when you have no misses. Rows with `q_ids: []` (20 of 204) never show under a misses/exam chip — `CLAUDE.md` now states that `q_ids` feed this filter and must be filled for new rows.
+
+### Internal
+- Exam-chip helpers `sortExamIdsNewest()` / `examChipLabel()` extracted from the Weaknesses filter and shared with the Cheatsheet; `maintenance/app-internals.md` documents the new filter.
+
 ## [0.19.6] — 2026-09-22
 ### Added
 - **Random mode: "Random pool" segment — `Fresh + top-up` vs `Fresh only`.** Shown only while Random is selected. `Fresh only` makes the pool exactly the questions outside your recent exams (`poolFor("random", …, {fresh:true})`), so the existing Length cap applies like in Ever failed: lengths above the fresh count are disabled, `All` = the fresh count, 15/30 draw from fresh questions with no top-up; the mode card shows the fresh count while it is active. `Fresh + top-up` is the previous behaviour (skip recent, top up from the oldest recent exams when short). The segment is disabled and reset when no fresh questions remain. `availByMode` takes the same `opts`.

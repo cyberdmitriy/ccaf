@@ -522,6 +522,14 @@
   .ref-tbl td.see{width:42%;color:var(--muted);border-right:1px solid var(--line2)}
   .ref-tbl td.ans{color:var(--ink);font-weight:600}
   .ref-tbl td.ans .arw{color:var(--accent2);font-weight:800;margin-right:.35rem}
+  /* Cheatsheet "Show" row (Everything / My misses / one exam) + the per-row "N missed" badge */
+  .ref-show{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:-.5rem 0 1.1rem}
+  .ref-show-lbl{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-right:.2rem}
+  .miss-chip .cs-cnt{display:inline-block;min-width:1.25em;padding:0 .35em;border-radius:999px;font-size:.72rem;font-weight:700;
+    background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--ink2);text-align:center;font-variant-numeric:tabular-nums}
+  .miss-chip.active .cs-cnt{background:rgba(255,255,255,.28);color:#fff}
+  .ref-hit{display:inline-block;margin-left:.5rem;padding:.05rem .45rem;border-radius:999px;font-size:.7rem;font-weight:700;white-space:nowrap;vertical-align:middle;
+    color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
   .ref-tbl tr:nth-child(even) td{background:var(--accent-soft)}
   .ref-tbl tr:nth-child(even) td.see{color:var(--ink2)}
   .ref-tbl code{font-family:var(--font-mono);font-size:.8em;background:var(--paper2);padding:.03rem .28rem;border-radius:3px}
@@ -1578,7 +1586,7 @@ function availByMode(domains,merged,opts){
   };
 }
 /* ---------- Cheatsheet view (miss-driven trigger→rule table) ---------- */
-let refState = { domain:"all", q:"" };
+let refState = { domain:"all", q:"", show:"all" };   // show = "all" (everything) | "misses" (rows tied to any question I ever failed) | <exam_id>
 function refMatchesQuery(row, q){
   if(!q) return true;
   q=q.toLowerCase();
@@ -1591,16 +1599,37 @@ function renderReference(){
   if(!domKeys.length){ root.innerHTML=`<p class="ref-empty">This tab is built from the bundled quick-reference file. That file is missing from this build.</p>`; return; }
   const chip=(active,val,label)=>`<button class="miss-chip${active?" active":""}" data-ref-dom="${val}">${esc(label)}</button>`;
   let filters=chip(refState.domain==="all","all","All")+domKeys.map(d=>chip(refState.domain===d,d,"D"+d)).join("");
+  // "Show" filter — ties rows to MY misses through each row's hand-picked `q_ids` (a row with `q_ids: []`
+  // never shows under a misses/exam chip). missByQ: qid -> Set(exam_ids it was failed in) over the bank.
+  const missByQ={}; BANK.forEach(q=>{ const ex=missExamIds(q.id); if(ex.size) missByQ[String(q.id)]=ex; });
+  const hitIds=r=>(r.q_ids||[]).map(String).filter(id=>{ const ex=missByQ[id]; if(!ex) return false; return refState.show==="misses"||refState.show==="all"||ex.has(refState.show); });
+  const rowVisible=r=> refMatchesQuery(r,refState.q) && (refState.show==="all" || hitIds(r).length>0);
+  // chips: counts over rows passing domain + search only (so a chip never yields an empty list); exams newest first
+  const ords=examOrdinals(); let missRows=0; const perExam={};
+  domKeys.filter(d=>refState.domain==="all"||refState.domain===d).forEach(d=>(doms[d].sections||[]).forEach(sec=>(sec.rows||[]).forEach(r=>{
+    if(!refMatchesQuery(r,refState.q)) return;
+    const exams=new Set(); (r.q_ids||[]).map(String).forEach(id=>{ const ex=missByQ[id]; if(ex) ex.forEach(e=>exams.add(e)); });
+    if(exams.size) missRows++; exams.forEach(e=>{ perExam[e]=(perExam[e]||0)+1; });
+  })));
+  if(refState.show!=="all"&&refState.show!=="misses"&&!(refState.show in perExam)) refState.show="all";
+  const examIds=sortExamIdsNewest(Object.keys(perExam), ords);
+  const schip=(active,val,label,cnt)=>`<button class="miss-chip${active?" active":""}" data-ref-show="${esc(val)}">${esc(label)}${cnt!=null?`<span class="cs-cnt">${cnt}</span>`:""}</button>`;
+  const showRow = missRows ? `<div class="ref-show"><span class="ref-show-lbl">Show</span>`
+      +schip(refState.show==="all","all","Everything")
+      +schip(refState.show==="misses","misses","My misses · all exams",missRows)
+      +examIds.map(id=>schip(refState.show===id,id,examChipLabel(id,ords),perExam[id])).join("")+`</div>` : "";
   let html=`<p class="ref-lead">What you see in the stem <b>&rarr;</b> the answer it points to. Grouped by domain.</p>`
-    +`<div class="ref-filters">${filters}<input class="ref-search" id="ref-q" type="search" placeholder="Search triggers or answers…" value="${esc(refState.q)}"></div>`;
+    +`<div class="ref-filters">${filters}<input class="ref-search" id="ref-q" type="search" placeholder="Search triggers or answers…" value="${esc(refState.q)}"></div>`+showRow;
   const show=domKeys.filter(d=>refState.domain==="all"||refState.domain===d);
   let any=false;
   show.forEach(d=>{
     const dv=doms[d]; const dvar=DOMAIN_VAR[d];
     const secs=(dv.sections||[]).map(sec=>{
-      const rows=(sec.rows||[]).filter(r=>refMatchesQuery(r,refState.q));
+      const rows=(sec.rows||[]).filter(rowVisible);
       if(!rows.length) return "";
-      const trs=rows.map(r=>`<tr><td class="see">${rich(r.see||"")}</td><td class="ans"><span class="arw">→</span>${rich(r.answer||"")}</td></tr>`).join("");
+      const trs=rows.map(r=>{ const h=refState.show==="all"?0:hitIds(r).length;
+        const badge=h?`<span class="ref-hit" title="Questions you failed that this row answers">${h} missed</span>`:"";
+        return `<tr><td class="see">${rich(r.see||"")}</td><td class="ans"><span class="arw">→</span>${rich(r.answer||"")}${badge}</td></tr>`; }).join("");
       // split "n.n label" into a coloured number kicker + big title (treatment B); validate.py guarantees the leading <d>.<n>
       const st=String(sec.title||""); const sm=st.match(/^(\S+)\s+([\s\S]+)$/);
       const secHead=sm
@@ -1612,9 +1641,10 @@ function renderReference(){
     any=true;
     html+=`<div class="ref-dom" style="--dc:var(${dvar})"><div class="ref-dom-h"><span class="ref-dnum">D${d}</span>${esc(dv.title||"")}</div><div class="ref-dom-sub">${esc(DOMAIN_DESC[d]||"")}</div>${secs}</div>`;
   });
-  if(!any) html+=`<p class="ref-empty">No rows match “${esc(refState.q)}”.</p>`;
+  if(!any) html+=`<p class="ref-empty">${refState.show==="all"?`No rows match “${esc(refState.q)}”.`:"No cheatsheet rows are tied to the questions you failed here."}</p>`;
   root.innerHTML=html;
   $$("#view-reference [data-ref-dom]").forEach(b=>b.onclick=()=>{ refState.domain=b.dataset.refDom; renderReference(); });
+  $$("#view-reference [data-ref-show]").forEach(b=>b.onclick=()=>{ refState.show=b.dataset.refShow; renderReference(); });
   const qi=$("#ref-q"); if(qi){ qi.oninput=()=>{ refState.q=qi.value; renderReference(); const n=$("#ref-q"); if(n){ n.focus(); const v=n.value.length; n.setSelectionRange(v,v);} }; }
 }
 let cheatState = { domain:"all", q:"", exam:"all" };   // exam = exam_id of a mock sitting, or "all"
@@ -1742,8 +1772,8 @@ function wkAttempts(qid){
   raw.sort((x,y)=>String(x.ts||"").localeCompare(String(y.ts||"")));   // chronological
   return raw;
 }
-// exam_ids of every WRONG attempt of a question — the Weaknesses exam filter reads this, so a chip shows
-// only questions actually failed in THAT sitting (not merely seen in it).
+// exam_ids of every WRONG attempt of a question — the Weaknesses + Cheatsheet exam filters read this, so a
+// chip shows only what was actually failed in THAT sitting (not merely seen in it).
 function missExamIds(qid){ const s=new Set(); wkAttempts(qid).forEach(x=>{ if(!x.correct&&x.exam_id) s.add(String(x.exam_id)); }); return s; }
 // ts of the most recent WRONG attempt ("" when none) — the Weaknesses sort key (see cheatList).
 function lastMissTs(qid){ let t=""; wkAttempts(qid).forEach(x=>{ if(!x.correct&&String(x.ts||"")>t) t=String(x.ts); }); return t; }
@@ -1751,6 +1781,11 @@ function wkTimeline(qid, ords){
   return wkAttempts(qid).map(x=>{ const o=ords[x.exam_id]; return {correct:x.correct, n:o?o.n:null, date:o?o.date:fmtDate(x.ts,'short')}; });
 }
 function examLbl(a){ return (a.n?("Exam #"+a.n):"Exam")+(a.date?" · "+esc(a.date):""); }
+// Exam-filter chips (Weaknesses + Cheatsheet share these): newest sitting first, "#N · dd.mm" labels; an
+// unrecorded pending sitting has no ordinal → "Unrecorded · dd.mm".
+function examTs(id, ords){ return (ords[id]||{}).ts || (pending.find(p=>p.exam_id===id)||{}).ts || ""; }
+function sortExamIdsNewest(ids, ords){ return ids.slice().sort((a,b)=>String(examTs(b,ords)).localeCompare(String(examTs(a,ords)))); }
+function examChipLabel(id, ords){ const o=ords[id]; if(o) return `#${o.n} · ${fmtDate(o.ts,'md')}`; const t=examTs(id,ords); return t?`Unrecorded · ${fmtDate(t,'md')}`:"Unrecorded"; }
 // ---------- Weaknesses: per-topic study note + a collapsible list of the exact failed questions ----------
 function renderWeakness(){
   const v=$("#view-weakness");
@@ -1775,11 +1810,10 @@ function renderWeakness(){
   // leads to an empty list; a selected exam that dropped out of the set falls back to "all".
   const perExam={};
   base.forEach(e=>{ missExamIds(e.qid).forEach(id=>{ perExam[id]=(perExam[id]||0)+1; }); });
-  const examIds=Object.keys(perExam).sort((a,b)=>{ const ta=(ords[a]||{}).ts||(pending.find(p=>p.exam_id===a)||{}).ts||"", tb=(ords[b]||{}).ts||(pending.find(p=>p.exam_id===b)||{}).ts||""; return String(tb).localeCompare(String(ta)); });
+  const examIds=sortExamIdsNewest(Object.keys(perExam), ords);
   if(cheatState.exam!=="all"&&!(cheatState.exam in perExam)) cheatState.exam="all";
   const echip=(active,val,label,cnt)=>`<button class="cs-chip${active?" on":""}" data-cs-exam="${esc(val)}">${esc(label)}${cnt!=null?`<span class="cs-cnt">${cnt}</span>`:""}</button>`;
-  const examLabel=id=>{ const o=ords[id]; if(o) return `#${o.n} · ${fmtDate(o.ts,'md')}`; const p=pending.find(x=>x.exam_id===id); return p&&p.ts?`Unrecorded · ${fmtDate(p.ts,'md')}`:"Unrecorded"; };
-  const examChips=examIds.length>1 ? `<span class="cs-chips-lbl">Exam</span>`+echip(cheatState.exam==="all","all","All exams")+examIds.map(id=>echip(cheatState.exam===id,id,examLabel(id),perExam[id])).join("") : "";
+  const examChips=examIds.length>1 ? `<span class="cs-chips-lbl">Exam</span>`+echip(cheatState.exam==="all","all","All exams")+examIds.map(id=>echip(cheatState.exam===id,id,examChipLabel(id,ords),perExam[id])).join("") : "";
   const shown=cheatState.exam==="all" ? base : base.filter(e=>missExamIds(e.qid).has(cheatState.exam));
   // group by topicKey, keeping most-recently-missed-first order; collect ALL entries in a group (not just the newest)
   const order=[], groups={};
