@@ -51,19 +51,26 @@ The five domains, with their weight on the real exam:
 
 | | Domain | Weight | Bank |
 |---|---|---|---|
-| D1 | Agentic Architecture & Orchestration | 27% | 64 questions |
-| D2 | Tool Design & MCP Integration | 18% | 47 |
-| D3 | Claude Code Configuration & Workflows | 20% | 42 |
-| D4 | Prompt Engineering & Structured Output | 20% | 41 |
-| D5 | Context Management & Reliability | 15% | 46 |
+| D1 | Agentic Architecture & Orchestration | 27% | 74 questions |
+| D2 | Tool Design & MCP Integration | 18% | 49 |
+| D3 | Claude Code Configuration & Workflows | 20% | 59 |
+| D4 | Prompt Engineering & Structured Output | 20% | 47 |
+| D5 | Context Management & Reliability | 15% | 49 |
 
 ## How the tutors teach
 
-Each tutor walks its domain one task statement at a time, in a fixed loop: explain the concept, name
-the tempting wrong move and the axis it fails on, apply it to a real production scenario, check that
-you followed, then quiz you.
+Each tutor walks its domain one task statement at a time, in a fixed loop: explain the concept, take
+apart each tempting wrong move, apply it to a real production scenario, solve one fresh exam-style
+question out loud, check that you followed, then quiz you.
 
-Three things make it stick:
+Four things make it stick:
+
+- **Every wrong answer is taken apart.** For each tempting wrong move the tutor says what it is (with a
+  small example), why it looks right, why it fails in this scenario, and which axis it trips on. It never
+  names a trap as a bare label.
+- **A worked example before your turn.** The tutor solves one new question in the exam's format in
+  front of you: it pulls the hard conditions out of the stem, checks every option against each
+  condition, and shows why only one survives. Then you do the same.
 
 - **No assumed vocabulary.** A tutor may not ask you to use a term it has not defined first, in plain
   words, with a small example.
@@ -121,7 +128,7 @@ giving the decision behind the question, the rule that generalises, the words in
 away, the right answer, and why your instinct was tempting plus when it would have been correct.
 Filter by domain, or search.
 
-**Cheatsheet.** A curated "what you see in the stem → the answer it points to" reference, 83 rows
+**Cheatsheet.** A curated "what you see in the stem → the answer it points to" reference, 242 rows
 across all five domains, with a search box.
 
 After you submit, the results page opens on your misses only, with an axis badge on each one. Copy
