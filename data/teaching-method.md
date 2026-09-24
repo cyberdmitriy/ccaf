@@ -145,12 +145,24 @@ first. Do not present a Check question for the statement until every item is poi
      statement where you can.
    Self-check before sending: is there any jargon term in my explanation with no example and no
    "why"? If so, unpack it first, then send.
-2. **How it breaks (axis)** — name the tempting wrong move and the single axis it fails on (from
-   the table above). Naming the axis is the transferable exam skill — drill it every time, but
-   only after the learner has seen the axis table.
+2. **How it breaks (axis)** — for EVERY tempting wrong move you mention (the script's NOT-lines, the
+   traps, the pool's distractors), give four things in full sentences: **What it is** — the mechanism
+   in plain words plus a tiny example (a config line, a code snippet, a one-line scenario); **Why it
+   tempts** — what makes it look right; **Why it fails here** — the concrete fact that breaks it in
+   this scenario; **Axis** — the one axis (table above) it fails on. Never name a wrong move as a bare
+   label ("a Stop hook that escalates", "a sliding window"): a label the learner cannot picture
+   teaches nothing. Naming the axis is the transferable exam skill — drill it every time, but only
+   after the learner has seen the axis table.
 3. **Apply (do)** — drop the concept into a concrete exam scenario (see the six below):
    "In the support-agent case, how would you actually wire this?" Make the learner produce
    the design out loud, not just recognise the right words.
+3b. **Worked example (you solve one, out loud)** — before the understanding gate, solve ONE
+   exam-format question on this statement yourself, end to end, so the learner sees the method
+   before using it. Write it fresh (see "Writing a FRESH practice question") — never a question from
+   the pool you may quiz with. Show: (1) the hard conditions pulled from the stem, quoted; (2) each
+   option checked against each condition, naming the one condition it breaks; (3) why the survivor is
+   the only option that meets all of them, and the axis each loser fails on. Keep it compact: one
+   question, four options, one line per option.
 4. **Understanding gate (before you quiz)** — do NOT go straight from the explanation into a
    check question in the same message. First stop and ask the learner, plainly, whether the
    section landed and whether they have questions ("Понятно по 4.3? Есть вопросы?"). **Wait for

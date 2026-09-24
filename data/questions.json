@@ -1,12 +1,12 @@
 {
   "meta": {
-    "total": 261,
+    "total": 278,
     "per_domain": {
-      "1": 70,
+      "1": 74,
       "2": 49,
-      "3": 53,
-      "4": 43,
-      "5": 46
+      "3": 59,
+      "4": 47,
+      "5": 49
     }
   },
   "questions": [
@@ -637,7 +637,7 @@
       },
       "correct": "D",
       "axis": 3,
-      "task": "5.1",
+      "task": "5.4",
       "explanation": "Structured per-agent reports keep fidelity (the findings, with schema), let the coordinator stay in charge of orchestration, and keep each subagent's context focused. This is the orchestrator + compact artifact pattern."
     },
     {
@@ -785,10 +785,10 @@
         "C": "Extract and persist structured issue data (order IDs, amounts, statuses) into a separate context layer.",
         "D": "Summarize earlier turns into a narrative description, preserving full message history only for the active issue."
       },
-      "correct": "D",
-      "axis": 2,
+      "correct": "C",
+      "axis": 5,
       "task": "5.1",
-      "explanation": "Progressive summarization compresses stable resolved topics while keeping the active thread verbatim — the classic pattern for long multi-issue conversations near the context limit."
+      "explanation": "Exam Guide v1.0, task 5.1: \"Extracting and persisting structured issue data (order IDs, amounts, statuses) into a separate context layer for multi-issue sessions.\" That is C. The customer asks about the refund from turns 1-15, so its exact order ID, amount and status must survive. D is the strongest near-miss: summarizing the resolved issues into a narrative keeps the active thread verbatim, but the refund is not the active issue, so its numbers and status get compressed into a vague summary (the progressive-summarization risk the Guide names). B, a sliding window of 30 turns, silently drops the refund turns entirely. A, re-fetching through tools on demand, needs identifiers (which order, which refund) that live in exactly the turns being lost, and adds latency on every reference."
     },
     {
       "id": 53,
@@ -1483,17 +1483,17 @@
     {
       "id": 99,
       "domain": 4,
-      "stem": "Production metrics show that when your agent resolves complex cases involving billing disputes or multi-order returns, customer satisfaction scores are 15% lower than for simple cases—even when the resolution is technically correct. Root cause analysis reveals the agent provides accurate resolutions but inconsistently explains the reasoning: sometimes omitting relevant policy details, other times missing timeline information or next steps. The specific context gaps vary by case. You want to improve resolution quality without adding human review overhead. Which approach is most effective?",
+      "stem": "Production metrics show that when your agent resolves complex cases involving billing disputes or multi-order returns, customer satisfaction scores are 15% lower than for simple cases, even when the resolution is technically correct. The system prompt already lists the required explanation elements (policy context, timeline, next steps) and includes few-shot examples of complete explanations for the common complex case types, and most responses follow that format. Still, individual responses drop an element: a policy detail in one case, the timeline or next steps in another, and which element goes missing varies from case to case. You want to close these gaps without adding human review overhead. Which approach is most effective?",
       "options": {
-        "A": "Add a self-critique step where the agent evaluates its draft response for completeness—ensuring it addresses the customer's concern, includes relevant context, and anticipates follow-up questions.",
-        "B": "Implement few-shot examples in the system prompt showing complete resolution explanations for five common complex case types, demonstrating how to include policy context, timelines, and next steps.",
-        "C": "Increase the model tier from Haiku to Sonnet for complex cases, routing based on detected case complexity.",
-        "D": "Add a confirmation step where the agent asks \"Does this fully address your concern?\" before closing, letting customers request additional information if needed."
+        "A": "Add a self-critique (evaluator-optimizer) step in which the agent checks each draft against an explicit completeness checklist before sending.",
+        "B": "Add more few-shot examples to the system prompt, covering further complex case types and showing policy context, timelines, and next steps.",
+        "C": "Increase the model tier from Haiku to Sonnet for complex cases, routing each case based on its detected complexity before the reply is drafted.",
+        "D": "Add a confirmation step where the agent asks \"Does this fully address your concern?\" before closing, letting customers request more information."
       },
       "correct": "A",
       "axis": 3,
-      "task": "4.1",
-      "explanation": "Self-critique (evaluator-optimizer pattern) directly addresses the root cause: inconsistent inclusion of explanation elements. By having the agent evaluate its own response against specific criteria before presenting it, you catch case-specific gaps that vary with each situation. Few-shot examples (B) help with consistent patterns but cannot cover highly variable gaps. Model tier upgrades (C) don't address the structural issue—the resolutions are already accurate, just incompletely explained. Confirmation steps (D) shift the burden to customers rather than improving the agent's output quality."
+      "task": "4.6",
+      "explanation": "The format has already been taught: the instructions list the required elements, few-shot examples show them, and most responses follow them. What remains is an occasional omission in a single response, and it differs from case to case, so the fix has to check each response. A self-critique (evaluator-optimizer) step compares every draft against an explicit completeness checklist (policy context, timeline, next steps) and fills the gap before the customer sees it, with no human reviewer (A). B fails because it adds more of a technique that is already in place. Few-shot examples are the right tool when the output pattern is inconsistent, but here the pattern is learned and the misses are individual lapses; more examples do not check the response actually being sent. C fails because the resolutions are already correct, and the problem is incomplete explanation, not model capability. D fails because it asks the customer to spot the gap after they have already received an incomplete answer."
     },
     {
       "id": 100,
@@ -2143,17 +2143,17 @@
     {
       "id": 143,
       "domain": 2,
-      "stem": "A developer is using Claude Code to update a configuration value in a file. They use the Edit tool, but it fails because the text they are trying to match appears in three places in the file. What is the correct next step?",
+      "stem": "A developer is using Claude Code to change a timeout value in a YAML configuration file. The Edit tool fails because the line `timeout: 30` appears three times in the file: under the `http_client`, `database_pool`, and `retry` sections, and each occurrence has different neighbouring lines. Only the `database_pool` value should change. What is the correct next step?",
       "options": {
         "A": "Switch to Bash with sed, since it replaces every matching line natively and sidesteps the uniqueness restriction that Edit imposes.",
-        "B": "Use Grep to locate the correct occurrence, then add more surrounding context so the Edit match becomes unique.",
+        "B": "Retry Edit with an old_string that also takes in the neighbouring lines of the database pool block, so the match becomes unique.",
         "C": "Fall back to Read to load the entire file, then use Write to output the full file with the single value changed.",
         "D": "Use Glob to list every file that contains the configuration value, then open and edit each of those files in turn."
       },
       "correct": "B",
       "axis": 2,
       "task": "2.5",
-      "explanation": "When Edit fails due to non-unique matches, the first recovery step is to include more surrounding context so the match becomes unique. Grep helps identify the right occurrence and its context. This keeps you within the Edit workflow."
+      "explanation": "Edit needs its old_string to match exactly one place in the file. The three occurrences sit in different sections with different neighbouring lines, so widening old_string to include the database pool lines makes the match unique, and Edit changes only that value (B). C, Read + Write, is the fallback for when Edit cannot find unique anchor text at all, such as identical boilerplate sections that no amount of context can tell apart. Here unique context exists, so rewriting the whole file is a heavier step with more room for accidental changes. A fails because sed would replace all three matches unless you hand-build line targeting, and it leaves the Edit workflow for no reason. D fails because it searches for other files, while the problem is inside one known file (and Glob matches paths, not file contents)."
     },
     {
       "id": 144,
@@ -2638,17 +2638,17 @@
     {
       "id": 176,
       "domain": 5,
-      "stem": "Claude Code is synthesising release notes from commit messages, PR descriptions, and changelog entries. During a 200+ commit session, summaries of early commits become vague ('various bug fixes') while recent commits are still detailed accurately. The context window is not full. What is the most likely cause?",
+      "stem": "Claude Code is synthesising release notes from commit messages, PR descriptions, and changelog entries. During a 200+ commit session, summaries of commits in the middle of the sequence become vague ('various bug fixes'), while the earliest and the most recent commits are still summarised accurately. The source messages are equally detailed throughout, and the context window is not full. What is the most likely cause?",
       "options": {
-        "A": "The sampling temperature is set too high, so the model randomly collapses earlier commit summaries into vague phrases like 'various bug fixes' while later ones stay detailed",
-        "B": "The lost-in-the-middle effect causes the model to attend more strongly to information at the beginning and end of context, losing detail for commits in the middle of the sequence",
-        "C": "The commit messages and PR descriptions for the earliest commits are simply less detailed than the recent ones, so the vague summaries faithfully reflect the sparse source material",
-        "D": "Claude Code silently applies progressive summarisation to the oldest commits, compressing them to conserve tokens for recent entries even though the context window is not yet full"
+        "A": "The sampling temperature is set too high, so the model randomly collapses some commit summaries into vague phrases like 'various bug fixes' across the session",
+        "B": "The lost-in-the-middle effect: the model attends more strongly to the beginning and end of a long input, losing detail for commits in the middle of the sequence",
+        "C": "The commit messages and PR descriptions for the middle commits are simply less detailed than the rest, so the vague summaries faithfully reflect the sparse source material",
+        "D": "Claude Code silently applies progressive summarisation to part of the commit history, compressing those entries to conserve tokens even though the context window is not yet full"
       },
       "correct": "B",
       "axis": 3,
       "task": "5.1",
-      "explanation": "The lost-in-the-middle effect is a well-documented phenomenon where models attend more strongly to the start and end of long contexts, with reduced attention to middle content. With 200+ commits loaded sequentially, commits in the middle of the sequence receive less attention, producing vague summaries. Processing in smaller batches or reordering critical information to the start and end mitigates this."
+      "explanation": "This is the lost-in-the-middle effect (B). Models reliably process the beginning and end of a long input but may drop detail from the middle, which is exactly the pattern here: the earliest and most recent commits stay accurate and the middle ones go vague. The fix is structural, for example processing commits in smaller batches or placing key items at the start and end. A fails because temperature adds randomness across the whole output and would not single out the middle of the sequence. C fails because the stem says the source messages are equally detailed throughout, so sparse input is ruled out. D fails because the context window is not full, so no compaction or summarisation has fired, and summarisation would hit the oldest commits first, not the middle ones."
     },
     {
       "id": 177,
@@ -3718,7 +3718,7 @@
     {
       "id": 248,
       "domain": 1,
-      "stem": "A code-generation agent in your developer tooling writes files through a write_file tool whose input carries the complete file contents. For large files, the API response comes back with stop_reason \"max_tokens\", and its last content block is a write_file tool_use whose input is cut off partway through the file. How should the agentic loop handle this response?",
+      "stem": "A code-generation agent in your developer tooling writes files through a write_file tool whose input carries the complete file contents. The requests use max_tokens: 1024, a default copied from a chat feature, and for ordinary source files of a few hundred lines the API response comes back with stop_reason \"max_tokens\", and its last content block is a write_file tool_use whose input is cut off partway through the file. How should the agentic loop handle this response?",
       "options": {
         "A": "Execute write_file with the partial input that was received, append the tool_result, and let Claude correct the file on the next iteration.",
         "B": "Treat the response as the end of the task, the same as end_turn, and return the assistant's text so far to the developer as the result.",
@@ -3728,7 +3728,7 @@
       "correct": "C",
       "axis": 2,
       "task": "1.1",
-      "explanation": "C is correct. stop_reason \"max_tokens\" means the response was truncated. When the last block is an incomplete tool_use, the documented handling is to retry the request with a higher max_tokens to get the full tool call. Raising max_tokens is the right fix here because the truncation itself is the problem. D fails and is the strongest near-miss (axis 2, right family but the wrong variant). Asking Claude to continue is a way to extend truncated text, but a tool_use input has to arrive as one complete block; splicing a continuation onto cut-off JSON is not the documented handling and risks an invalid call. A fails: running a tool on a partial input writes a truncated file, a real side effect produced by a malformed call. B fails: max_tokens is not end_turn. The task is unfinished and the text is not a final answer."
+      "explanation": "C is correct. stop_reason \"max_tokens\" means the response was truncated. When the last block is an incomplete tool_use, the documented handling is to retry the request with a higher max_tokens to get the full tool call. Raising max_tokens is the right fix here because the truncation itself is the problem. D fails and is the strongest near-miss (axis 2, right family but the wrong variant). Asking Claude to continue is a way to extend truncated text, but a tool_use input has to arrive as one complete block; splicing a continuation onto cut-off JSON is not the documented handling and risks an invalid call. A fails: running a tool on a partial input writes a truncated file, a real side effect produced by a malformed call. B fails: max_tokens is not end_turn. The task is unfinished and the text is not a final answer. The cap here is simply too low for a normal-sized file, which is why retrying with a higher max_tokens fits. If the output were inherently too large for one response (for example one change set for 40 modules, or findings for a 150-file review), raising the cap again would be the trap: split the work into smaller scoped calls and merge the results instead."
     },
     {
       "id": 249,
@@ -3924,6 +3924,261 @@
       "axis": 2,
       "task": "3.4",
       "explanation": "C is correct: the requirement is approval of the approach before implementation. In plan mode Claude explores the code and writes a plan without editing source until the plan is approved, so the plan can go to the security team and tech lead first and the edits start only after they accept it. The work also spans four services and is security-sensitive, which the Guide assigns to plan mode. D is the near-miss: plan-then-execute is the right shape (the same hybrid the Guide recommends for a library migration), but the developer approves their own plan, so the people the stem names never see it before code is written. A provides a review, but of finished code after implementation; any rejected approach means rework. B assumes the approach is already settled by an informal chat, so there is no reviewed artefact and no exploration of the four services before coding."
+    },
+    {
+      "id": 262,
+      "domain": 1,
+      "stem": "A code-migration agent in your developer tooling applies its work through an apply_changes tool whose input is a single change set holding the full rewritten contents of every module it touched. For a migration covering 40 service modules, the API response comes back with stop_reason \"max_tokens\", and its last content block is an apply_changes tool_use whose input is cut off partway through a module. The team has already raised max_tokens twice. Each raise gets the change set a few modules further before it is cut off, and the migration list grows every sprint. What should the team change?",
+      "options": {
+        "A": "Execute apply_changes with the partial input that was received, append the tool_result, and let Claude rewrite the remaining modules next turn.",
+        "B": "Discard the incomplete tool_use block, request the change set for a few modules per API call, and merge the change sets before applying them.",
+        "C": "Discard the incomplete tool_use block and re-send the same request with max_tokens raised to the model's maximum output limit.",
+        "D": "Append a user message asking Claude to continue where it stopped, join the new output onto the cut-off tool input, and then run it."
+      },
+      "correct": "B",
+      "axis": 5,
+      "task": "1.1",
+      "explanation": "B is correct. stop_reason \"max_tokens\" means the response was cut off, so the partial apply_changes call is discarded and never run. The stem shows the output is inherently too large for one response: each raise only gets a few modules further, and the change set grows with every module added. The fix is to make each call smaller, asking for the change set of a few modules per call, and to merge the complete change sets in code before applying them, so the migration still lands as one unit. C is the strongest near-miss (axis 5, it patches the symptom). Retrying an incomplete tool_use with a higher max_tokens is the documented move when the cap was set too low for a normal-sized answer. Here, though, every model has a fixed maximum output, very large max_tokens values need streaming to avoid dropped connections, and the growing migration list will pass any ceiling. A fails: running the tool on a cut-off input writes a broken module, a real side effect from a malformed call. D fails: a tool_use input must arrive as one complete block, and joining a continuation onto cut-off JSON can repeat or skip content, with no guarantee the result still matches the tool schema."
+    },
+    {
+      "id": 263,
+      "domain": 4,
+      "stem": "Your Structured Data Extraction pipeline sends each supplier price catalogue to Claude with an extract_line_items tool whose input schema is an array of line items (sku, description, unit_price, currency, and an optional discount). Most catalogues work. The largest ones, around 400 pages and 6,000 items across 35 product sections, fit easily in the context window, but they return a tool_use cut off mid-array with stop_reason \"max_tokens\", even though max_tokens is already set high. Supplier catalogues grow every season, and downstream validation rejects these extractions. What is the most effective fix?",
+      "options": {
+        "A": "Raise max_tokens to the model's maximum output limit and keep sending each catalogue as one extraction request.",
+        "B": "Move the pipeline to a model with a larger context window so each catalogue and its extraction fit in one request.",
+        "C": "Remove the optional fields from the line-item schema so each item uses fewer tokens and the whole array fits in one response.",
+        "D": "Send each product section as its own extract_line_items request with the same schema, then merge the item arrays in code."
+      },
+      "correct": "D",
+      "axis": 5,
+      "task": "4.3",
+      "explanation": "D is correct. The catalogue fits the context window. What fails is the output: a line-item array that grows with the catalogue and is cut off with stop_reason \"max_tokens\". Sending one request per product section with the same schema returns 35 complete, schema-valid arrays, and code merges them into one extraction (and can check that every section returned a result). A is the strongest near-miss (axis 5, it patches the symptom). Raising max_tokens is the reflex for truncation, but it is already set high, each model has a fixed maximum output, and a 6,000-item array that grows every season will pass any ceiling. B is a neighbouring diagnosis: a bigger context window helps an input that does not fit, but this input already fits, and the context window and the maximum output are separate limits. C throws away data the schema was designed to capture (a discount printed in the catalogue now has nowhere to go) and only postpones the ceiling until a larger catalogue arrives."
+    },
+    {
+      "id": 264,
+      "domain": 4,
+      "stem": "In your CI/CD pipeline, a nightly job audits every file changed on the release branch, often 150 or more files. It calls the Messages API with a report_findings tool whose input is one array of findings, and each finding concerns a single file. On large releases the tool_use is cut off with stop_reason \"max_tokens\", the job cannot parse the findings, and nothing gets posted. What should the team do so the audit reliably reports on every file?",
+      "options": {
+        "A": "Call the API once per batch of about ten changed files with the same report_findings tool, then merge the findings arrays in code.",
+        "B": "Raise max_tokens to the model's maximum output limit for the audit job and fail it only when a response is still cut off.",
+        "C": "Instruct the model to keep each finding's description under twenty words so the findings for all files fit in one response.",
+        "D": "Stream the response and post every finding that arrived complete before the stream stopped with stop_reason max_tokens."
+      },
+      "correct": "A",
+      "axis": 5,
+      "task": "4.3",
+      "explanation": "A is correct. Each finding concerns a single file, so the audit splits cleanly: one call per batch of about ten files returns a complete, schema-valid findings array, and code merges the arrays into one report before posting. The output of each call stays within what one response can hold, however large the release gets. B is the strongest near-miss (axis 5, it patches the symptom). A higher max_tokens only moves the cut-off point: every model has a fixed maximum output, very large values need streaming for long requests, and the next larger release fails again. C shrinks each finding, which strips the detail developers need to act on and still leaves the total output growing with the file count. D keeps the findings that arrived before the cut-off and silently drops every file after it, so the job reports a partial audit as complete."
+    },
+    {
+      "id": 265,
+      "domain": 3,
+      "stem": "Your team's custom review agent, built on the Claude API, already checks every pull request for style violations and common security issues. The team adds a second review stage that runs Claude Code in GitHub Actions. This stage keeps reporting the same style and security findings the first agent already covers. The team decides that in this repository style and security belong to that dedicated agent, so every Claude Code review of the repository should skip those categories and report only other defects. What should they do?",
+      "options": {
+        "A": "Add an exclusion list of the style and security rules as a custom input to the Claude Code step in the GitHub Actions workflow file.",
+        "B": "Store the excluded rule categories in a GitHub Actions environment variable that the review job reads before Claude runs.",
+        "C": "Document in the repository's CLAUDE.md that the dedicated agent covers style and security, which reviews must skip, and what they should report.",
+        "D": "Add a GitHub Actions job after the review that removes findings matching the first agent's categories before they are posted."
+      },
+      "correct": "C",
+      "axis": 5,
+      "task": "3.6",
+      "explanation": "C is correct. CLAUDE.md is the documented place for review criteria and project-specific rules, and Claude Code reads it on every run. Writing down which categories the first agent covers (and must be skipped) and what this stage should report changes what the model itself treats as a finding, so the fix sits at the cause.\nD is the strongest near-miss. A filter job after the review is deterministic, but it acts only after the model has already spent turns on the excluded categories. It also depends on the model labelling each finding's category the same way on every run: a mislabelled real defect gets deleted, and a mislabelled style nit slips through. The review itself is unchanged, so it patches the symptom.\nA fails because the action reads only the inputs it defines (prompt, claude_args, settings and so on), and none of them excludes review categories. An extra custom input never becomes text Claude reads, so its judgement stays the same.\nB fails because an environment variable belongs to the process, not to the model's context. Nothing in Claude's prompt or CLAUDE.md mentions it, and in the action's automation mode Claude has no shell access to read it unless someone grants one.\nWhy CLAUDE.md and not --append-system-prompt: the rule here applies to every Claude Code review of the repository, so it belongs in the project CLAUDE.md that every run reads. A rule meant for one specific invocation only, without changing other sessions, would go in --append-system-prompt for that run (see q227)."
+    },
+    {
+      "id": 266,
+      "domain": 3,
+      "stem": "Your GitHub Actions workflow runs `anthropics/claude-code-action@v1` with a plain-text review `prompt` on every pull request, and Claude posts its findings as inline comments. To stop runs from stalling, a developer set `claude_args: '--allowedTools \"Bash,Edit,mcp__github_inline_comment__create_inline_comment\"'`. A security audit then found review runs in which Claude ran `curl` and `npm install` and edited files in the checkout, although the review only needs to read the code and post inline comments. The team wants review runs to be unable to do anything beyond that. What should they change?",
+      "options": {
+        "A": "Change `claude_args` to `--allowedTools \"mcp__github_inline_comment__create_inline_comment\"`, removing `Bash` and `Edit` from the granted tools.",
+        "B": "Add a rule to the repository's CLAUDE.md stating that review runs must never run shell commands or edit files in the checkout.",
+        "C": "Change the job's GitHub `permissions` block from `contents: write` to `contents: read` for the review job.",
+        "D": "Add a workflow step after the review that runs `git checkout -- .` to discard any file changes left on the runner."
+      },
+      "correct": "A",
+      "axis": 1,
+      "task": "3.6",
+      "explanation": "A is correct. In the action's automation mode Claude has no shell or GitHub API access until tools are granted with `--allowedTools` in `claude_args`, so the grant list is the review's access boundary. Removing `Bash` and `Edit` takes away the ability to run `curl`/`npm install` and to edit files. Read-only tools such as Read, Grep and Glob need no grant, so the review can still read the code, and the inline-comment tool stays granted (the action starts that MCP server only when `--allowedTools` names it).\nB is the strongest near-miss. CLAUDE.md is the right home for review standards, but a line in it is text the model reads: it makes shell use less likely, while `Bash` and `Edit` remain granted, so nothing makes the runs unable to use them. The stem asks for a guarantee.\nC treats a neighbouring problem. The `permissions` block scopes the workflow's GitHub token, meaning what the job may write back to the repository. It does not change which tools Claude may run on the runner, so the `curl` calls and file edits still happen.\nD patches the symptom after the fact. By the time the cleanup step runs, the shell commands have already executed (with network access and possibly secrets in the environment), and discarding edits afterwards does not restrict anything."
+    },
+    {
+      "id": 267,
+      "domain": 4,
+      "stem": "Your CI review sends each pull request to Claude with one prompt that checks security, business-logic correctness, and API-design consistency, with few-shot examples for each. After the team added six new security examples to reduce missed injection flaws, security recall improved, but API-design findings such as breaking changes to public endpoints and inconsistent error shapes dropped sharply on the same evaluation set. Pull request sizes did not change. What should the team do?",
+      "options": {
+        "A": "Add six new API-design examples to the same prompt, matching the number of security examples it now contains.",
+        "B": "Add a verification pass after the review that re-checks each reported finding against the diff and drops any it cannot confirm.",
+        "C": "Move the review to a higher-tier model with a larger context window that can hold every concern's examples in one prompt.",
+        "D": "Run separate security, business-logic, and API-design passes over the pull request, each with its own prompt and few-shot examples."
+      },
+      "correct": "D",
+      "axis": 5,
+      "task": "4.6",
+      "explanation": "D is correct. The security, business-logic and API-design concerns compete inside one prompt, so strengthening one (six new security examples) pulls recall away from another. Separate passes, each with its own prompt and its own few-shot examples, let each concern be tuned without moving the others. The merged findings still cover all three.\nA is the strongest near-miss. Balancing the example counts keeps every concern in the same prompt, so the competition remains. The prompt keeps growing, and the next round of tuning shifts recall again. It patches the symptom.\nB treats a neighbouring problem. A verification pass improves precision by removing wrong findings from what was reported. The problem here is recall: API-design issues the combined prompt never reported are not in the list, so there is nothing for the verifier to confirm.\nC adds capacity the prompt does not lack, since it already fits and pull request sizes did not change. A larger context window does not stop the concerns from trading recall."
+    },
+    {
+      "id": 268,
+      "domain": 4,
+      "stem": "A payments team is designing an automated pull request review. Three groups want findings: the security team (injection, missing authorization checks), the product team (violations of refund and discount rules), and the platform team (breaking changes to public API contracts). Most pull requests touch two to four files. In a prototype that used one combined prompt, every time one group's few-shot examples were tuned, recall for the other groups' categories fell. Which review architecture should they build?",
+      "options": {
+        "A": "Review each changed file in its own pass with the combined prompt, then run one integration pass across files for cross-file data flow.",
+        "B": "Run one pass per concern (security, business rules, API contracts), each with its own prompt and few-shot examples, then merge the findings.",
+        "C": "Keep the combined prompt and add an instruction telling Claude to give the three concerns equal attention on every pull request.",
+        "D": "Run the combined prompt three times on each pull request and report only the findings that appear in at least two of the three runs."
+      },
+      "correct": "B",
+      "axis": 3,
+      "task": "4.6",
+      "explanation": "B is correct. The prototype shows a recall trade-off between concerns: tuning one group's examples lowers the other groups' recall. So each concern gets its own pass with its own prompt and few-shot examples, and the findings are merged into one report. Each team's pass can then be tuned without moving the others.\nA is the strongest near-miss. Per-file passes plus an integration pass are the right fix for attention dilution across many files, but these pull requests touch only two to four files, and every file pass would still run the combined prompt, so the concerns keep competing. It treats a neighbouring problem.\nC keeps all concerns in one prompt and relies on an instruction to give them equal attention, which does not remove the competition the prototype measured.\nD, consensus over three runs of the same combined prompt, keeps the same blind spots in every run and suppresses real findings that are only caught some of the time."
+    },
+    {
+      "id": 269,
+      "domain": 3,
+      "stem": "A team runs Claude Code with `claude -p` in a GitHub Actions job to review every pull request. The team's review criteria (for example, every new endpoint must call `authorize()`, and controllers must not build raw SQL) were written by the tech lead in her `~/.claude/CLAUDE.md`. When she runs the review command on her laptop, violations of these criteria are flagged; in the CI job, the same violations pass without comment. The team wants every CI run and every developer's local review to apply the same criteria. What should they do?",
+      "options": {
+        "A": "Add a workflow step that copies the tech lead's `~/.claude/CLAUDE.md` into the runner's home directory before the review runs.",
+        "B": "Add `--bare` to the `claude -p` review command in the CI job, keeping the rest of the workflow unchanged.",
+        "C": "Add `--append-system-prompt \"Apply the team's review criteria\"` to the `claude -p` review command in the CI job.",
+        "D": "Move the review criteria from the tech lead's `~/.claude/CLAUDE.md` into the repository's committed `CLAUDE.md` file."
+      },
+      "correct": "D",
+      "axis": 5,
+      "task": "3.6",
+      "explanation": "D is correct. A CI runner checks out only committed files, and a `claude -p` run loads the project `CLAUDE.md` from the checkout plus whatever sits in the runner's own `~/.claude`, which is normally nothing. The memory docs scope `~/.claude/CLAUDE.md` to \"Just you (all projects)\" and the project `CLAUDE.md` to \"Team members via source control\". The GitHub Actions docs say to define review criteria and project rules in the repository's `CLAUDE.md`. Moving the criteria there gives CI and every developer the same rules, versioned with the code. A is the strongest near-miss. Copying her file onto the runner does make CI flag the violations, but it only patches the symptom: the team's rules still live in one person's private, unversioned file, other developers still don't get them, and her personal preferences leak into every CI review. B makes things worse, because `--bare` skips auto-discovery of every `CLAUDE.md`, including the project one. C adds a sentence that names \"the team's review criteria\" but carries none of their content, so Claude still doesn't know them."
+    },
+    {
+      "id": 270,
+      "domain": 3,
+      "stem": "A GitHub Actions job runs `claude -p \"Review this PR and report issues\" --dangerously-skip-permissions --output-format json --json-schema \"$(cat review-schema.json)\"`, and a later step posts each finding from `structured_output` as an inline PR comment. A developer added `--dangerously-skip-permissions` after early runs had tool calls denied. Since then, some runs have edited source files to \"fix\" the issues they found, and one run executed `npm install` and a project script. The review must still read the code and the diff, but it must not modify files, install packages, or execute project scripts. What should the team change?",
+      "options": {
+        "A": "Add \"Only read code and report findings; never edit files or run commands\" to the review prompt passed to `claude -p`.",
+        "B": "Replace `--dangerously-skip-permissions` with `--permission-mode dontAsk --allowedTools \"Read,Grep,Glob,Bash(git diff *)\"`.",
+        "C": "Keep `--dangerously-skip-permissions` and add `--disallowedTools \"Edit\" \"Write\"` to the `claude -p` review command.",
+        "D": "Keep `--dangerously-skip-permissions` and add a PostToolUse hook that runs `git checkout .` after every tool call."
+      },
+      "correct": "B",
+      "axis": 2,
+      "task": "3.6",
+      "explanation": "B is correct. `--permission-mode dontAsk` auto-denies every call that would otherwise prompt, and `--allowedTools` pre-approves only reading and `git diff`. File edits, `npm install` and project scripts are therefore denied, while reads keep working and the unchanged JSON flags still produce `structured_output`. The permission-modes docs list this shape (dontAsk plus an exact `--allowedTools` list) for \"Run in CI with an exact allowlist\". C is the strongest near-miss: it uses the right kind of mechanism but blocks the wrong set of tools. Deny rules do apply even in bypassPermissions, so Edit and Write disappear. But Bash stays fully open, so `npm install`, project scripts and even `sed -i` edits still run. A is only an instruction the model reads, and with `--dangerously-skip-permissions` nothing stops a call Claude decides to make anyway. D reverts file edits only after they happen. It cannot undo a command that already ran, such as a package install or a script with side effects, and it leaves the bypass flag in place."
+    },
+    {
+      "id": 271,
+      "domain": 3,
+      "stem": "A nightly job on a shared CI virtual machine (not an isolated container) runs `claude -p \"Run the unit tests and fix any failing tests\"`. The run exits after a few turns with no files changed, and its log shows that every `Edit` call and every `npm test` call was denied. The job must be able to edit files and run `npm test` with nobody answering permission prompts, and any other command that changes files, installs packages, or runs project code must stay denied. Which invocation should the team use?",
+      "options": {
+        "A": "`claude -p \"<prompt>\" --dangerously-skip-permissions --allowedTools \"Read,Edit,Bash(npm test *)\"`",
+        "B": "`claude -p \"<prompt>\" --permission-mode acceptEdits --allowedTools \"Read,Edit\"`",
+        "C": "`claude -p \"<prompt>\" --permission-mode dontAsk --allowedTools \"Read,Edit,Bash(npm test *)\"`",
+        "D": "`claude -p \"<prompt>\" --permission-mode auto --allowedTools \"Bash(npm test *)\"`"
+      },
+      "correct": "C",
+      "axis": 2,
+      "task": "3.6",
+      "explanation": "C is correct. In `dontAsk` mode every call that would prompt is denied; only actions that never need approval (file reads, read-only commands) and actions the allow rules cover still run. The allowlist pre-approves exactly `Edit` and `npm test`, so the job runs unattended and every other state-changing command is denied. A is the strongest near-miss: its allowlist is correct, but it is paired with the wrong mode. `--dangerously-skip-permissions` equals `bypassPermissions`, and the docs state that \"Allow rules have no effect in bypassPermissions\", so every command runs. The docs also reserve that mode for isolated containers and VMs, which this shared VM is not. B approves file edits but has no entry for `npm test`, so the test runs are still denied and the fixes go unverified. D puts `auto` mode in charge, where a classifier model approves most actions. Commands beyond `npm test` can therefore run on the model's judgement, which is not an exact allowlist."
+    },
+    {
+      "id": 272,
+      "domain": 3,
+      "stem": "A CI step runs Claude Code after each merge to generate unit tests for the modules that changed. The prompt already includes each module's existing test file, and duplicate scenarios have stopped appearing. Reviewers still reject most generated tests: many assert only `expect(result).toBeDefined()` or that a mocked repository's `save` was called, and each test builds its own inline user objects instead of using the factories in `tests/fixtures/`. The project `CLAUDE.md` says only \"Write thorough tests.\" What change most improves the generated tests?",
+      "options": {
+        "A": "Replace the `CLAUDE.md` line with test criteria: assert a specific outcome for each input, no existence-only or mock-call-only checks, build data with `tests/fixtures/`.",
+        "B": "Add a CI gate that fails the step unless the generated tests raise line and branch coverage of the changed modules to at least 90 percent before merge.",
+        "C": "Add a second, independent Claude review step that scores each generated test for usefulness and deletes every test it rates below a set threshold.",
+        "D": "Change the `CLAUDE.md` line to \"Write thorough, meaningful, high-quality tests; avoid trivial assertions and reuse existing helpers where possible.\""
+      },
+      "correct": "A",
+      "axis": 5,
+      "task": "3.6",
+      "explanation": "A is correct. The model already sees the existing tests. What it lacks is a definition of a valuable test in this project and the fixture convention. Guide 3.6 names this exact move: documenting testing standards, valuable test criteria and available fixtures in `CLAUDE.md` to improve generation quality and reduce low-value output. Concrete criteria give Claude a target it can check each test against: assert a specific outcome, existence-only or mock-call-only checks don't count, use `tests/fixtures/`. C is the strongest near-miss. Independent review is sound for code review, but this reviewer has no written criteria either, so it judges \"usefulness\" by the same vague notion. Deleting tests also leaves fewer tests, not better ones, because it filters the symptom after generation instead of defining the target before it. B rewards exactly the rejected tests, because `toBeDefined()` executes every line without checking any result. D is still the vague kind of instruction that produced the trivial tests: it never says what counts as meaningful, and \"reuse existing helpers\" doesn't name the fixtures."
+    },
+    {
+      "id": 273,
+      "domain": 1,
+      "stem": "A multi-agent research system receives the request: \"Assess whether four-day school weeks improve academic outcomes in rural districts.\" The coordinator always runs the same four steps: a search subagent collects studies, an extraction subagent pulls test-score results from each study, an analysis subagent compares the results across districts, and a report subagent writes up the findings. In a test run, the search subagent reports that most of the 30 studies it found measure attendance, teacher retention, and budget savings rather than test scores, and that several districts reversed the policy after two years. The remaining steps run unchanged: extraction finds test-score data in only four studies, and the final report draws a strong conclusion from those four. What change to the coordinator would best address this?",
+      "options": {
+        "A": "Have the coordinator review each subagent's output before choosing what runs next, for example adding subtasks to find district test-score records outside the studies and to examine why districts reversed the policy.",
+        "B": "Add a check after the extraction step that reruns the search with broader test-score keywords whenever fewer than ten studies report academic results, and then continues with the remaining steps.",
+        "C": "Add an instruction to the report subagent to state how many studies support each conclusion and to add a caveat to any finding drawn from fewer than ten studies.",
+        "D": "Run the search, extraction, and analysis subagents in parallel on separate slices of the topic, and then pass all of their outputs to the report subagent together for the write-up."
+      },
+      "correct": "A",
+      "axis": 5,
+      "task": "1.6",
+      "explanation": "A is correct. This is an open-ended research question, and the first step's findings showed that the plan's built-in assumption (the studies report test scores) was wrong and that a new line of inquiry (the policy reversals) matters. The defect is that the coordinator runs a fixed sequence regardless of intermediate findings. Having the coordinator read each result and generate the next subtasks from it (dynamic decomposition, the orchestrator-workers pattern for tasks whose subtasks cannot be predicted) lets the plan add work that no upfront plan contained. B fails and is the strongest near-miss (axis 5, a symptom patch on the antipattern): it reacts to a bad result, so it looks adaptive, but it only repeats the same search under the assumption the finding just disproved, and the pipeline still cannot add a new kind of subtask such as investigating the reversals. C fails: stating sample sizes is good uncertainty practice, but it only describes the gap in the report; the missing investigation still never happens. D fails: parallelism changes how fast the fixed steps run, not what they are, so the plan still ignores what the search found."
+    },
+    {
+      "id": 274,
+      "domain": 1,
+      "stem": "A developer asks Claude Code to find everything that must change before the team replaces a deprecated ORM in a 300-module service. The first attempt used a fixed plan: Grep for modules that import the ORM, review each match, then write a report. The Grep found 40 modules. While reviewing them, the agent noticed that many other modules use the ORM without importing it: they inherit its query methods from a shared repository base class, and several call query code emitted at build time by a code generator. The report still covered only the 40 original matches. How should the task be decomposed on the next attempt?",
+      "options": {
+        "A": "Keep the Grep and review steps, and add a cross-module integration pass after the per-module reviews that checks how the 40 reviewed modules call into one another and share data.",
+        "B": "Spawn one subagent per module for all 300 modules in parallel, each checking its own module for ORM usage, and then merge all of their reports into one list at the end.",
+        "C": "First map how modules reach the database, including base classes and generated code, then create review subtasks from that map and add new ones when a review exposes another access path.",
+        "D": "Ask the developer to provide a complete list of the modules that access the database, and then run the same Grep and review steps over that list instead of the Grep results."
+      },
+      "correct": "C",
+      "axis": 3,
+      "task": "1.6",
+      "explanation": "C is correct. The scope of this audit is unknown until the agent investigates: the first attempt already showed that ORM usage also arrives through a base class and generated code, which a keyword Grep for imports cannot find. An open-ended task like this needs dynamic decomposition: map the structure first, create subtasks from what the map reveals, and keep adding subtasks as reviews uncover new access paths. A fails and is the strongest near-miss (axis 3, it treats a neighbouring problem): a per-file pass plus a cross-file integration pass is the right pattern for a predictable review of a known file set, where the risk is attention dilution. Here the problem is unknown scope, and an integration pass over the 40 matches still never examines the modules that inherit or generate their queries. B fails on proportionality and grounding: 300 subagents with no map are costly, each asks the same fixed question of its own slice, and the generator templates that emit the query code are nobody's subtask. D fails: discovering the scope is the task itself, and the developer did not know about these access paths either; the agent found them."
+    },
+    {
+      "id": 275,
+      "domain": 1,
+      "stem": "A pull-request review coordinator built with the Claude Agent SDK defines three subagents in the agents option: test-runner, dependency-auditor, and security-reviewer. The coordinator's allowedTools includes the Agent tool (formerly Task). Logs show the coordinator regularly spawns test-runner and dependency-auditor, but for pull requests that change authentication code it writes the security analysis itself, and no Agent tool call has ever used security-reviewer as its subagent_type. No errors are logged. The security-reviewer definition was created by copying the dependency-auditor definition; the team then rewrote its prompt field with detailed security-review instructions and left the other fields unchanged. What should the team change?",
+      "options": {
+        "A": "Add \"security-reviewer\" to the coordinator's allowedTools list next to the Agent tool, and restart the coordinator so that the updated list is loaded.",
+        "B": "Rewrite security-reviewer's description to say what it reviews and when to use it, such as changes to authentication, session, or input-validation code.",
+        "C": "Add to security-reviewer's prompt field a list of the file paths and change types it should handle, such as authentication, session, and input-validation code.",
+        "D": "Give security-reviewer its own tools list with Read, Grep, and Glob in place of the tool settings it took over from the copied dependency-auditor definition."
+      },
+      "correct": "B",
+      "axis": 2,
+      "task": "1.3",
+      "explanation": "B is correct. The copied definition still carries dependency-auditor's description, and Claude decides which subagent to invoke by matching the task against each subagent's description (the SDK docs: write clear, specific descriptions so Claude can match tasks to the right subagent). Rewriting the description to state what the subagent handles and when to use it fixes the selection. C fails and is the strongest near-miss (axis 2, right configuration object, wrong field): the prompt field is the subagent's own system prompt, which it reads only after it has been spawned, so more detail there cannot make the coordinator choose it. A fails: allowedTools lists tools, not subagents, and the logs already show the Agent tool working for the other two subagents. D fails: the tools list controls what the subagent can do once it runs, and this subagent is never spawned in the first place."
+    },
+    {
+      "id": 276,
+      "domain": 5,
+      "stem": "A nightly multi-agent pipeline audits 60 service repositories for license compliance. A coordinator assigns each repository to a scanner subagent, which returns its findings as the Agent tool result, and a report subagent combines all findings at the end. Last night the host restarted after 38 repositories had been scanned. The coordinator tracked which repositories were finished only in its own conversation, which had been auto-compacted twice during the run, condensing the early per-repository findings into short summaries. The team wants future interrupted runs to continue without rescanning finished repositories or losing any of their findings. What should they implement?",
+      "options": {
+        "A": "Save the coordinator's session ID when each run starts and, after an interruption, resume that session with the same agent definitions so it continues from its restored conversation history.",
+        "B": "Raise the run's turn limit, move the job to a host with no scheduled restarts, and rerun all 60 repositories from the beginning whenever a run is interrupted before it completes.",
+        "C": "Export the coordinator's full conversation transcript to disk after every ten repositories, and on restart load the latest export as the first message of a new coordinator session.",
+        "D": "Have each scanner write its findings to a per-repository file and mark the repository done in a manifest that the coordinator loads on restart and injects into new subagent prompts."
+      },
+      "correct": "D",
+      "axis": 5,
+      "task": "5.4",
+      "explanation": "D is correct. It is the structured state persistence pattern for crash recovery: each agent exports its state to a known location, and the coordinator loads a manifest on resume and injects the relevant state into agent prompts. Finished repositories are skipped because the manifest records them as done, and no finding is lost because each one lives in its own file rather than in a conversation that compaction can condense. A fails and is the strongest near-miss (axis 5, using the conversation as the state store): resuming does restore the session, but that conversation had already been auto-compacted, so the early per-repository findings survive only as short summaries, and there is no machine-readable record of which repositories are finished. C fails: it writes to disk, but it saves verbose transcript instead of structured per-repository state, loses up to nine repositories of work since the last export, and pushes the whole transcript back into the new context. B fails the stated goal directly: it rescans finished repositories, and neither a higher turn limit nor a different host prevents the next interruption."
+    },
+    {
+      "id": 277,
+      "domain": 5,
+      "stem": "A support agent for an electronics retailer keeps requests small with a sliding window that sends only the most recent 20 turns. In turn 3 of a long chat, the agent confirmed a $40 goodwill credit on order #55120 and promised free return shipping. At turn 34 the customer asks whether the credit has been applied. The agent replies that it has no record of any credit and offers to open a new request. Logs show the model never saw turn 3. What change most reliably prevents this failure while keeping requests small?",
+      "options": {
+        "A": "Enlarge the window to the most recent 50 turns, which covers the length of nearly all support chats in the logs.",
+        "B": "Summarize each turn as it leaves the window into a running narrative that is sent ahead of the windowed turns.",
+        "C": "Maintain a structured case-state object that the application updates after each turn and sends with every request.",
+        "D": "Add a tool the agent can call to search the stored full transcript when the customer refers to something said earlier."
+      },
+      "correct": "C",
+      "axis": 5,
+      "task": "5.1",
+      "explanation": "C is correct. The failure happened because an exact commitment (a $40 credit on order #55120, plus free return shipping) existed only inside a turn that the window later dropped. A structured case-state object (order IDs, amounts, commitments, statuses) stores those facts outside the turns, keeps them exact, and is sent with every request. The window can keep cutting old turns, so requests stay small. B is the strongest near-miss. It is the known antipattern of progressive summarization for transactional data: a running summary keeps 'something', but it tends to shrink the credit into a phrase like 'offered a goodwill gesture', and the customer is asking exactly about that credit and whether it was applied. A only delays the problem: a chat longer than 50 turns drops turn 3 again, every request grows (breaking the 'keep requests small' condition), and nothing guarantees the commitment survives. D depends on the agent deciding to search. An agent that never saw turn 3 does not know a credit exists, so it has no reason to look, which is exactly why it answered 'no record'. Retrieval also adds a tool call to every such turn."
+    },
+    {
+      "id": 278,
+      "domain": 5,
+      "stem": "A developer-productivity agent monitors a long-running deployment. Every two minutes it calls get_deploy_status, which returns a ~3,000-token snapshot of the whole rollout (per-host state, recent log lines, health checks). Each new snapshot fully supersedes the previous one. Engineers only ask about the current state (\"Is eu-west healthy now?\"), and no answer depends on earlier snapshots. After six hours the request carries about 180 snapshots. Latency and cost have climbed, and answers sometimes quote a host state from an hour ago. What is the most effective change?",
+      "options": {
+        "A": "Keep only the latest few get_deploy_status results in the request and replace older snapshot results with a short placeholder.",
+        "B": "Extract every host state and error from each snapshot into a running structured state object that is sent with every request.",
+        "C": "Summarize older snapshots into a running narrative of the rollout history and keep only the most recent snapshot verbatim.",
+        "D": "Move the agent to a model with a larger context window so all snapshots of a long rollout fit without truncation."
+      },
+      "correct": "A",
+      "axis": 4,
+      "task": "5.1",
+      "explanation": "A is correct. The stem says each snapshot fully supersedes the previous one and no answer depends on earlier snapshots. So the old tool results are pure cost and a source of stale answers. Keeping only the most recent few (a sliding window over tool results, or selective retention) removes both problems with the least machinery. The Claude API offers the same thing server-side as tool-result clearing (a beta strategy with a keep setting), which clears the oldest tool results first and replaces them with a placeholder. B is the strongest near-miss. A structured state object is the right tool when facts must survive exactly, but here nothing from old snapshots must survive. A running record built from every snapshot keeps growing, keeps superseded host states the engineers never ask about, and adds extraction work on every poll: the right idea, far too heavy for the job. C also keeps history nobody needs, costs a summarization call, and the narrative can still carry an hour-old host state into answers. D is the known antipattern: a bigger window keeps all 180 stale snapshots in the request, so cost and latency stay high, and it does nothing about answers quoting old states."
     }
   ]
 }

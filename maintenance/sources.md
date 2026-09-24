@@ -14,7 +14,7 @@ so it can be checked directly. The **technical behavior** the exam tests (CLI fl
 - **Exam Guide:** **v1.0 · Effective July 2026 · exam code CCAR-F** (title page). "Subject to change
   without notice." Verified against the PDF on 2026-07-18.
 - **Product docs / changelogs checked:** 2026-07-19 (Layer-2 fact-currency audit — 0 stale facts across all 5 domains); 2026-09-23 targeted check for the Layer-1b gaps (Claude Code settings/permissions/memory/mcp/checkpointing docs, Messages API stop reasons, Agent SDK agent-loop/sessions/hooks).
-- **Bundled content built/last-synced:** 2026-09-23 (bank = 261 questions).
+- **Bundled content built/last-synced:** 2026-09-24 (bank = 278 questions).
 
 > When you refresh content against the sources below, bump these lines and the plugin version.
 
@@ -84,6 +84,10 @@ name sub-points the Guide omits (settings permissions vs CLAUDE.md, the five-mec
 tool discovery, loop-exit safeguards, authorization state in handoffs). Treat them as a coverage
 source alongside the Guide: every objective must map to a lesson, a trap, and ≥2 bank questions.
 - 2026-09-23 score report (29 objectives) → gaps closed in bank ids 246–261 + lessons 1.1/1.4/2.4/3.1/3.3/3.4.
+- 2026-09-24 score report (37 objectives) → gaps closed in bank ids 262–278 + lessons 1.1/1.3/1.6/3.6/4.1/4.3/4.6/5.1/5.4.
+  New evidence is classified before it changes an existing question (see `maintenance/authoring-questions.md`,
+  "Changing an existing question"): q248 was kept and clarified (cap-too-low case) while the split-and-merge
+  objective got new questions.
 
 ## Layer 2 — Technical behavior (PUBLIC · fetchable during review)
 Official product docs the exam is built on. During a review (see `RUNBOOK.md`), fetch these and check

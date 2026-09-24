@@ -22,12 +22,13 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Cutting round-trips with composite/bundled tools (`get_customer_with_orders`), speculative execution, or a larger `max_tokens` — the fix is prompting Claude to batch tool requests per turn and return all results together.
 - Treating every iteration cap as an anti-pattern — a cap is fine as a SECONDARY backstop against runaway loops, as long as `stop_reason` stays the primary stop.
 - Treating `stop_reason: "max_tokens"` like `end_turn` and presenting the cut-off text as the final answer — the response is truncated: not done, and not a tool call to run.
-- Executing an incomplete `tool_use` block after `max_tokens`, or splicing a "continue" reply onto its cut-off input — discard it and retry the request with a higher `max_tokens`.
 - Returning parallel tool results one user message per result — return one `tool_result` per `tool_use` id, all together in the next single user message, `tool_result` blocks before any text.
 - Omitting the result of a parallel call that failed or was skipped — it still gets a `tool_result` with `is_error: true` and a brief explanation.
 - Merging parallel results into one plain-text summary — each result is its own `tool_result` block matched by `tool_use_id`.
+- Executing an incomplete `tool_use` block after `max_tokens`, or splicing a "continue" reply onto its cut-off input — discard it; retry with a higher `max_tokens` only when the cap was set too low for a normal-sized answer.
+- Raising `max_tokens` again and again (up to the model's output maximum) when the output is inherently too large, such as one change set for 40 modules or one findings array for a whole PR — split the work into smaller scoped calls and merge the resulting structures in code.
 
-**Core rule:** Stop on the `stop_reason` field: `tool_use` → run every requested tool and return one `tool_result` per call, all in the next user message; `end_turn` → final answer; `max_tokens` → truncated, never final — retry an incomplete `tool_use` with a higher `max_tokens`. Never stop on text presence, an iteration cap, a natural-language phrase, or a forced `tool_choice`. An iteration cap is allowed only as a secondary runaway backstop, never as the primary stop.
+**Core rule:** Stop on the `stop_reason` field: `tool_use` → run every requested tool and return one `tool_result` per call, all in the next user message; `end_turn` → final answer; `max_tokens` → truncated, never final and never runnable: discard an incomplete `tool_use`, retry with a higher `max_tokens` only when the cap was set too low for a normal-sized answer, and split inherently large output into smaller scoped calls whose results you merge in code. Never stop on text presence, an iteration cap, a natural-language phrase, or a forced `tool_choice`. An iteration cap is allowed only as a secondary runaway backstop, never as the primary stop.
 
 ### 1.2 Multi-Agent Orchestration
 **Exam Traps:**
@@ -50,8 +51,12 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Blaming the synthesis agent for missing citations when the real issue is context passing without metadata.
 - Proposing sequential invocation for tasks that can run independently (use parallel Task calls in one response).
 - Confusing `fork_session` with `--resume`.
+- Rewriting a subagent's `prompt` field when the coordinator never selects that subagent — `prompt` is the subagent's own system prompt, read only after it is spawned; Claude picks a subagent by matching the task to its `description`, so rewrite the description to say what it handles and when to use it.
+- Adding a missing tool to the coordinator's `allowedTools` when a spawned subagent can't do its job — the parent's list gives the subagent nothing; add the tool to that AgentDefinition's `tools` list (omitting `tools` inherits every tool available to subagents).
+- Blaming the model or permissions when a spawned subagent silently returns guesses — a tool left out of its `tools` list is not in its session at all, so there is no error and no permission prompt; check the `tools` list.
+- Blaming `allowedTools` when the logs show the coordinator spawning other subagents — `Task`/`Agent` is clearly present; the fault is in the one AgentDefinition that is never chosen, or in definitions never passed in the `agents` option.
 
-**Core rule:** A subagent gets only what the coordinator passes it, metadata included. Pass the full context, and run independent work in parallel.
+**Core rule:** A subagent gets only what the coordinator passes it, metadata included. Pass the full context, and run independent work in parallel. When spawning misbehaves, find the broken layer: no Agent call at all → `Task` missing from the coordinator's `allowedTools`; one specialist never chosen → its `description`; spawned but can't act, no errors → its `tools` list; spawned but missing facts → the Agent prompt didn't carry them.
 
 ### 1.4 Workflow Enforcement and Handoff
 **Exam Traps:**
@@ -86,12 +91,16 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 **Exam Traps:**
 - A more powerful model / larger context window as the fix for attention dilution (it's architectural, not capability).
 - Single-pass review with better prompts as equivalent to multi-pass (better prompts ≠ fixing attention allocation).
-- Fixed pipelines for open-ended investigation (open-ended needs adaptability).
 - Batching files without a cross-file integration pass (misses cross-batch issues).
 - Reading every file whose name or content matches a keyword (`auth`, `token`, `permission`) to understand a system — exhaustive upfront reading, not entry-point navigation.
 - Fanning out parallel subagents across services before an entry point is found (premature parallelism with no grounding), or asking the human to name the 10-15 key files instead of the agent tracing them.
+- A fixed pipeline for open-ended work (research, debugging, impact or migration audits) whose later steps run "as planned" or "regardless of" what step 1 found — the coordinator must read each result and generate the next subtasks from it (add, drop, re-scope).
+- Bolting a retry or validation step onto a fixed pipeline ("if fewer than ten studies, rerun the search with broader keywords") — it redoes the old step harder under the assumption the finding just disproved; it can never add the new subtask the finding calls for.
+- Adding a cross-file integration pass to fix an open-ended audit — that pass is for predictable reviews of a known file set; it only examines what the fixed first step found, so items outside that set (modules that inherit DB access, generated code) stay missed.
+- Caveating the report (state sample sizes, soften conclusions) instead of fixing the plan — it describes the gap but the missing investigation never happens.
+- Over-correcting: choosing dynamic decomposition for a predictable multi-aspect review of a known PR — if every step can be listed upfront and no result would change them, prompt chaining (per-file passes + integration pass) is the answer.
 
-**Core rule:** Attention dilution needs multi-pass decomposition, a cross-batch integration pass, and flows that adapt. A bigger model, prompt or window does not fix it. And to understand an unfamiliar codebase, `Grep` for entry points then follow imports outward incrementally — never read every keyword-matching file at once.
+**Core rule:** Choose the decomposition by predictability: if every step can be listed before step 1 runs and no early result would change the later steps, use prompt chaining (per-file passes plus a cross-file integration pass); if an early finding can change what should happen next, the coordinator generates the next subtasks from each result. Attention dilution needs multi-pass decomposition and a cross-batch integration pass — a bigger model, prompt or window does not fix it. To understand an unfamiliar codebase, `Grep` for entry points then follow imports outward incrementally — never read every keyword-matching file at once.
 
 ### 1.7 Session State and Resumption
 **Exam Traps:**
@@ -256,8 +265,20 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Not including prior review findings in later runs → duplicate comments erode trust.
 - Capping with `--max-turns` alone, then failing the build on a post-hoc `total_cost_usd` check → detects overspend but the money is already spent (needs `--max-budget-usd` to prevent it).
 - Bounding a runaway run with a shell `timeout` or a cheaper `--model` → caps wall-clock seconds or per-token rate, not the total dollar spend.
+- Putting review exclusions in a custom `with:` input on the action step, a job env var, or a filter job after the review — an invented input never reaches the model, an env var is not context, and a post-filter only hides output (and deletes mislabelled real bugs) → write review criteria, accepted patterns and skip categories in the repository's CLAUDE.md, which Claude reads on every run.
+- Granting a CI review broad tools (`Bash`, `Edit`) so it 'never gets stuck', then trying to rein it in with a CLAUDE.md 'never run shell commands' rule, the job's GitHub `permissions` block, or a cleanup step afterwards — a CLAUDE.md line only influences, the `permissions` block scopes the GitHub token and not the tools Claude runs, and cleanup happens after the commands already ran → grant only what the review needs via `--allowedTools` (e.g. `mcp__github_inline_comment__create_inline_comment`); in automation mode Claude has no shell or GitHub API access until tools are granted, and read-only tools need no grant.
+- Stopping at `--output-format json` when a script must parse the findings — that only wraps free text in JSON → add `--json-schema` so the findings follow a validated shape for inline PR comments.
+- Resuming the previous review session (`--resume`) to carry earlier findings into a re-review after fix commits — the resumed context holds stale reads of the code from before the fixes → start a fresh `-p` run and inject the prior findings JSON, asking only for new or still-unaddressed issues.
+- De-duplicating re-review comments with a path+line filter, or reviewing only the latest push's diff — lines shift and wording varies, and a diff-only review misses breakage in untouched files → put the prior findings in context.
+- Keeping the team's review criteria in a personal `~/.claude/CLAUDE.md` or a gitignored `CLAUDE.local.md` (or copying that file onto the runner) — the runner only checks out committed files; put team criteria in the committed project `CLAUDE.md`.
+- Adding `--bare` to a CI review that relies on the project `CLAUDE.md` — `--bare` skips every CLAUDE.md, hooks, skills and MCP; drop it, or pass the criteria with `--append-system-prompt-file`.
+- Stopping a review job from editing files or running commands with a prompt line, or with `--disallowedTools "Edit" "Write"` on top of `--dangerously-skip-permissions` — the prompt only asks and the blocklist leaves Bash open; use `--permission-mode dontAsk --allowedTools "Read,Grep,Glob,Bash(git diff *)"`.
+- Pairing `--dangerously-skip-permissions` with an `--allowedTools` list on a shared runner — allow rules have no effect in bypassPermissions, so everything runs; that mode is for isolated containers/VMs only.
+- Using `--permission-mode acceptEdits` (or `auto`) for an unattended job that must edit files and run exactly one command — acceptEdits doesn't approve the test command, and auto lets a classifier approve others; use `dontAsk` + an exact `--allowedTools` list.
+- Using `--output-format json` without `--json-schema` for findings a script posts as PR comments — the findings are still free text in `result`; add `--json-schema` and read `structured_output`.
+- Fixing trivial generated tests (`toBeDefined`, mock-was-called) with a coverage gate, a vague "write meaningful tests" line, or a reviewer step that deletes low-value tests — write the meaningful-test criteria and the fixtures to use into `CLAUDE.md`.
 
-**Core rule:** `-p` runs without a prompt. `--output-format json` gives a machine-readable result. Automated review needs a separate session plus the earlier findings as context. Bound a runaway run with `--max-turns N` plus `--max-budget-usd X` — the budget flag stops the run before it overspends; a post-hoc `total_cost_usd` check only detects overspend.
+**Core rule:** `-p` runs without a prompt. A CI review has three parts. (1) Standards: the committed project CLAUDE.md carries the review criteria, accepted patterns and exclusions that apply to every review of the repo, and Claude reads it on every run (never a personal `~/.claude/CLAUDE.md`; `--bare` skips every CLAUDE.md); a rule for one invocation only goes in `--append-system-prompt`. (2) Tools: grant only what the review needs (`--permission-mode dontAsk --allowedTools "..."`: unlisted calls that would prompt are denied, reads and read-only commands still run; `--dangerously-skip-permissions` ignores allow rules and belongs only in isolated containers). (3) Output: `--output-format json` + `--json-schema`, read from `structured_output`. Workflow inputs, env vars and post-filter jobs do not change what the model treats as a defect. Automated review needs a separate session; a re-review gets the earlier findings in a fresh run and reports only new or still-unaddressed issues. Bound a runaway run with `--max-turns N` plus `--max-budget-usd X` — the budget flag stops the run before it overspends; a post-hoc `total_cost_usd` check only detects overspend. Test generation needs the existing test files in context plus written criteria in CLAUDE.md for what a meaningful test is (it asserts a specific outcome for a given input) and which fixtures to use.
 
 ### 3.7 System-Prompt & Startup Flags (CLI)
 **Exam Traps:**
@@ -277,8 +298,10 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Choosing "be conservative" / "only report high-confidence findings" as valid prompt improvements.
 - Assuming confidence thresholds fix false-positive problems.
 - Keeping all review categories active while iterating on a high-false-positive category.
+- Fixing a project-specific false positive with a one-off instruction (a reply to one PR comment, a line in a single run's prompt) — the next run starts without it and the false positive returns → put accepted patterns and exclusion criteria in persistent context (CLAUDE.md for Claude Code, the system prompt for an API reviewer) applied on every review.
+- Suppressing a noisy pattern with a keyword filter after the run — hides the symptom, breaks when wording changes, and drops real issues that share the keyword → state the exclusion as an explicit criterion the model reads.
 
-**Core rule:** Explicit criteria (exactly what to flag and what to skip) plus concrete code examples beat vague instructions and confidence filtering.
+**Core rule:** Explicit criteria (exactly what to flag and what to skip) plus concrete code examples beat vague instructions and confidence filtering. Project-specific conventions, accepted patterns and exclusion criteria belong in persistent context (CLAUDE.md or the system prompt), so they apply on every review — not in a one-off message or an after-the-fact filter.
 
 ### 4.2 Few-Shot Prompting
 **Exam Traps:**
@@ -296,8 +319,12 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - For a CI/automation pipeline, forcing review structure via a CLAUDE.md "Output Format" section or a prompt template — prompt-based formatting is followed inconsistently and can't be reliably parsed; use the CLI flags `--output-format json` + `--json-schema`.
 - Blaming instruction/tool-name keyword overlap on temperature, an unset `tool_choice`, or too-sparse tool descriptions — then adding longer descriptions or a security-over-performance priority rule; the cause is the shared wording, fixed only by distinct terminology.
 - Reaching for response prefilling (or prompt-based JSON) when the requirement is *strict schema compliance* — prefill pins the opening tokens and skips preamble but enforces no schema (and can't be used while `tool_choice` forces a tool); `tool_use` + schema is the method that guarantees shape.
+- Raising `max_tokens` to the model's output maximum when a large structured result (findings for every file, every line item in a long document) keeps truncating — split into smaller scoped calls that each return a complete schema-valid structure (per file batch / section / record batch) and merge the arrays in code.
+- Switching to a larger-context-window model to fix truncated output — the input already fits; the output limit is what is hit, and the context window and the maximum output are separate limits.
+- Shrinking the output to fit one response (drop optional fields, "keep each finding under 20 words") — throws away data the schema was built to capture and only postpones the ceiling; split the task instead.
+- Parsing or repairing a cut-off JSON result (keep the items that arrived, auto-close the brackets) — silently drops every item after the cut-off; a `max_tokens` stop means the structure is incomplete and unusable.
 
-**Core rule:** `tool_use` with optional or nullable fields stops syntax errors and fabrication. You still validate the values separately. For a CLI/automation pipeline `--output-format json` + `--json-schema` enforce parseable output, and instruction wording must stay distinct from tool names so the model invokes the tool instead of following the prose. Response prefilling only steers format / skips preamble — it is not a schema guarantee; reserve it for controlling the first tokens.
+**Core rule:** `tool_use` with optional or nullable fields stops syntax errors and fabrication. You still validate the values separately. For a CLI/automation pipeline `--output-format json` + `--json-schema` enforce parseable output, and instruction wording must stay distinct from tool names so the model invokes the tool instead of following the prose. Response prefilling only steers format / skips preamble — it is not a schema guarantee; reserve it for controlling the first tokens. When a structured result is inherently too large for one response (`stop_reason: "max_tokens"` mid-structure), split the task into smaller scoped calls with the same schema and merge the structures in code — never raise `max_tokens` past practical limits, shrink the data, or keep the partial output.
 
 ### 4.4 Validation, Retry, and Feedback Loops
 **Exam Traps:**
@@ -324,12 +351,16 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Single pass for large multi-file reviews (inconsistent depth, missed bugs, contradictions).
 - Switching to a larger-context model to fix attention dilution.
 - Uncalibrated confidence scores for automated review routing.
-- Few-shot examples of complete answers to close gaps that vary case-by-case (examples fix consistent patterns, not per-case variable omissions → use a self-critique / evaluator-optimizer step against completeness criteria).
+- More few-shot examples when the format is already taught (elements listed and demonstrated) and single responses still drop a different element each time — examples do not check the response being sent; add a self-critique / evaluator-optimizer step against completeness criteria.
 - Upgrading the model tier or adding a customer confirmation step when resolutions are already accurate but inconsistently explained (the gap is completeness, not correctness — self-critique the draft, don't shift the burden to the customer).
 - Surfacing high-confidence findings only, or suppressing false-positive signatures, to cut investigation time (any pre-review filtering is out when stakeholders forbid it → surface reasoning + confidence inline instead).
 - Re-categorising findings (blocking vs suggestion) to speed review (reorganises the queue but developers still click into each finding to see why it was flagged).
+- One combined prompt reviews security, business logic and API design; tuning one concern's examples lowers another concern's recall, and the team adds balancing examples to the same prompt — the concerns still compete → split into per-concern passes, each with its own focused prompt and dedicated few-shot examples, then merge the findings.
+- Adding a verification pass to fix a recall drop between competing concerns — verification only removes false positives from what was reported; it cannot recover findings the combined prompt never produced → per-concern passes.
+- Splitting per file when the symptom is competing concerns (one category's recall falls when another is tuned, PR size unchanged) — per-file passes cure dilution across many files, not concern competition → per-concern passes (combine the two for a large multi-concern PR).
+- Running the combined prompt several times and keeping only findings two of three runs agree on — every run has the same blind spot, and the vote throws away real bugs that are caught only some of the time.
 
-**Core rule:** An independent instance with no prior context beats self-review. A large review needs one pass per file plus a separate pass across files. Self-critique against explicit completeness criteria still catches per-case coverage gaps; when findings must not be filtered before review, surface reasoning and confidence inline to cut investigation time.
+**Core rule:** An independent instance with no prior context beats self-review. A large review needs one pass per file plus a separate pass across files. Competing review concerns (security, business logic, API design) need one focused pass per concern, each with its own prompt and few-shot examples. Pick by the symptom, and combine the two when both apply. Self-critique against explicit completeness criteria still catches per-case coverage gaps. When findings must not be filtered before review, surface reasoning and confidence inline to cut investigation time.
 
 ---
 
@@ -340,9 +371,13 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Thinking progressive summarisation is safe for transactional data (destroys numbers/dates/IDs).
 - Assuming "lost in the middle" is solved by telling the model to pay attention (fix is structural: key facts first + section headers).
 - Keeping full tool results "in case" (40+ field lookups exhaust the budget).
-- Believing history can be selectively truncated freely (API is stateless; each request needs full history).
+- Making the sliding window bigger after it dropped an early fact (a credit, a promise, an order ID) — that only delays the drop, and every request costs more. Copy the fact into a structured state object that is sent with every request.
+- Summarising the turns that fall out of a sliding window — the summary blurs the exact amount or promise the customer will ask about later. Must-survive facts go in the state object, not the summary.
+- Giving the agent a transcript-search tool to recover what it said in early turns — the agent only searches when it already suspects the fact exists. An agent that never saw turn 3 doesn't know there is a credit to look for.
+- Dropping old turns (a sliding window) while they still hold facts a later answer depends on — the API is stateless, so the model never sees what you don't send. Move those facts into a state object first, then window the rest.
+- Building a case-facts object or a narrative history for content that later turns fully replace (for example, repeated status snapshots when users only ask about the current state) — that is over-engineering and keeps stale data. Keep the latest few and clear the older tool results (sliding window / selective retention).
 
-**Core rule:** Pull transactional facts into a structured facts block and send it with every prompt. Then summarising can never destroy them.
+**Core rule:** Pull must-survive facts (amounts, dates, IDs, statuses, commitments) into a structured facts block and send it with every prompt. Then summarising or windowing the rest cannot destroy them. Summarise or window only what no later answer needs exactly, and trim tool outputs to the relevant fields before they pile up.
 
 ### 5.2 Escalation & Ambiguity Resolution
 **Exam Traps:**
@@ -368,8 +403,12 @@ How to use with `trap-log.md`: each trap below maps to one of the 5 axes —
 - Assuming subagent delegation is only about parallelisation (primary benefit = context isolation).
 - Restarting a session without saving state (persist via scratchpad + state manifests, then inject).
 - Using `/compact` only at the limit (apply proactively throughout).
+- Resuming the coordinator's session transcript (`--resume` / `resume: sessionId`) to recover a crashed multi-agent pipeline — the conversation is not a durable store of findings; auto-compaction may already have condensed early results, and nothing records which units are done. Export structured state + a manifest instead.
+- Rerunning the whole pipeline after an interruption (or raising `max_turns` / moving hosts) — repeats finished work and does not prevent the next interruption; load the manifest and skip finished units.
+- Checkpointing by dumping the full coordinator transcript to disk every N units — right place, wrong content: verbose, loses work since the last dump, and refills the new context; persist per-unit structured findings instead.
+- Letting each agent reload its own private state file independently on restart — the coordinator loses track of what is done and who needs which findings; the coordinator loads the manifest and injects state into agent prompts.
 
-**Core rule:** Degradation is an attention-quality problem. Use scratchpad files, subagents for context isolation, and state manifests. A bigger window does not fix it.
+**Core rule:** Degradation is an attention-quality problem. Use scratchpad files, subagents for context isolation, and state manifests. A bigger window does not fix it. For crash recovery, each agent exports structured state to a known location and the coordinator loads the manifest on resume, skips finished units and injects prior findings into agent prompts — not a transcript resume, a full rerun, or the coordinator's memory.
 
 ### 5.5 Human Review & Confidence Calibration
 **Exam Traps:**

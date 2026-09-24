@@ -57,14 +57,21 @@ Teach the full stop_reason map, not just the two-value loop:
 
 "tool_use" → execute EVERY requested tool, return the results, continue the loop.
 "end_turn" → Claude finished; present the final response.
-"max_tokens" → the response was cut off. It is NOT a final answer and NOT a tool call you can run. If the last content block is an incomplete tool_use, discard it and retry the request with a higher max_tokens to get the full tool call. NOT executing the partial input, NOT splicing a "continue" onto it, NOT treating it like end_turn. Here raising max_tokens IS the fix, because the truncation itself is the problem. Everywhere else the exam tests it (too many round-trips that batching should fix, verbose exploration that belongs in a subagent, an input too long for the context window) a bigger max_tokens is still the wrong answer.
+"max_tokens" → the response was cut off: NOT a final answer, NOT a runnable tool call. Discard an incomplete tool_use (NOT executing its partial input, NOT splicing a "continue" onto it, NOT treating it like end_turn), then ask WHY it was cut off. Cap too low for a normal-sized answer (1,024 tokens for one ordinary file) → retry the same request with a higher max_tokens (the documented handling for an incomplete tool_use). Output inherently too large for one response (one findings array for a 150-file review, every rewritten module in one change set, thousands of extracted line items) → split into smaller scoped calls (per file, per section, per batch of items) and merge the data structures in code. Exam trap: raising max_tokens again on the too-large case (fixed per-model output ceiling, very large values need streaming or batches, the task keeps growing). A bigger max_tokens is also wrong for too many round-trips (batching), verbose exploration (subagent), an input too long for the context window.
 "stop_sequence" → a custom stop string was hit; handle it the way your design intends.
 Mention these in one line only, because they are beyond the Guide and not drilled: pause_turn (a server-tool loop paused; send the assistant content back as-is to continue), refusal (read stop_details), model_context_window_exceeded (treat the response as truncated).
 A stop reason arrives on a successful HTTP 200 response, never as an error. API errors are 4xx/5xx responses your code has to catch, so the loop needs a stop_reason branch AND error handling.
 
 Teach how to return parallel tool results: when one response carries several tool_use blocks, return one tool_result per tool_use block, matched by tool_use_id, all together in the next single user message, with every tool_result block placed before any text. A call that failed, or that you chose not to run, still gets a tool_result with is_error: true and a brief explanation. NOT one user message per result, NOT dropping the failed call's result, NOT a merged plain-text summary. Text can also accompany tool_use blocks (Claude often comments on what it is doing), which is one more reason text presence never means completion.
 
-Practice scenario: A code-generation agent's write_file call comes back with stop_reason "max_tokens" and a tool_use whose file contents stop mid-file. Ask the student what the loop does. Answer: discard the partial call and retry with a higher max_tokens. Then give a second case, where three parallel search calls return and one times out, and ask for the shape of the next user message. Answer: three tool_result blocks in one message, the timed-out one marked is_error: true.
+Practice scenario: write_file for one ordinary 300-line file returns stop_reason "max_tokens", contents cut mid-file, max_tokens was 1,024. Ask what the loop does. Answer: discard the partial call, retry with a higher max_tokens (normal-sized answer, cap too low). Second case: one apply_changes call holding 40 rewritten modules; each raise only gets a few modules further. Answer: discard, request the change set a few modules per call, merge the change sets in code before applying. Then give a third case, where three parallel search calls return and one times out, and ask for the shape of the next user message. Answer: three tool_result blocks in one message, the timed-out one marked is_error: true.
+
+Teach telling the two max_tokens cases apart:
+Cap too low: max_tokens: 1024, one ordinary 300-line file, write_file input stops at line 80 → discard, re-send the same request with a higher max_tokens (e.g. 8,000). Works because a normal-sized answer just missed the budget.
+Inherently too large: all 40 rewritten modules in one apply_changes change set; raising 16,000 → 32,000 → 64,000 only gets a few modules further each time. Raising again is the lure (documented move for an incomplete tool_use, each raise "worked a bit") but fails: every model has a fixed maximum output (listed per model in the models overview), the change set grows with every module added to the migration, and very large max_tokens need streaming or the Batch API (long non-streaming requests risk dropped connections).
+Fix: a few modules per call, check each response ended with stop_reason "tool_use" and a complete input, merge the change sets in code before applying, so the migration still lands as one unit.
+NOT executing the partial tool_use (lure: looks like progress, "Claude fixes it next turn") — the last module stops mid-file, so the tool writes a broken file: a real side effect of a malformed call.
+NOT splicing a continuation ("continue where you stopped" glued onto the cut-off JSON; lure: works for plain text) — a tool_use input must arrive as one complete block; the join can repeat or skip content and nothing guarantees it still matches the tool's schema.
 TASK STATEMENT 1.2: MULTI-AGENT ORCHESTRATION
 Teach the hub-and-spoke architecture:
 
@@ -126,6 +133,18 @@ Use for exploring divergent approaches (e.g., comparing two testing strategies f
 Each fork operates independently after the branching point
 
 Practice scenario: A synthesis agent produces a report with several claims that have no source attribution. The web search and document analysis subagents are working correctly. Ask the student to identify the root cause (context passing did not include structured metadata) and the fix (require subagents to output structured claim-source mappings).
+
+Teach diagnosing a misconfigured subagent: match the log symptom to the ONE broken layer.
+(1) Coordinator can't spawn: writes "I'll ask the web search agent to find sources", no Agent tool_use block, no error. Cause: Task missing from the coordinator's allowedTools (can talk about delegating, has no tool to do it).
+(2) Spawns other subagents, never one specialist, does that work itself. Cause: that AgentDefinition's description doesn't say what it handles / when to use it (copied from another agent, or "helper agent"). Selection = task matched against each description; the prompt field is the subagent's own system prompt, read only after spawn → irrelevant to selection. Fix: rewrite description, e.g. description: "Security reviewer. Use for changes to authentication, session handling, or input validation." Naming it in the request ("Use the security-reviewer agent") forces it for that one request only; automatic routing only via description.
+Exam trap: "expand the subagent's prompt" — right config object, wrong field.
+(3) Spawned (Agent call with its subagent_type in logs) but can't do the job: guesses from file names, says it can't open the documents, never acts; no error, no permission prompt. Cause: its tools list omits the needed tool (tools: ["Grep", "Glob"], no "Read") — an omitted tool doesn't exist in that session, nothing fails loudly. Fix: add it to that AgentDefinition's tools (omitting tools entirely = inherit every tool available to subagents). NOT the coordinator's allowedTools — that's the parent's list; an explicit tools list gives only those tools.
+(4) Spawned, right tools, reports no findings or asks for data. Cause: wiring — coordinator didn't put earlier results into the Agent tool's prompt; subagents never inherit the parent conversation, the prompt string is the only channel. Also wiring: a definition written in code but not passed in query()'s agents option and not a file in .claude/agents/ doesn't exist for that query → coordinator falls back to the built-in general-purpose subagent. On session resume, pass the same definitions in agents again.
+NOT bigger max_tokens — a spawn is a short tool call, logs show no truncation.
+NOT a more capable model — any model can only choose from the tools and descriptions it's given.
+NOT listing subagents by name in the coordinator's system prompt — logs already show it spawning the others, so knowing what exists isn't the problem.
+
+Practice scenario: PR-review coordinator spawns test-runner and dependency-auditor constantly, never security-reviewer, and writes the security analysis itself; security-reviewer was copied from dependency-auditor with only its prompt field rewritten. Student names the field to fix and why prompt field, allowedTools and the tools list are the wrong layers. Answer: the description.
 TASK STATEMENT 1.4: WORKFLOW ENFORCEMENT AND HANDOFF
 Teach the enforcement spectrum:
 
@@ -152,7 +171,7 @@ The handoff summary must be self-contained
 
 Practice scenario: Production data shows that in 8% of cases, a customer support agent processes refunds without verifying account ownership, occasionally leading to refunds on wrong accounts. Present four options: A) programmatic prerequisite gate, B) enhanced system prompt, C) few-shot examples, D) routing classifier. Walk through why A is correct and why B, C, and D are insufficient.
 
-Teach the outcome guarantee: every session must end in exactly one terminal outcome, either a completed resolution or a human escalation that carries a structured handoff, however the loop stopped. The orchestrator CODE enumerates every exit path and maps each one to an outcome; the model does not. end_turn / success → deliver and record the resolution. max_tokens → retry. Iteration cap reached, budget reached, or API errors after retries run out → escalate_to_human with a handoff (or a deliberate resume branch in code that itself still ends in a resolution or an escalation). The iteration cap is only the backstop. The safeguard is what the orchestrator does after the backstop, or any other non-success exit, fires. Tell the student plainly that this rule is synthesized from the stop-reason and result-subtype docs; no single doc sentence states it.
+Teach the outcome guarantee: every session must end in exactly one terminal outcome, either a completed resolution or a human escalation that carries a structured handoff, however the loop stopped. The orchestrator CODE enumerates every exit path and maps each one to an outcome; the model does not. end_turn / success → deliver and record the resolution. max_tokens → retry with a higher cap only if it was set too low for a normal-sized answer; if the output is inherently too large, split the work into smaller calls and merge (see 1.1). Iteration cap reached, budget reached, or API errors after retries run out → escalate_to_human with a handoff (or a deliberate resume branch in code that itself still ends in a resolution or an escalation). The iteration cap is only the backstop. The safeguard is what the orchestrator does after the backstop, or any other non-success exit, fires. Tell the student plainly that this rule is synthesized from the stop-reason and result-subtype docs; no single doc sentence states it.
 
 Teach the Agent SDK version: check the result message's subtype before reading result, because result is present only on success. The subtypes are success, error_max_turns, error_max_budget_usd, error_during_execution and error_max_structured_output_retries. Every subtype still carries session_id, total_cost_usd, usage and num_turns, so a non-success session can be resumed or handed off. A single-shot query() also raises after it yields an error result, and a connection or process failure produces no result message at all, so wrap the call in try/catch as well. max_turns and the budget default to no limit; setting a budget is a good production default, but the limit is not the safeguard.
 
@@ -223,6 +242,27 @@ Grep for entry points (login, token verify, middleware), read those, then follow
 Anti-pattern: read every file whose name/content matches a keyword ("auth", "token", "permission") — exhaustive upfront reading blows context and still misses the real call edges.
 Anti-pattern: fan out parallel subagents per service before any entry point is found (premature parallelism, no grounding); likewise offloading file-selection to the human defeats the point.
 Practice scenario: engineer wants to understand the auth architecture of an 800+ file codebase. Options: parallel subagents per service / read all keyword-matching files / read CLAUDE.md+README then ask the human to name 10-15 files / Grep entry points then follow imports. Correct is the incremental entry-point navigation.
+
+Teach the decomposition test: before step 1 runs, can every step be written down AND can no early result change what later steps should be?
+Yes → predictable → prompt chaining (fixed sequential pipeline). No → open-ended → dynamic decomposition: the coordinator (or single agent) reads each result and generates the next subtasks from it.
+Chaining case: multi-aspect review of a known file set — pass 1 per-file, pass 2 cross-file integration, pass 3 format findings. Pass 2 stays right whatever pass 1 finds → consistent, repeatable.
+Open-ended cases: research questions, debugging an unknown failure, impact/migration audits where the involved modules are unknown, "add comprehensive tests to a legacy codebase".
+Stem signal: an early finding contradicts an assumption built into the plan (studies don't measure what the extraction step extracts; Grep matches miss modules reaching the database indirectly), then later steps "ran as planned" / "ran unchanged" / ran "regardless of" it. Defect: the plan never looks at its own intermediate results.
+
+Teach recognising dynamic decomposition in an option even without the word "dynamic":
+Coordinator starts with a mapping/scouting subtask (every way modules reach the database, incl. base classes and generated code; survey what the studies actually measure), creates next subtasks from what it returned, adds/drops/re-scopes as results arrive.
+Examples: search subagent reports several districts reversed a four-day school week after two years → coordinator adds "why did they reverse" (in no upfront plan). Module inherits its queries from a shared repository base class → add "find every other subclass of that base class".
+Coordinator still owns the plan: decides what runs next, keeps the original goal in view. NOT subagents wandering with no direction.
+
+Teach the distractors (each looks like an improvement):
+NOT fixed pipeline + retry/validation step ("if fewer than ten studies report test scores, rerun the search with broader test-score keywords, then continue") — sounds like a feedback loop, but repeats the disproved assumption: can only redo an old step harder, never add the new kind of subtask.
+NOT a cross-file/cross-module integration pass added to the fixed plan — right fix for attention dilution in a predictable known-file-set review, but only examines what fixed step 1 found (Grep missed base-class inheritors → integration pass over the 40 matches never sees them).
+NOT one subagent per item (module/service/topic slice) from the start, or the fixed steps in parallel — fails proportionality + grounding: 300 unmapped subagents are expensive, each checks its own slice with the same fixed question, a cross-module path (query code generated at build time) is nobody's subtask. Parallelism changes speed, never the plan.
+NOT fixing the output (report subagent states sample sizes, caveats weak conclusions) — good 5.6 practice, but only describes the gap; the missing investigation never happens.
+NOT handing scope discovery to the human ("ask the developer to list every module that touches the database") — discovering scope IS the task; stem usually shows the agent already found facts the human never stated.
+Exam trap (over-correction): on a truly predictable task (fixed checklist review of a known pull request) dynamic decomposition is NOT better — chaining gives consistent, repeatable passes; an adaptive planner only adds unpredictability.
+
+Practice scenario: research coordinator always runs search → extract test scores → compare districts → write report. Step 1 reports most studies measure attendance and budget savings, not test scores, and several districts reversed the policy; steps 2–4 run unchanged and the report draws a strong conclusion from four studies. Options: retry search with broader keywords / caveat instruction to the report writer / run the steps in parallel / coordinator reviews each output before choosing the next subtasks. Student names why the first three leave the fixed sequence in place. Correct: coordinator generates subtasks from each result.
 TASK STATEMENT 1.7: SESSION STATE AND RESUMPTION
 Teach the session management options:
 
@@ -681,6 +721,65 @@ Teach bounding a runaway CI run:
 Post-hoc: parsing `total_cost_usd` from `--output-format json` only DETECTS overspend after the money is spent — never prevents it.
 `timeout` bounds wall-clock seconds; a cheaper `--model` lowers per-token rate — neither caps total spend. This is Q211.
 
+
+Teach the CI review configuration as three parts; fixing one never replaces another:
+Standards (defects, accepted patterns, skips) → repo CLAUDE.md; `actions/checkout` puts it on the runner, Claude reads it every run.
+Tools → `claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'` (`anthropics/claude-code-action@v1`).
+Output → `claude -p "Review this PR" --output-format json --json-schema '<schema>'`: validated findings (file, line, severity, issue) a later step posts as inline comments. `--output-format json` alone = JSON envelope around free text.
+
+Teach CLAUDE.md as the home of review criteria, accepted patterns and exclusions (docs: "review criteria, project-specific rules, and preferred patterns"; keep concise, read every run). Example lines: "Report: logic errors, missing error handling on external calls, breaking public API routes." / "Do not report: formatting (linter enforces it); style/security categories SecurityBot already reviews." / "Accepted: raw SQL in db/migrations/." Versioned and reviewed with the code.
+Boundary with q227 (3.7): rule for EVERY Claude Code review of the repo (criteria, accepted patterns, categories another stage owns) → project CLAUDE.md, read on every run. Rule for ONE invocation only, other sessions unchanged (e.g. a security-only job) → `--append-system-prompt` in that invocation (Actions: via `claude_args`). `prompt` input = one run's task ("Review PR #123").
+NOT a custom `with:` input (`exclude_categories`) — action reads only its defined inputs (`prompt`, `claude_args`, `settings`, `plugins`); invented key ignored (at most a warning), never reaches Claude.
+NOT a job env var (`SKIP_CATEGORIES`) — process state, not model context (prompt, system prompt, CLAUDE.md, tool results); no shell in automation mode to read it.
+NOT a post-review filter job — model still spends turns on those categories; mislabels delete real bugs ("security" logic bug) or pass nits; JSON/local readers still get noise.
+Exam trap: the workflow file feels like "the review config" — fix the cause in CLAUDE.md.
+
+Teach the tool grant as the review's access boundary: automation mode (plain-text `prompt`) has no shell or GitHub API until `--allowedTools` in `claude_args` (or `permissions.allow` in `settings`) grants it; Read/Grep/Glob need no grant. Read-and-comment review = only the inline-comment tool (the action starts that server only when the list names it). `"Bash,Edit,…"` "so it never gets stuck" → `curl`, `npm install`, edits → shorten the list.
+NOT a CLAUDE.md "never run shell commands" line — influences, Bash/Edit stay granted. CLAUDE.md = what's a defect; tool list = what the run can do.
+NOT GitHub `permissions: contents: read` — scopes the workflow token, not Claude's tools on the runner.
+NOT a `git checkout -- .` cleanup — commands already ran (network, secrets in env).
+Plain `claude -p`: `--allowedTools` pre-approves; `--disallowedTools "Bash,Edit"` removes tools from context.
+
+Teach the re-review: each `claude -p` starts empty → save prior findings (`--json-schema` JSON artifact or posted comments), inject them; Claude checks each against current code and reports only new or still-unaddressed issues, not ones the new commits fixed.
+NOT `--resume <session>` — holds pre-fix file reads, stale tool results (1.7: fresh session + injected summary).
+NOT path+line de-dup — lines shift, wording varies, new issues on a commented line vanish.
+NOT latest-push diff only — misses breakage in untouched files.
+
+Teach loading project standards in a CI review:
+CI runner = fresh checkout, empty home folder. `claude -p` loads the project `CLAUDE.md` (`./CLAUDE.md` or `./.claude/CLAUDE.md`) from the checkout plus the runner's own `~/.claude`, nothing else.
+Team review criteria (e.g. "every new endpoint calls `authorize()`", "controllers never build raw SQL") belong in the committed project `CLAUDE.md`: shared via source control, reviewed like code, read on every run. GitHub Actions docs: put code style, review criteria and project rules in the repo `CLAUDE.md`; keep it concise (read every run).
+Exam trap: criteria in a personal file, i.e. the lead's `~/.claude/CLAUDE.md` or `CLAUDE.local.md` (docs: add it to `.gitignore`). Works on her laptop, so it looks done. The runner never gets either file, so CI silently skips the rules, with no error.
+NOT a workflow step that copies her personal file onto the runner. CI then flags violations, but the rules stay private and unversioned, other devs still lack them, and her personal preferences ("2-space indentation") leak into every review. Symptom fix, cause left in place.
+Exam trap: `--bare`. It skips hooks, skills, plugins, MCP servers, auto memory and every `CLAUDE.md`. Docs recommend it for scripts (same behaviour on every machine), but a review that depends on the project `CLAUDE.md` loses all its criteria. Fix: drop `--bare` for this job, or keep it and pass the criteria from a committed file (`--append-system-prompt-file review-criteria.md`).
+Exam trap: a one-line pointer, `--append-system-prompt "Apply the team's review standards"`. The text does reach the run, but it only names the standards. The concrete rules are still in the personal file, so Claude falls back to its generic idea of a good review.
+
+Teach restricting tool access for a CI job (permission modes + allowlists):
+A review job needs read + diff only. Allow exactly that, deny the rest:
+`claude -p "Review this PR" --permission-mode dontAsk --allowedTools "Read,Grep,Glob,Bash(git diff *)" --output-format json --json-schema "$(cat review-schema.json)"`
+(`--json-schema` takes the schema as an inline JSON string, not a file path, hence `$(cat ...)`.)
+`--allowedTools` pre-approves in permission-rule syntax (`Bash(git diff *)` = any command starting `git diff`). `--permission-mode dontAsk` auto-denies every call that would prompt. Approval-free actions (file reads, built-in read-only commands `ls`, `git status`) and allow-rule matches still run. Docs label this mode "Locked-down CI and scripts".
+Plain `-p` with no permission host also denies prompting calls, so a bare `claude -p "fix the failing tests"` often changes nothing (every `Edit` and `npm test` denied). Fix: `--permission-mode dontAsk --allowedTools "Read,Edit,Bash(npm test *)"`.
+NOT `--dangerously-skip-permissions` (= `--permission-mode bypassPermissions`): clears the denials in one flag, but then every call runs unchecked. The review can edit source and run `npm install` or project scripts. Allow rules have no effect in this mode (`--dangerously-skip-permissions --allowedTools "Read"` still runs everything). Docs reserve it for isolated containers/VMs.
+NOT a prompt line "never edit files or run commands": text the model reads. Under bypass nothing checks the call, so a "quick fix" edit happens anyway. A prompt asks; a permission rule enforces.
+NOT `--disallowedTools "Edit" "Write"`: a blocklist. Deny rules hold in every mode (even bypassPermissions), but Bash stays open (`npm install`, a project script, `sed -i 's/a/b/' src/app.ts`). An allowlist of what the job needs is complete; a blocklist of what you thought of is not.
+NOT a PostToolUse hook running `git checkout .`: deterministic, but after the fact. It reverts files; it cannot undo a package install, a network call or a side-effecting script, and the bypass flag is still on.
+NOT `--permission-mode acceptEdits` for a fix-the-tests job: auto-approves edits + common filesystem commands (`mkdir`, `touch`, `mv`, `cp`) only; `npm test` still denied unless `--allowedTools "Bash(npm test *)"`.
+NOT `--permission-mode auto` when the requirement is "exactly these commands": a classifier model judges each action and may approve `npm install lodash`. The boundary is a model's judgement, not your list.
+GitHub Action (`anthropics/claude-code-action@v1`), same principle: with a plain-text `prompt` (automation mode) Claude has no shell or GitHub API access until granted via `claude_args: --allowedTools "..."` or a `permissions.allow` rule in the `settings` input. Official code-review workflow: `claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'` (the one tool that posts inline PR comments).
+
+Teach structured output for downstream processing:
+`--output-format json` alone = JSON envelope; findings are still free text in `result`, so a script cannot reliably extract file, line, severity. Add `--json-schema '<schema>'` and read validated findings from `structured_output` (`jq '.structured_output.findings[]'`); a later step posts each as an inline PR comment.
+NOT formatting instructions in the prompt or CLAUDE.md: followed inconsistently (Q105).
+
+Teach criteria that separate meaningful tests from trivial ones:
+Existing test files stop duplicate scenarios (Q74). The model also needs what counts as a valuable test in this project, or it writes tests that raise coverage and prove nothing.
+Trivial = executes code without checking behaviour: `expect(result).toBeDefined()`, `expect(repo.save).toHaveBeenCalled()` without checking what was saved, a whole-object snapshot nobody reads, an assertion that recomputes the code's own formula.
+Meaningful = given input, specific outcome the business rule demands: `expect(applyDiscount(100, 'VIP')).toBe(90)`, `await expect(transfer(-5)).rejects.toThrow(InvalidAmount)`, "after `cancelOrder(id)` the stored order has status `cancelled`".
+Write in the project `CLAUDE.md`: (1) criteria: each test asserts a specific outcome (return value, saved state or raised error) for a given input; existence-only and mock-call-only checks do not count. (2) fixture conventions: build data with the factories in `tests/fixtures/` (`makeUser({ plan: 'pro' })`), not inline object literals; never call the real network. CI-invoked Claude reads it every run and checks each test it writes against it.
+NOT a coverage gate ("fail unless line coverage ≥ 90%"): automatic and measurable, but `toBeDefined()` executes every line and passes it.
+NOT "write thorough, meaningful, high-quality tests": names the goal, never says what counts; the model's own idea of "thorough" produced the trivial tests.
+NOT a second independent Claude step that scores and deletes low-value tests: independent review fits code review, but this reviewer has no written criteria either, and deleting leaves fewer tests, not better ones. Filters the symptom after generation instead of defining the target before it.
+NOT a hook that rejects any test containing `toBeDefined`: a keyword ban. The same empty test returns as `expect(result).not.toBeNull()`, and legitimate uses of the matcher get blocked.
 TASK STATEMENT 3.7: SYSTEM-PROMPT & STARTUP FLAGS (CLI)
 Teach the system-prompt CLI flags (append vs replace):
 
@@ -741,6 +840,13 @@ Teach severity calibration:
 Define explicit severity criteria with concrete CODE EXAMPLES for each level
 Not prose descriptions of severity. Actual code showing what "critical" vs "minor" looks like.
 
+
+Teach persistent context for project conventions: many false positives are about THIS project (`eval()` in the sandboxed plugin loader, `SELECT *` in migrations, formatting the linter enforces). Write accepted patterns + exclusions once where every review loads them: Claude Code incl. CI → project CLAUDE.md (3.6); API reviewer → system prompt. E.g. "Accepted: `SELECT *` in `db/migrations/**`." / "Report TypeScript `any` only in public types under `src/api/**`." Same form as explicit criteria: exact skip/report, code example where subtle.
+Boundary: temporarily disabling a noisy category = short-term trust fix while criteria are rewritten; a standing exclusion (accepted pattern, category another stage covers) = permanent → persistent context.
+NOT a one-off ("@claude this pattern is fine here", one run's prompt) — next run starts fresh.
+NOT "be conservative" / "high-confidence only" — model is confident about the false positive.
+NOT a keyword post-filter — hides symptom, wording-fragile, drops real `SELECT *` leaks in app code.
+Exam trap: the one-off works at once on that PR; "high-confidence only" sounds like precision.
 TASK STATEMENT 4.2: FEW-SHOT PROMPTING
 Teach that few-shot examples are the most effective technique for consistency. Not more instructions. Not confidence thresholds.
 Teach when to deploy:
@@ -795,6 +901,15 @@ Teach the instruction/tool-name keyword-overlap failure:
 When instruction prose mirrors a tool name (`check the security` vs tool `check_security`), the model follows the phrase as prose (writes text instead of calling the tool) or misroutes between tools (ties `loop`→performance, `function`→security regardless of the actual issue).
 Fix = distinct, non-overlapping terminology for instruction text vs tool names/descriptions. NOT temperature, NOT tool_choice, NOT longer/more-detailed tool descriptions, NOT a priority rule.
 
+
+Teach structured output truncation. Exam objective: split large tasks into smaller scoped calls and merge the results, rather than raising max_tokens beyond practical limits.
+A structured result is usable only whole. tool_use input or JSON result with stop_reason "max_tokens" = cut-off structure (array with no closing bracket, finding missing its fields) → validation rejects it; worse, a "repair" step that closes the brackets silently stores a shorter list missing the last items.
+Decision boundary: normal-sized answer, cap just too low → raise max_tokens once. Output grows with the input (findings for every file in a 150-file release, every line item in a 400-page catalogue) → split into smaller scoped calls with the same tool schema, each returning a complete schema-valid structure (per file or batch of files, per document section, per batch of records). Merge in code: concatenate the arrays, dedupe on a natural key (file + line, sku), check every file or section returned a result. Split calls are independent → a job nobody waits on can go through the Message Batches API, one custom_id per chunk (4.5).
+NOT raising max_tokens to the model's maximum (e.g. 32000 → the model's max output; lure: docs say retry an incomplete tool_use higher, each earlier raise got further) — fixed per-model output ceiling, output keeps growing with the input so the next larger PR or catalogue truncates again; very large values also need streaming or batches to avoid dropped long-running connections.
+NOT a model with a larger context window (lure: "too big" sounds like context) — the input already fits; context window and max output are separate limits, a bigger window gives no bigger response. Too-large INPUT is the neighbouring problem, fixed by chunking input documents in 4.5.
+NOT shrinking the output (drop optional schema fields, "keep each finding under 20 words"; lure: fewer tokens per item does fit more items) — throws away data the schema was built to capture (removed optional discount field → a discount printed in the catalogue has nowhere to go; a 20-word finding loses the detail a developer needs to act); only postpones the ceiling until a larger input.
+NOT keeping what arrived (stream and post the findings finished before the cut-off, or auto-close the JSON; lure: salvages work) — silently drops every item after the cut-off and reports an incomplete result as complete.
+Exam trap: 4.6 vs here. 4.6 per-file passes fix attention dilution (quality drops on later files though the output fits); this split fixes output that does not fit in one response at all. Cross-file findings (data flow between modules) → a split review also needs 4.6's separate cross-file integration pass.
 TASK STATEMENT 4.4: VALIDATION-RETRY LOOPS
 Teach retry-with-error-feedback:
 
@@ -866,20 +981,29 @@ Model self-reports confidence per finding
 Route low-confidence findings to human review
 Calibrate confidence thresholds using labelled validation sets
 
+
+Teach per-concern passes: security + business logic + API design in one prompt compete for attention and few-shot examples. Symptom: tune one, another's recall drops on the same eval set (6 injection examples → breaking-change recall down). Fix: one pass per concern, own prompt + 2-4 examples (security; broken refund/discount rules; breaking contract changes), merge findings; each tunes independently (managed Code Review: one agent per issue class + verification step).
+Choose by symptom, combine when both: per-file + cross-file integration pass → dilution over many files (shallow later files, contradictory verdicts — q73, q163); per-concern → competition, even on small PRs of unchanged size; large multi-concern PR → per-concern over per-file chunks + integration pass.
+NOT balancing examples in one prompt — still competing; next tuning shifts recall, prompt grows.
+NOT a verification pass — precision only; a never-reported issue isn't there to verify.
+NOT per-file passes with the combined prompt — cures file-count dilution, not competition.
+NOT a bigger model/context — prompt already fits.
+NOT 2-of-3 voting — same blind spot every run; drops intermittently caught bugs.
+Exam trap: verification is a real pipeline stage, but a recall drop between concerns needs per-concern passes.
+Teach self-critique for variable completeness gaps:
+Add an evaluator-optimizer step: the agent checks its own draft against explicit completeness criteria (addresses the concern, includes relevant context, anticipates follow-ups) before presenting
+Use it when output is accurate but inconsistently explained and the gaps vary by case (missing policy detail here, a timeline there)
+when the required elements are already listed and shown in few-shot examples and single responses still drop a different element each time, more few-shot does not help (it does not check the response being sent); a higher model tier or a customer confirmation step doesn't fix incomplete explanation
+Distinguish from the self-review limitation above: self-critique against criteria catches variable coverage gaps (q99); an independent fresh instance catches confirmation-bias blind spots the same context already rationalised (q103)
+Teach inline reasoning + confidence to cut investigation time:
+When the bottleneck is developers clicking into each finding AND filtering findings before review is off the table, require Claude to include its reasoning and confidence assessment inline per finding
+Surfacing high-confidence only, or suppressing historical false-positive signatures, filters pre-review — rejected by the constraint; re-tiering blocking vs suggestion reorganises the queue but doesn't cut per-finding investigation time
+
 DOMAIN 4 COMPLETION
 8-question practice exam. Score. 7+/8 to pass. Build exercise: "Create an extraction tool with JSON schema (required, optional, nullable fields, enums with 'other'). Implement validation-retry. Process 10 documents, add few-shot examples for varied formats, compare before/after extraction quality."
 ````
 
 ---
-
-Teach self-critique for variable completeness gaps:
-Add an evaluator-optimizer step: the agent checks its own draft against explicit completeness criteria (addresses the concern, includes relevant context, anticipates follow-ups) before presenting
-Use it when output is accurate but inconsistently explained and the gaps vary by case (missing policy detail here, a timeline there)
-few-shot fixes consistent patterns, not highly variable per-case omissions; a higher model tier or a customer confirmation step doesn't fix incomplete explanation
-Distinguish from the self-review limitation above: self-critique against criteria catches variable coverage gaps (q99); an independent fresh instance catches confirmation-bias blind spots the same context already rationalised (q103)
-Teach inline reasoning + confidence to cut investigation time:
-When the bottleneck is developers clicking into each finding AND filtering findings before review is off the table, require Claude to include its reasoning and confidence assessment inline per finding
-Surfacing high-confidence only, or suppressing historical false-positive signatures, filters pre-review — rejected by the constraint; re-tiering blocking vs suggestion reorganises the queue but doesn't cut per-finding investigation time
 
 ## Domain 5 — Context Management & Reliability (15%)
 
@@ -914,13 +1038,27 @@ Prevents token budget exhaustion from accumulated irrelevant data
 Teach full history requirements:
 
 Subsequent API requests must include complete conversation history
-Omitting earlier messages breaks conversational coherence
+Omitting earlier messages by accident breaks conversational coherence (the agent re-asks the customer's name, q53)
+Dropping old turns on purpose is a sliding window (see the technique choice below): safe only after their facts are copied into a state object
 
 Teach upstream agent optimisation:
 
 Modify agents to return structured data (key facts, citations, relevance scores) instead of verbose content and reasoning chains
 Critical when downstream agents have limited context budgets
 
+
+Teach choosing among the four context-window techniques (all named in the objective: summarisation, sliding windows, structured state objects, selective retention):
+
+The exam asks which one fits the overflowing content, not which is best in general.
+Decision question about the old material: will a later answer need any of it exactly?
+Structured state object ("case facts" block): a small record the app updates every turn and sends with every request, outside the turns. E.g. {"order_id": "55120", "credit": {"amount": 40.00, "status": "promised"}, "commitments": ["free return shipping"], "open_issue": "refund"}. For anything that must survive exactly: amounts, dates, order IDs, statuses, decisions, promises. Updated every turn, it never shrinks or drops facts. Multi-issue session: one entry per issue (the Guide's "separate context layer" for structured issue data).
+Summarisation (compaction): replace old turns with a summary. Fits a stable, resolved story where the gist is enough. Lossy by design: "$247.83 refund for order #8891, promised by Friday" becomes "discussed a refund". Never the only home of a number, ID or promise.
+Sliding window: send only the last N turns. The API is stateless (the model sees only the system prompt + `messages` you send), so a window is a choice of what to send. Fits content where only recent turns matter, e.g. an agent polling deployment status every 2 minutes, each snapshot replacing the last, users asking "is it healthy now?". Fails silently: a $40 credit confirmed in turn 3 is gone and the agent says "I have no record of that". Safe only after must-survive facts are copied into a state object. Not a contradiction of the full-history rule: that rule forbids losing turns by accident (q53, re-asking the name); a window is deliberate, and only for turns no later answer needs.
+Selective retention / trimming: keep only the parts that matter. Cut a 40-field order lookup to the 5 fields the return decision needs before appending, or clear old tool results that newer ones superseded. 
+
+Exam trap: NOT a bigger window (20 → 50 turns) after an early fact dropped: a longer chat drops it again, every request costs more, and the fact still lives only in a turn. NOT summarising turns that leave the window: the summary blurs the exact amount or promise. NOT a transcript-search tool: the agent only searches when it suspects something is there, and one that never saw turn 3 doesn't know a credit exists. NOT the over-correction of a case-facts object for content nothing depends on (e.g. extracting every host state from 180 superseded status snapshots): keeps stale data nobody asks about and adds extraction work on every poll; a plain window or tool-result clearing is proportionate. NOT a larger-context model (the standard antipattern): the stale content is still there, every request still pays for it, and lost-in-the-middle still applies.
+
+Practice scenario: A support agent with a 20-turn window denies the $40 credit confirmed in turn 3, while a deployment-monitor agent on the same team struggles with 180 stale status snapshots. Ask the student which technique fits each, and why the same fix is wrong for the other.
 TASK STATEMENT 5.2: ESCALATION AND AMBIGUITY RESOLUTION
 Teach the three valid escalation triggers:
 
@@ -983,9 +1121,25 @@ Summary injection: summarise findings from one phase before spawning subagents f
 
 Teach crash recovery:
 
-Each agent exports structured state to a known file location (manifest)
+Each agent exports structured state (findings per finished unit) to a known file location; a manifest records each unit's status and where its output lives
 On resume, coordinator loads manifest and injects into agent prompts
 
+
+Teach crash recovery as a concrete file layout:
+Each agent, on finishing a unit (repository, document, module), writes structured findings to a known location (state/findings/repo-billing.json) and records the unit's status in a coordinator-owned manifest: state/manifest.json = {"run": "2026-09-23", "units": {"repo-billing": {"status": "done", "findings": "state/findings/repo-billing.json"}, "repo-auth": {"status": "in_progress"}, "repo-search": {"status": "pending"}}}.
+Order: findings file first, then flip status to done → a unit cut off halfway stays not-done and is rerun.
+Restart: coordinator loads manifest, skips done, reruns in_progress + pending, injects into each new subagent's prompt the prior findings it needs (subagents inherit nothing → injection mandatory). Final synthesis/report agent reads the findings files, not coordinator memory.
+Result: no finished work repeated, no finding depends on a conversation surviving.
+
+Teach the distractors:
+NOT resuming the coordinator session (--resume <name> CLI, resume: sessionId SDK) — right in 1.7 when one conversation's context is still valid; here the conversation isn't a durable findings store: long runs get auto-compacted (early results condensed to summaries, detail gone before the crash) → huge, partly degraded context, no machine-readable record of done units.
+NOT rerunning everything from scratch (incl. "raise max_turns", "host that never restarts") — repeats hours of finished work, fails the stated goal; neither stops the next interruption.
+NOT the coordinator's running summary/progress notes in its context — dies with the process or gets compacted.
+NOT exporting the full transcript every N units, loaded as first message of a new session — known location sounds like the Guide pattern, but saves verbose conversation not structured state, loses everything since the last export, pushes the whole transcript back into context.
+NOT each agent keeping a private state file reloaded independently — coordinator no longer knows what's done or who needs which findings; Guide routes state through the coordinator's manifest.
+Exam trap: 1.7 session resumption continues one conversation; pipeline recovery = structured exports + a manifest the coordinator loads and injects.
+
+Practice scenario: nightly licence-audit pipeline over 60 repositories stops at repository 38 on host restart; progress lived only in the coordinator's conversation, auto-compacted twice. Options: resume the coordinator session / rerun everything / dump the transcript every ten repos / per-repository findings files + manifest the coordinator loads and injects. Student names why each of the first three loses findings or repeats work.
 TASK STATEMENT 5.5: HUMAN REVIEW AND CONFIDENCE CALIBRATION
 Teach the aggregate metrics trap:
 

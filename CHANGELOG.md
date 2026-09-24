@@ -6,6 +6,19 @@ This file also records **content reviews** — the periodic sync against the off
 Claude Code / API docs (procedure: `maintenance/RUNBOOK.md`; sources + last-verified stamp:
 `maintenance/sources.md`).
 
+## [0.21.0] — 2026-09-24
+### Fixed
+- **q52 re-keyed D → C** (axis 2 → 5). Exam Guide 5.1: *"Extracting and persisting structured issue data (order IDs, amounts, statuses) into a separate context layer for multi-issue sessions"*. The imported key (narrative summary of earlier issues) loses the refund's numbers the customer asks about. The 5.1 Cheatsheet row that carried the old key is rewritten.
+- **Audit of all imported keys (ids 1–212, subagent workflow, per-flag independent check): no re-keys.** Three items had two defensible readings and got a clarified stem, key unchanged: q176 (lost-in-the-middle now describes the MIDDLE commits going vague), q143 (occurrences have different neighbouring lines, so widening Edit's context wins; Read + Write stays the fallback for identical text), q99 (few-shot is already in place, so the per-response self-critique wins; task 4.1 → 4.6; the false "few-shot cannot cover variable gaps" claim removed from the explanation, the trap, the lesson and the Cheatsheet row). q42 retagged 5.1 → 5.4.
+- **`max_tokens`: two cases, not one rule.** Lesson 1.1/1.4, the 1.1 trap + core rule and Cheatsheet rows now separate "cap too low for a normal-sized answer → retry higher" (q248, stem clarified) from "output inherently too large → split into smaller scoped calls and merge" (new questions).
+- Two 4.6 lesson paragraphs that sat after the Domain 4 closing fence are moved inside it.
+
+### Added
+- **Second score-report gap fill — bank ids 262–278** (17 questions, drafted + adversarially verified by a subagent workflow): split-and-merge for truncated structured output (1.1, 4.3); review exclusions as persistent CLAUDE.md context incl. a GitHub Actions item whose distractors are workflow inputs / env vars / a post-filter job (3.6), with the boundary to `--append-system-prompt` (q227); tool grant + structured output for a CI review, `--permission-mode dontAsk` vs `--dangerously-skip-permissions`, meaningful-vs-trivial test criteria (3.6); per-concern review passes (4.6); dynamic decomposition (1.6); subagent-spawn diagnosis via AgentDefinition fields (1.3); pipeline state manifests (5.4); sliding window / structured state / trimming boundaries (5.1). Bank = 278.
+- Matching lessons (condensed to the lesson-script register), traps, core rules and Cheatsheet rows.
+- **Teachers: `teaching-method.md`.** Step 2 now requires every named wrong move to be unpacked (what it is + tiny example, why it tempts, why it fails here, axis) — never a bare label. New step 3b: the tutor solves one fresh exam-format question out loud (conditions from the stem → each option against each condition → the survivor) before the learner is quizzed.
+- `maintenance/authoring-questions.md`: rule "Changing an existing question" (re-key only when the key contradicts the Guide in that question's own scenario; otherwise add a question or clarify the stem).
+
 ## [0.20.0] — 2026-09-23
 ### Fixed
 - **q51 re-keyed D → C** (axis 4 → 3). An explicit "I want to talk to a real person NOW" is escalated at once — Exam Guide v1.0 task 5.2: *"Honoring explicit customer requests for human agents immediately without first attempting investigation"*. The imported key (one clarifying question first) was exactly the investigation the Guide rules out. The same wrong rule had propagated into the 5.2 Cheatsheet row ("a bare human request is not an unconditional immediate handoff"); that row is split into the explicit-request case (q51 → escalate at once) and the frustration case (q58 → offer resolution, escalate if they reiterate).
